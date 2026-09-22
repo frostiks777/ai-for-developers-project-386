@@ -21,6 +21,9 @@
 ├── components.json           ✅ shadcn/ui
 ├── drizzle.config.ts         ✅
 ├── index.html                ✅
+├── Dockerfile                ✅ multi-stage (builder + runtime)
+├── .dockerignore             ✅
+├── render.yaml               ✅ Render Blueprint (docker, free, frankfurt)
 ├── src/
 │   ├── main.tsx              ✅
 │   ├── App.tsx               ✅
@@ -34,7 +37,7 @@
 │   ├── components/ui/button.tsx ✅ shadcn Button
 │   └── test/setup.ts         ✅ jest-dom/vitest
 ├── server/
-│   ├── index.ts              ✅ Fastify: /health, /api/slots, /api/bookings
+│   ├── index.ts              ✅ Fastify: /health, /api/*, статика dist/ (SPA)
 │   ├── types.ts              ✅ TimeSlot, Booking, CreateBookingBody
 │   ├── db/schema.ts          ✅ Drizzle: slots, bookings
 │   ├── db/index.ts           ✅ клиент БД + авто-сид слотов
@@ -44,7 +47,11 @@
 │   ├── conventions.md        ✅
 │   ├── agent-principles.md   ✅
 │   ├── Структура проекта.md  ✅ (теория агентов)
-│   └── Каркас приложения.md  ✅ (требования шага 2)
+│   ├── Каркас приложения.md  ✅ (требования шага 2)
+│   ├── ci_cd.md              ✅ (план GCP — не используется)
+│   ├── ci_cd_render.md       ✅ (план Render — основной)
+│   ├── ai-tuning-plan.md     ✅ (тюнинг AI-агентов)
+│   └── mcp.md                ✅ (MCP-серверы)
 └── AGENTS.md                 ✅ (обновлён под финальный стек)
 ```
 
@@ -81,8 +88,9 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 1/1 passed (vitest 3.2.7, 259ms)
-✅ build: vite v6.4.3 — 171.52 kB JS, 9.91 kB CSS (2.64s)
+✅ test: 6/6 passed (2 файла, vitest 3.2.7)
+✅ build: vite v6.4.3 — 250.57 kB JS (gzip 80.12), 15.98 kB CSS
+✅ smoke (prod): PORT=3100, /health 200, / 200 (index.html), SPA fallback 200, /api/slots 200
 ```
 
 ## Что сделано (полный список)
@@ -104,6 +112,12 @@
     - AGENTS.md: добавлены разделы `## Hygiene of context window`, `## Long-term memory`, `## Safety gates`; обновлены `## Documentation`, `## Skills (OpenCode)`, `## Directory structure`
     - MCP: shadcn MCP подключён в `opencode.jsonc` → блок `mcp`; read-only permission установлена для субагента `explore`; документировано в [`docs/mcp.md`](docs/mcp.md)
     - `docs/agent-principles.md` дополнен ссылками на новые скиллы, ADR и правило 2 итераций
+13. ✅ Деплой на Render.com по [`docs/ci_cd_render.md`](docs/ci_cd_render.md):
+    - `server/index.ts` — `PORT` из env, раздача `dist/` через `@fastify/static`, SPA fallback
+    - `package.json` — скрипт `start` (tsx), `@fastify/static` в dependencies, `tsx` перенесён в dependencies
+    - `Dockerfile` — multi-stage (python3/make/g++ для better-sqlite3, non-root), `.dockerignore`
+    - `render.yaml` — docker, plan free, region frankfurt, branch main, healthCheck `/health`
+    - Коммиты `aa22fb0`, `1202442`, `7c5a1ba`, `ed95bf7` запушены в `main`
 
 ## Что осталось (следующие шаги)
 
@@ -113,6 +127,7 @@
 - [ ] Добавить страницу «Мои бронирования»
 - [ ] Добавить JWT-аутентификацию (если требуется по спеке)
 - [ ] Написать интеграционные тесты API (Vitest + supertest/fastify.inject)
+- [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
 
 ## Ключевые решения
 
@@ -128,6 +143,9 @@
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
 | Процессные скиллы | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
 | MCP для UI | [`@shadcn/ui/mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Доступ к каталогу компонентов через `components.json` |
+| Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP (`docs/ci_cd.md`) не используется |
+| Фронт в проде | `@fastify/static` раздаёт `dist/` из Fastify | Один контейнер, same-origin `/api` без CORS |
+| Порт в проде | `process.env.PORT` (fallback 3000) | Требование Render; хост `0.0.0.0` |
 
 ## Окружение
 
