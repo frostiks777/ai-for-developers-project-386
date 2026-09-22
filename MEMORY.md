@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-22
+> Дата последнего обновления: 2026-09-22 (sync #2: каталог вырос 16→133)
 
 ## Текущее состояние
 
@@ -66,6 +66,7 @@
 | `typecheck` | `@ts-expect-error` стал неиспользуемым после обновления vitest | Директива удалена |
 | `lint` | `no-unsafe-finally` в `use-availability.ts` | Убран `finally`, логика перенесена после try/catch |
 | `lint` | `react-refresh/only-export-components` warning в `button.tsx` | Предупреждение (не ошибка) — допустимо для shadcn |
+| `docs sync` | `opencode/mimo-v2.5-free` удалён из каталога моделей, заменён на `opencode/mimo-v2.6-flash-free` | Обновлено во всех 4 файлах: `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` |
 
 ## Версии зависимостей (финальные)
 
@@ -118,6 +119,13 @@
     - `Dockerfile` — multi-stage (python3/make/g++ для better-sqlite3, non-root), `.dockerignore`
     - `render.yaml` — docker, plan free, region frankfurt, branch main, healthCheck `/health`
     - Коммиты `aa22fb0`, `1202442`, `7c5a1ba`, `ed95bf7` запушены в `main`
+14. ✅ Синхронизация документации с каталогом моделей (`tools.opencode.models`):
+    - **Sync #1:** `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` — открытый ID `opencode/mimo-v2.5-free` заменён на `opencode/mimo-v2.6-flash-free`. Добавлен OpenRouter как «справочно».
+    - **Sync #2 (текущий):** каталог вырос с 16 до 133 моделей. Обновлено:
+      - `docs/model-usage.md`: opencode — добавлена 5-я бесплатная `big-pickle` (теперь 5 из 18); openrouter — таблица переразбита на 3 группы (универсальные 7, роутеры 5, специализированные 1) итого 12 из 115; добавлены `fusion`, `pareto-code`, `bodybuilder`, `auto`, `lyria-3-clip-preview`; удалены 4 устаревших free-модели (`qwen3.8-27b:free`, `laguna-xs:free`, `glm-5.2:free`, `gemma-4-31b-it:free`); список платных opencode-моделей для справки.
+      - `AGENTS.md`: добавлен `opencode/big-pickle` в список бесплатных ID.
+      - `opencode.jsonc`, `docs/ai-tuning-plan.md`: без изменений (sync #1 уже закрыл `mimo-v2.5-free → v2.6`).
+      - Сводная статистика: **133 модели всего, 17 бесплатных, 116 платных**.
 
 ## Что осталось (следующие шаги)
 

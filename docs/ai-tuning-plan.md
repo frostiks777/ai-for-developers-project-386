@@ -335,7 +335,7 @@ Accepted — 2026-09-22.
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/mimo-v2.5-free",
+  "model": "opencode/mimo-v2.6-flash-free",
   "agents": {
     "explore": { "model": "opencode/muse-spark-1.3-contributor-free" },
     "general": { "model": "opencode/muse-spark-1.3-contributor-free" }
@@ -350,7 +350,7 @@ Accepted — 2026-09-22.
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/mimo-v2.5-free",
+  "model": "opencode/mimo-v2.6-flash-free",
   "agents": {
     "explore": { "model": "opencode/muse-spark-1.3-contributor-free" },
     "general": { "model": "opencode/muse-spark-1.3-contributor-free" }
