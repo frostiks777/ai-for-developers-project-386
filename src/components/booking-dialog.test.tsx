@@ -73,6 +73,18 @@ describe('BookingDialog', () => {
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
   })
 
+  it('не даёт отправить форму с невалидным телефоном', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.type(screen.getByLabelText('Телефон'), 'abcdef')
+    await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+
+    expect(screen.getByText('Неверный номер телефона')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+  })
+
   it('бронирует слот, показывает уведомление и закрывает диалог', async () => {
     const fetchMock = vi.fn(
       async () =>
