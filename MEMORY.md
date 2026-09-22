@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-22 (sync #2: каталог 16→133; +obra/superpowers plugin)
+> Дата последнего обновления: 2026-09-22 (sync #3: +37 upstream-скилов в `.agents/skills/`)
 
 ## Текущее состояние
 
@@ -152,6 +152,13 @@
     - `POST /api/bookings` на прошедший слот → 400 «Слот уже прошёл»
     - ре-сид 8 слотов, если будущих слотов не осталось
 18. ✅ Интеграционные тесты API: `server/app.ts` (`buildApp()`), `server/app.test.ts` — 11 тестов через `app.inject()` на `DATABASE_PATH=:memory:`
+19. ✅ Импорт 37 upstream-скилов в `.agents/skills/` (по требованию — доступны всем агентам, не только OpenCode):
+    - **Single-skill репо (5):** `open-code-review` (alibaba), `i-have-adhd` (ayghri), `security-audit` (cloudflare, +references/ +scripts/), `archify-review` (tt-a1i), `browser-skill` (Tencent: CLI body + DSH variant section, объединено из двух SKILL.md в один).
+    - **Каталог tech-leads-club/agent-skills (32):** только категории `(development)` — 18 шт. (`codenavi`, `coding-guidelines`, `confluence-assistant`, `docs-writer`, `gh-address-comments`, `harness-eval`, `jira-assistant`, `nestjs-modular-monolith`, `not-your-babysitter`, `rails-dev`, `react-native-expert`, `shopify-developer`, `spec-driven-eval`, `tlc-discover`, `tlc-implement`, `tlc-plan`, `tlc-spec-driven`, `tlc-spec-lean`) — и `(architecture)` — 14 шт. (`component-common-domain-detection`, `component-flattening-analysis`, `component-identification-sizing`, `coupling-analysis`, `decomposition-planning-roadmap`, `domain-analysis`, `domain-identification-grouping`, `evolutionary-modular-architecture`, `frontend-blueprint`, `legacy-migration-planner`, `modular-decomposition`, `modular-design-principles`, `react-composition-patterns`, `tactical-ddd`).
+    - **Имена → из frontmatter `name:`**, директории = `name` в kebab-case. Никаких переименований/префиксов.
+    - **Vitest exclude:** добавлен `.agents/skills/**` в `vite.config.ts` → `test.exclude`, чтобы исключить upstream-ские `.cjs` test-файлы из `npm test`.
+    - **Проверки:** `npm run lint` ✓ (0 err, 1 допустимый warn в `button.tsx`), `npm run typecheck` ✓, `npm test` 20/20 ✓, валидация frontmatter 43/43 (все SKILL.md имеют `--- ---`, `name:`, `description:`).
+    - **Известные мелочи:** 3 скила имеют description чуть выше рекомендованных 1024 chars (`evolutionary-modular-architecture` ~1069, `not-your-babysitter` ~1066, `tlc-spec-driven` ~1060 — описания upstream-а, не правлены).
 
 ## Что осталось (следующие шаги)
 
@@ -184,6 +191,7 @@
 | Валидация API | zod 4 (схема-зеркало: `server/validation.ts` ↔ `src/lib/validation.ts`) | См. [ADR-0002](docs/adr/0002-zod-api-validation.md); единые сообщения об ошибках фронт/бэк |
 | Архитектура сервера | Фабрика `buildApp()` в `server/app.ts`, `server/index.ts` — только listen | Тесты через `app.inject()` без реального порта |
 | БД в тестах | `DATABASE_PATH=:memory:` (`vite.config.ts` → `test.env`) | Изоляция тестов от `server/data/app.db` |
+| Upstream-скилы | Копия upstream-репо в `.agents/skills/<name>/`, имена = frontmatter `name:`, deep-рекурсия (`references/`, `scripts/`) | Доступны всем агентам в проекте (не только opencode); не зависят от локального кеша персональных скилов и плагинов |
 
 ## Окружение
 

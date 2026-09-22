@@ -19,6 +19,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/test/setup.ts',
+    // Exclude agent-skills repo content from project test discovery
+    exclude: [
+      'node_modules',
+      'dist',
+      '.git',
+      '.agents/skills/**',
+    ],
     env: {
       DATABASE_PATH: ':memory:',
     },
