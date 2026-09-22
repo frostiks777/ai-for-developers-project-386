@@ -48,10 +48,11 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
 
   const parseResult = createBookingSchema.safeParse({ slotId: slot?.id ?? 0, name, phone, email })
   const isFormValid = parseResult.success
-  const emailIssue = parseResult.success
-    ? undefined
-    : parseResult.error.issues.find((issue) => issue.path[0] === 'email')
-  const emailError = email.trim() !== '' && emailIssue ? emailIssue.message : null
+  const issues = parseResult.success ? [] : parseResult.error.issues
+  const phoneError =
+    phone.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'phone')?.message ?? null) : null
+  const emailError =
+    email.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'email')?.message ?? null) : null
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -99,7 +100,14 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
               onChange={(event) => setPhone(event.target.value)}
               placeholder="+7 900 000-00-00"
               autoComplete="tel"
+              aria-invalid={phoneError !== null}
+              aria-describedby={phoneError ? 'booking-phone-error' : undefined}
             />
+            {phoneError && (
+              <p id="booking-phone-error" className="text-sm text-destructive">
+                {phoneError}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">

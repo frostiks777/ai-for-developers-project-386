@@ -117,6 +117,8 @@ describe('POST /api/bookings', () => {
     ['с невалидным email', { email: 'not-an-email' }],
     ['с пустым именем', { name: '   ' }],
     ['с пустым телефоном', { phone: '  ' }],
+    ['с невалидным телефоном', { phone: 'abcdef' }],
+    ['с коротким телефоном', { phone: '+7 900' }],
     ['без slotId', { slotId: undefined }],
   ])('отвечает 400 %s', async (_case, overrides) => {
     const slot = firstFreeSlot(await requestSlots())
