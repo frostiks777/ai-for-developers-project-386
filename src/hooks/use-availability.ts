@@ -13,7 +13,8 @@ export function useAvailability() {
 
     try {
       const data = await fetchSlots()
-      setSlots(data)
+      // Бэкенд тоже фильтрует, но вкладка могла быть открыта долго — не показываем прошедшее
+      setSlots(data.filter((slot) => new Date(slot.startAt).getTime() >= Date.now()))
       setError(null)
     } catch {
       setError('Не удалось загрузить слоты')

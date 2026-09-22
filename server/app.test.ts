@@ -1,0 +1,149 @@
+// @vitest-environment node
+import type { FastifyInstance } from 'fastify'
+
+import { buildApp } from './app'
+import { db } from './db'
+import { slots } from './db/schema'
+import type { Booking, TimeSlot } from './types'
+
+let app: FastifyInstance
+
+beforeAll(async () => {
+  app = await buildApp()
+  await app.ready()
+})
+
+afterAll(async () => {
+  await app.close()
+})
+
+async function requestSlots(): Promise<TimeSlot[]> {
+  const response = await app.inject({ method: 'GET', url: '/api/slots' })
+
+  expect(response.statusCode).toBe(200)
+  return response.json<TimeSlot[]>()
+}
+
+function firstFreeSlot(allSlots: TimeSlot[]): TimeSlot {
+  const slot = allSlots.find((item) => !item.isBooked)
+
+  if (!slot) {
+    throw new Error('В тестовой БД нет свободных слотов')
+  }
+
+  return slot
+}
+
+function validBody(slotId: number) {
+  return {
+    slotId,
+    name: 'Иван',
+    phone: '+79000000000',
+    email: 'ivan@example.com',
+  }
+}
+
+describe('GET /health', () => {
+  it('отвечает 200 со статусом ok', async () => {
+    const response = await app.inject({ method: 'GET', url: '/health' })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ status: 'ok' })
+  })
+})
+
+describe('GET /api/slots', () => {
+  it('не отдаёт прошедшие слоты', async () => {
+    const pastStartAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    db.insert(slots).values({ startAt: pastStartAt, durationMin: 30 }).run()
+
+    const allSlots = await requestSlots()
+    const nowIso = new Date().toISOString()
+
+    expect(allSlots.every((slot) => slot.startAt >= nowIso)).toBe(true)
+    expect(allSlots.some((slot) => slot.startAt === pastStartAt)).toBe(false)
+  })
+})
+
+describe('POST /api/bookings', () => {
+  it('создаёт бронь и возвращает 201', async () => {
+    const slot = firstFreeSlot(await requestSlots())
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(slot.id),
+    })
+
+    expect(response.statusCode).toBe(201)
+    const booking = response.json<Booking>()
+    expect(booking.slotId).toBe(slot.id)
+    expect(booking.email).toBe('ivan@example.com')
+
+    const updatedSlot = (await requestSlots()).find((item) => item.id === slot.id)
+    expect(updatedSlot?.isBooked).toBe(true)
+  })
+
+  it('отвечает 409 на повторную бронь того же слота', async () => {
+    const slot = firstFreeSlot(await requestSlots())
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(slot.id),
+    })
+    expect(first.statusCode).toBe(201)
+
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(slot.id),
+    })
+    expect(second.statusCode).toBe(409)
+  })
+
+  it('отвечает 404 для несуществующего слота', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(999999),
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it.each([
+    ['без email', { email: undefined }],
+    ['с невалидным email', { email: 'not-an-email' }],
+    ['с пустым именем', { name: '   ' }],
+    ['с пустым телефоном', { phone: '  ' }],
+    ['без slotId', { slotId: undefined }],
+  ])('отвечает 400 %s', async (_case, overrides) => {
+    const slot = firstFreeSlot(await requestSlots())
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { ...validBody(slot.id), ...overrides },
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('отвечает 400, если слот прошедший', async () => {
+    const pastStartAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const pastSlot = db
+      .insert(slots)
+      .values({ startAt: pastStartAt, durationMin: 30 })
+      .returning()
+      .get()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(pastSlot.id),
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+})

@@ -11,6 +11,7 @@ export interface CreateBookingBody {
   slotId: number
   name: string
   phone: string
+  email: string
 }
 
 export interface Booking {
@@ -18,5 +19,6 @@ export interface Booking {
   slotId: number
   name: string
   phone: string
+  email: string
   createdAt: string
 }
