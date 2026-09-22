@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-22 (sync #2: каталог вырос 16→133)
+> Дата последнего обновления: 2026-09-22 (sync #2: каталог 16→133; +obra/superpowers plugin)
 
 ## Текущее состояние
 
@@ -126,6 +126,11 @@
       - `AGENTS.md`: добавлен `opencode/big-pickle` в список бесплатных ID.
       - `opencode.jsonc`, `docs/ai-tuning-plan.md`: без изменений (sync #1 уже закрыл `mimo-v2.5-free → v2.6`).
       - Сводная статистика: **133 модели всего, 17 бесплатных, 116 платных**.
+15. ✅ Подключение плагина [obra/superpowers](https://github.com/obra/superpowers) в `opencode.jsonc`:
+    - Добавлен ключ `plugins: ["superpowers@git+https://github.com/obra/superpowers.git"]` (V2, требует opencode ≥ 2.0.4).
+    - Регистрирует 14 дополнительных процессных скилов через OpenCode plugin manager (см. таблицу ключевых решений).
+    - `verification-before-completion` + `using-superpowers` теперь доступны в этой же сессии.
+    - Локальные 6 скилов в `.agents/skills/` остаются — приоритет V2: проектные → персональные → плагины, ID не пересекаются.
 
 ## Что осталось (следующие шаги)
 
@@ -149,7 +154,8 @@
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
-| Процессные скиллы | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
+| Процессные скиллы (локальные) | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
+| Процессные скиллы (плагин) | [obra/superpowers](https://github.com/obra/superpowers) через `opencode.jsonc` → `plugins` (V2 git-spec) | Дополнительные 14 скилов: `brainstorming`, `systematic-debugging`, `test-driven-development`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `using-git-worktrees`, `verification-before-completion`, `using-superpowers`, `diagnosing-superpowers`. Приоритет V2: проектные → персональные → superpowers (локальные `ponytail` и др. не страдают). |
 | MCP для UI | [`@shadcn/ui/mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Доступ к каталогу компонентов через `components.json` |
 | Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP (`docs/ci_cd.md`) не используется |
 | Фронт в проде | `@fastify/static` раздаёт `dist/` из Fastify | Один контейнер, same-origin `/api` без CORS |
