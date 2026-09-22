@@ -1,5 +1,9 @@
+import { useState } from 'react'
+
+import { BookingDialog } from '@/components/booking-dialog'
 import { Button } from '@/components/ui/button'
 import { useAvailability } from '@/hooks/use-availability'
+import type { TimeSlot } from '@/types/booking'
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
   dateStyle: 'medium',
@@ -11,10 +15,13 @@ function formatStartAt(startAt: string): string {
 }
 
 export default function HomePage() {
-  const { slots, isLoading, error } = useAvailability()
+  const { slots, isLoading, error, refetch } = useAvailability()
+  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const handleBookingClick = (slotId: number) => {
-    console.log('Бронирование слота:', slotId)
+  const handleBookingClick = (slot: TimeSlot) => {
+    setSelectedSlot(slot)
+    setIsDialogOpen(true)
   }
 
   return (
@@ -35,7 +42,10 @@ export default function HomePage() {
       {!isLoading && !error && slots.length > 0 && (
         <ul className="grid gap-4 sm:grid-cols-2">
           {slots.map((slot) => (
-            <li key={slot.id} className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
+            <li
+              key={slot.id}
+              className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm"
+            >
               <p className="font-medium">{formatStartAt(slot.startAt)}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Длительность: {slot.durationMin} мин
@@ -43,7 +53,7 @@ export default function HomePage() {
               <Button
                 className="mt-4"
                 disabled={slot.isBooked}
-                onClick={() => handleBookingClick(slot.id)}
+                onClick={() => handleBookingClick(slot)}
               >
                 {slot.isBooked ? 'Занято' : 'Забронировать'}
               </Button>
@@ -51,6 +61,13 @@ export default function HomePage() {
           ))}
         </ul>
       )}
+
+      <BookingDialog
+        slot={selectedSlot}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onBooked={refetch}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { fetchSlots } from '@/api/client'
 import type { TimeSlot } from '@/types/booking'
@@ -8,27 +8,23 @@ export function useAvailability() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const loadSlots = useCallback(async () => {
+    setIsLoading(true)
 
-    const loadSlots = async () => {
-      try {
-        const data = await fetchSlots()
-        if (cancelled) return
-        setSlots(data)
-      } catch {
-        if (cancelled) return
-        setError('Не удалось загрузить слоты')
-      }
-      if (!cancelled) setIsLoading(false)
-    }
-
-    void loadSlots()
-
-    return () => {
-      cancelled = true
+    try {
+      const data = await fetchSlots()
+      setSlots(data)
+      setError(null)
+    } catch {
+      setError('Не удалось загрузить слоты')
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
-  return { slots, isLoading, error }
+  useEffect(() => {
+    void loadSlots()
+  }, [loadSlots])
+
+  return { slots, isLoading, error, refetch: loadSlots }
 }
