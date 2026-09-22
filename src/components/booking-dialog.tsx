@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useBooking } from '@/hooks/use-booking'
+import { createBookingSchema } from '@/lib/validation'
 import type { TimeSlot } from '@/types/booking'
 
 interface BookingDialogProps {
@@ -34,16 +35,23 @@ function formatStartAt(startAt: string): string {
 export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDialogProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const { isSubmitting, bookSlot } = useBooking()
 
   useEffect(() => {
     if (!open) {
       setName('')
       setPhone('')
+      setEmail('')
     }
   }, [open])
 
-  const isFormValid = name.trim() !== '' && phone.trim() !== ''
+  const parseResult = createBookingSchema.safeParse({ slotId: slot?.id ?? 0, name, phone, email })
+  const isFormValid = parseResult.success
+  const emailIssue = parseResult.success
+    ? undefined
+    : parseResult.error.issues.find((issue) => issue.path[0] === 'email')
+  const emailError = email.trim() !== '' && emailIssue ? emailIssue.message : null
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -52,7 +60,7 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
       return
     }
 
-    const isBooked = await bookSlot({ slotId: slot.id, name, phone })
+    const isBooked = await bookSlot(parseResult.data)
 
     if (isBooked) {
       onBooked()
@@ -92,6 +100,25 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
               placeholder="+7 900 000-00-00"
               autoComplete="tel"
             />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="booking-email">Email</Label>
+            <Input
+              id="booking-email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              aria-invalid={emailError !== null}
+              aria-describedby={emailError ? 'booking-email-error' : undefined}
+            />
+            {emailError && (
+              <p id="booking-email-error" className="text-sm text-destructive">
+                {emailError}
+              </p>
+            )}
           </div>
 
           <DialogFooter>

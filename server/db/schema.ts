@@ -17,6 +17,7 @@ export const bookings = sqliteTable('bookings', {
     .references(() => slots.id),
   name: text('name').notNull(),
   phone: text('phone').notNull(),
+  email: text('email').notNull(),
   createdAt: text('createdAt')
     .notNull()
     .default(sql`(datetime('now'))`),

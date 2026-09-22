@@ -1,0 +1,93 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import fastifyStatic from '@fastify/static'
+import { eq, gte } from 'drizzle-orm'
+import Fastify, { type FastifyInstance } from 'fastify'
+import { db } from './db'
+import { bookings, slots } from './db/schema'
+import type { TimeSlot } from './types'
+import { createBookingSchema } from './validation'
+
+// Фабрика приложения: тесты создают изолированный инстанс без listen()
+export async function buildApp(): Promise<FastifyInstance> {
+  // В тестах логи Fastify не нужны (vitest выставляет NODE_ENV=test)
+  const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
+
+  app.get('/health', () => ({ status: 'ok' }))
+
+  // Слоты в будущем с признаком занятости, отсортированные по startAt
+  app.get('/api/slots', (): TimeSlot[] => {
+    const rows = db
+      .select({
+        id: slots.id,
+        startAt: slots.startAt,
+        durationMin: slots.durationMin,
+        bookingId: bookings.id,
+      })
+      .from(slots)
+      .leftJoin(bookings, eq(bookings.slotId, slots.id))
+      .where(gte(slots.startAt, new Date().toISOString()))
+      .orderBy(slots.startAt)
+      .all()
+
+    return rows.map((row) => ({
+      id: row.id,
+      startAt: row.startAt,
+      durationMin: row.durationMin,
+      isBooked: row.bookingId !== null,
+    }))
+  })
+
+  app.post('/api/bookings', (request, reply) => {
+    const parsed = createBookingSchema.safeParse(request.body)
+
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+      return reply.code(400).send({ error: message })
+    }
+
+    const { slotId, name, phone, email } = parsed.data
+
+    const slot = db.select().from(slots).where(eq(slots.id, slotId)).get()
+    if (!slot) {
+      return reply.code(404).send({ error: 'Слот не найден' })
+    }
+
+    if (slot.startAt < new Date().toISOString()) {
+      return reply.code(400).send({ error: 'Слот уже прошёл' })
+    }
+
+    const existingBooking = db.select().from(bookings).where(eq(bookings.slotId, slotId)).get()
+    if (existingBooking) {
+      return reply.code(409).send({ error: 'Слот уже занят' })
+    }
+
+    const created = db
+      .insert(bookings)
+      .values({ slotId, name, phone, email })
+      .returning()
+      .get()
+
+    return reply.code(201).send(created)
+  })
+
+  // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/
+  const currentDir = path.dirname(fileURLToPath(import.meta.url))
+  const distDir = path.resolve(currentDir, '..', 'dist')
+
+  if (existsSync(distDir)) {
+    await app.register(fastifyStatic, { root: distDir, prefix: '/' })
+
+    // SPA fallback: любой GET вне /api отдаёт index.html
+    app.setNotFoundHandler((request, reply) => {
+      if (request.raw.method === 'GET' && !request.url.startsWith('/api')) {
+        return reply.sendFile('index.html')
+      }
+
+      return reply.code(404).send({ error: 'Не найдено' })
+    })
+  }
+
+  return app
+}

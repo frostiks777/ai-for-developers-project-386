@@ -25,6 +25,12 @@ function renderDialog() {
   )
 }
 
+async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
+  await user.type(screen.getByLabelText('Имя'), 'Иван')
+  await user.type(screen.getByLabelText('Телефон'), '+79000000000')
+  await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+}
+
 describe('BookingDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -37,10 +43,11 @@ describe('BookingDialog', () => {
     expect(screen.getByRole('heading', { name: 'Бронирование звонка' })).toBeInTheDocument()
     expect(screen.getByLabelText('Имя')).toBeInTheDocument()
     expect(screen.getByLabelText('Телефон')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
   })
 
-  it('включает кнопку отправки после заполнения полей', async () => {
+  it('включает кнопку отправки только после заполнения всех полей', async () => {
     const user = userEvent.setup()
     renderDialog()
 
@@ -48,7 +55,22 @@ describe('BookingDialog', () => {
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
 
     await user.type(screen.getByLabelText('Телефон'), '+7 900 000-00-00')
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+
+    await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeEnabled()
+  })
+
+  it('не даёт отправить форму с невалидным email', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.type(screen.getByLabelText('Телефон'), '+79000000000')
+    await user.type(screen.getByLabelText('Email'), 'not-an-email')
+
+    expect(screen.getByText('Неверный email')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
   })
 
   it('бронирует слот, показывает уведомление и закрывает диалог', async () => {
@@ -60,6 +82,7 @@ describe('BookingDialog', () => {
             slotId: 1,
             name: 'Иван',
             phone: '+79000000000',
+            email: 'ivan@example.com',
             createdAt: '2026-09-22T07:00:00.000Z',
           }),
           { status: 201 },
@@ -70,8 +93,7 @@ describe('BookingDialog', () => {
     const user = userEvent.setup()
     renderDialog()
 
-    await user.type(screen.getByLabelText('Имя'), 'Иван')
-    await user.type(screen.getByLabelText('Телефон'), '+79000000000')
+    await fillValidForm(user)
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -92,8 +114,7 @@ describe('BookingDialog', () => {
     const user = userEvent.setup()
     renderDialog()
 
-    await user.type(screen.getByLabelText('Имя'), 'Иван')
-    await user.type(screen.getByLabelText('Телефон'), '+79000000000')
+    await fillValidForm(user)
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(toast.error).toHaveBeenCalledWith('Слот уже занят')

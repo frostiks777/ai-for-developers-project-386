@@ -16,7 +16,12 @@ describe('App', () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       new Response(
         JSON.stringify([
-          { id: 1, startAt: '2026-09-22T07:00:00.000Z', durationMin: 30, isBooked: false },
+          {
+            id: 1,
+            startAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            durationMin: 30,
+            isBooked: false,
+          },
         ]),
         { status: 200 },
       ),
