@@ -15,7 +15,8 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - UI: shadcn/ui + Tailwind CSS 3.4
 - API: Fastify 5 (порт 3000, vite proxy `/api`)
 - БД: SQLite + Drizzle ORM 0.45
-- Тесты: Vitest 3 + React Testing Library
+- Валидация: zod 4 (схемы-зеркала: `server/validation.ts` ↔ `src/lib/validation.ts`)
+- Тесты: Vitest 3 + React Testing Library (API — `server/app.test.ts`, `app.inject()`, in-memory БД)
 - Линтеры: ESLint 9 (flat config), Prettier
 
 ## Directory structure
@@ -26,13 +27,15 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   ├── utils/         # Утилиты
 │   ├── types/         # TypeScript-типы
 │   ├── api/           # API-клиент
-│   ├── lib/           # cn() и прочее
+│   ├── lib/           # cn(), zod-схемы (validation.ts)
 │   ├── test/          # setup тестов
 │   └── main.tsx       # Точка входа
 ├── server/
-│   ├── index.ts       # Fastify: /health, /api/slots, /api/bookings
+│   ├── index.ts       # Точка входа: buildApp() + listen
+│   ├── app.ts         # Фабрика Fastify: /health, /api/*, статика dist/
+│   ├── validation.ts  # zod-схема API (зеркало src/lib/validation.ts)
 │   ├── types.ts       # Типы API
-│   └── db/            # Drizzle schema + клиент
+│   └── db/            # Drizzle schema + клиент (DATABASE_PATH)
 ├── docs/              # Документация проекта
 │   ├── architecture.md
 │   ├── conventions.md

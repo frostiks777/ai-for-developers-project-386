@@ -34,3 +34,4 @@
 | # | Заголовок | Статус | Дата |
 |---|---|---|---|
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted | 2026-09-22 |
+| [0002](0002-zod-api-validation.md) | Валидация API-контракта через zod | Accepted | 2026-09-22 |
