@@ -6,6 +6,7 @@
 
 Проект находится на шаге 2 курса Hexlet "ИИ для разработчиков" — **Каркас приложения**.
 Создан и установлен скелет: бэкенд (Fastify + Drizzle ORM + SQLite), фронтенд (React 18 + TypeScript + Vite + shadcn/ui), документация, конфиги.
+Дополнительно реализованы: обязательный email в брони (zod), фильтр прошедших слотов, интеграционные тесты API на in-memory БД.
 
 ### Файловая структура (создана)
 
@@ -30,17 +31,22 @@
 │   ├── App.test.tsx          ✅ smoke-тест
 │   ├── index.css             ✅ shadcn CSS-переменные + Tailwind
 │   ├── lib/utils.ts          ✅ cn()
-│   ├── types/booking.ts      ✅ TimeSlot, Booking, CreateBookingBody
+│   ├── lib/validation.ts     ✅ zod-схема брони (зеркало server/validation.ts)
+│   ├── types/booking.ts      ✅ TimeSlot, Booking, CreateBookingBody (+email)
 │   ├── api/client.ts         ✅ fetchSlots, createBooking
-│   ├── hooks/use-availability.ts ✅ (no-unsafe-finally исправлен)
+│   ├── hooks/use-availability.ts ✅ (no-unsafe-finally исправлен, фильтр прошедших)
+│   ├── hooks/use-availability.test.tsx ✅ 2 теста (фильтр, ошибка загрузки)
 │   ├── pages/home-page.tsx   ✅
 │   ├── components/ui/button.tsx ✅ shadcn Button
-│   └── test/setup.ts         ✅ jest-dom/vitest
+│   └── test/setup.ts         ✅ jest-dom/vitest + jsdom-полифилы (safe для node)
 ├── server/
-│   ├── index.ts              ✅ Fastify: /health, /api/*, статика dist/ (SPA)
-│   ├── types.ts              ✅ TimeSlot, Booking, CreateBookingBody
-│   ├── db/schema.ts          ✅ Drizzle: slots, bookings
-│   ├── db/index.ts           ✅ клиент БД + авто-сид слотов
+│   ├── index.ts              ✅ точка входа: buildApp() + listen + graceful shutdown
+│   ├── app.ts                ✅ фабрика buildApp(): /health, /api/*, статика dist/ (SPA)
+│   ├── app.test.ts           ✅ 11 интеграционных тестов (app.inject, in-memory БД)
+│   ├── validation.ts         ✅ zod createBookingSchema
+│   ├── types.ts              ✅ TimeSlot, Booking, CreateBookingBody (+email)
+│   ├── db/schema.ts          ✅ Drizzle: slots, bookings (+email)
+│   ├── db/index.ts           ✅ клиент БД (DATABASE_PATH) + ALTER + авто-сид
 │   └── README.md             ✅
 ├── docs/
 │   ├── architecture.md       ✅
@@ -48,6 +54,7 @@
 │   ├── agent-principles.md   ✅
 │   ├── Структура проекта.md  ✅ (теория агентов)
 │   ├── Каркас приложения.md  ✅ (требования шага 2)
+│   ├── adr/                  ✅ README + ADR-0001, ADR-0002 + template
 │   ├── ci_cd.md              ✅ (план GCP — не используется)
 │   ├── ci_cd_render.md       ✅ (план Render — основной)
 │   ├── ai-tuning-plan.md     ✅ (тюнинг AI-агентов)
@@ -66,6 +73,8 @@
 | `typecheck` | `@ts-expect-error` стал неиспользуемым после обновления vitest | Директива удалена |
 | `lint` | `no-unsafe-finally` в `use-availability.ts` | Убран `finally`, логика перенесена после try/catch |
 | `lint` | `react-refresh/only-export-components` warning в `button.tsx` | Предупреждение (не ошибка) — допустимо для shadcn |
+| `test` | `src/test/setup.ts` падал в node-окружении (`Element is not defined`) | jsdom-полифилы обёрнуты в `typeof Element !== 'undefined'` |
+| `test` | `App.test.tsx` — фикстура слота с прошедшей датой ломалась о новый фильтр | `startAt` генерируется как `now + 1h` |
 | `docs sync` | `opencode/mimo-v2.5-free` удалён из каталога моделей, заменён на `opencode/mimo-v2.6-flash-free` | Обновлено во всех 4 файлах: `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` |
 
 ## Версии зависимостей (финальные)
@@ -80,7 +89,8 @@
   "better-sqlite3": "^13.0.3",
   "drizzle-orm": "^0.45.3",
   "drizzle-kit": "^0.31.11",
-  "tailwindcss": "^3.4.17"
+  "tailwindcss": "^3.4.17",
+  "zod": "^4.6.5"
 }
 ```
 
@@ -89,9 +99,10 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 6/6 passed (2 файла, vitest 3.2.7)
-✅ build: vite v6.4.3 — 250.57 kB JS (gzip 80.12), 15.98 kB CSS
-✅ smoke (prod): PORT=3100, /health 200, / 200 (index.html), SPA fallback 200, /api/slots 200
+✅ test: 20/20 passed (4 файла: App, booking-dialog, use-availability, server/app)
+✅ build: vite v6.4.3 — 338.63 kB JS (gzip 105.39), 16.17 kB CSS
+✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
+   /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400
 ```
 
 ## Что сделано (полный список)
@@ -131,15 +142,25 @@
     - Регистрирует 14 дополнительных процессных скилов через OpenCode plugin manager (см. таблицу ключевых решений).
     - `verification-before-completion` + `using-superpowers` теперь доступны в этой же сессии.
     - Локальные 6 скилов в `.agents/skills/` остаются — приоритет V2: проектные → персональные → плагины, ID не пересекаются.
+16. ✅ Обязательный email ([ADR-0002](docs/adr/0002-zod-api-validation.md)):
+    - zod 4: `server/validation.ts` + зеркало `src/lib/validation.ts`
+    - форма: поле Email, inline-ошибка «Неверный email», submit заблокирован
+    - API: 400 с сообщением из zod; БД: колонка `email` + `ALTER TABLE` для старых БД
+17. ✅ Фильтр прошедших слотов:
+    - SQL: `GET /api/slots` возвращает только `startAt >= now`
+    - фронт: `useAvailability` дополнительно фильтрует
+    - `POST /api/bookings` на прошедший слот → 400 «Слот уже прошёл»
+    - ре-сид 8 слотов, если будущих слотов не осталось
+18. ✅ Интеграционные тесты API: `server/app.ts` (`buildApp()`), `server/app.test.ts` — 11 тестов через `app.inject()` на `DATABASE_PATH=:memory:`
 
 ## Что осталось (следующие шаги)
 
-- [ ] Реализовать функциональность бронирования (сейчас onClick — console.log)
-- [ ] Добавить форму бронирования (name, phone) — модалка или отдельная страница
-- [ ] Подключить POST /api/bookings к фронтенду
-- [ ] Добавить страницу «Мои бронирования»
-- [ ] Добавить JWT-аутентификацию (если требуется по спеке)
-- [ ] Написать интеграционные тесты API (Vitest + supertest/fastify.inject)
+- [ ] Реализовать `GET /api/bookings` (для панели организатора)
+- [ ] Обновить `README.md`: установка, запуск, примеры, asciinema
+- [ ] Транзакция / уникальный индекс на `bookings.slotId` — закрыть race condition
+- [ ] Экран успеха («Встреча запланирована», сводка) вместо только тоста
+- [ ] Поле «комментарий», телефон как опциональный (по спеке)
+- [ ] Месячная сетка календаря, таймзоны, генерация слотов по правилам доступности
 - [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
 
 ## Ключевые решения
@@ -160,6 +181,9 @@
 | Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP (`docs/ci_cd.md`) не используется |
 | Фронт в проде | `@fastify/static` раздаёт `dist/` из Fastify | Один контейнер, same-origin `/api` без CORS |
 | Порт в проде | `process.env.PORT` (fallback 3000) | Требование Render; хост `0.0.0.0` |
+| Валидация API | zod 4 (схема-зеркало: `server/validation.ts` ↔ `src/lib/validation.ts`) | См. [ADR-0002](docs/adr/0002-zod-api-validation.md); единые сообщения об ошибках фронт/бэк |
+| Архитектура сервера | Фабрика `buildApp()` в `server/app.ts`, `server/index.ts` — только listen | Тесты через `app.inject()` без реального порта |
+| БД в тестах | `DATABASE_PATH=:memory:` (`vite.config.ts` → `test.env`) | Изоляция тестов от `server/data/app.db` |
 
 ## Окружение
 

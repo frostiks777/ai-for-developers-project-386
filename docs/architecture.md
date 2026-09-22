@@ -36,12 +36,16 @@ import type { Slot } from '@/types/slot'
 
 Код сервера отделён от фронтенда и лежит в `server/`:
 
-- `server/index.ts` — точка входа: создаёт экземпляр Fastify, регистрирует маршруты `/api/*` и слушает порт 3000. Запуск в dev-режиме — `npm run server:dev` (через `tsx watch`).
+- `server/index.ts` — точка входа: создаёт приложение через `buildApp()` и слушает порт 3000. Запуск в dev-режиме — `npm run server:dev` (через `tsx watch`).
+- `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты `/api/*` и раздачу собранного фронтенда из `dist/`. Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
+- `server/validation.ts` — zod-схема API-контракта (`createBookingSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).
 - `server/db/schema.ts` — схема БД в терминах Drizzle ORM (таблицы слотов и бронирований).
-- `server/db/` — клиент Drizzle поверх `better-sqlite3`.
+- `server/db/` — клиент Drizzle поверх `better-sqlite3`; путь к файлу БД переопределяется переменной `DATABASE_PATH` (`:memory:` используется в тестах).
 - `server/data/app.db` — файл базы SQLite. БД **in-app**: не требует отдельного сервера СУБД, файл живёт внутри проекта.
 
-Миграции и синхронизация схемы выполняются через drizzle-kit (`npm run db:generate` / `npm run db:push`).
+Миграции и синхронизация схемы выполняются через drizzle-kit (`npm run db:generate` / `npm run db:push`). Для скелета при старте создаются недостающие таблицы и колонки, а также сидируются слоты на ближайшие 4 дня (если будущих слотов нет).
+
+Интеграционные тесты API живут в `server/app.test.ts` и работают с in-memory БД (`DATABASE_PATH=:memory:` в `vite.config.ts` → `test.env`).
 
 ## Поток данных
 
@@ -51,15 +55,15 @@ import type { Slot } from '@/types/slot'
 
 Пример на двух эндпоинтах:
 
-1. `GET /api/slots` — страница календаря вызывает `fetchSlots()` из `src/api/slots.ts` → запрос уходит на `/api/slots` → прокси Vite передаёт его Fastify → маршрут через Drizzle читает таблицу слотов из `server/data/app.db` → JSON со слотами возвращается на фронтенд и кладётся в состояние хука.
-2. `POST /api/bookings` — форма бронирования вызывает функцию из `src/api/bookings.ts` с данными формы → Fastify валидирует тело запроса → Drizzle вставляет запись в таблицу бронирований → клиент получает созданное бронирование и обновляет UI.
+1. `GET /api/slots` — страница календаря вызывает `fetchSlots()` из `src/api/client.ts` → запрос уходит на `/api/slots` → прокси Vite передаёт его Fastify → маршрут через Drizzle читает таблицу слотов из `server/data/app.db` (прошедшие слоты отфильтровываются и на бэке, и в `useAvailability`) → JSON со слотами возвращается на фронтенд и кладётся в состояние хука.
+2. `POST /api/bookings` — форма бронирования вызывает `createBooking()` из `src/api/client.ts` с данными формы → Fastify валидирует тело zod-схемой (`name`, `phone`, `email`, `slotId`) → Drizzle вставляет запись в таблицу бронирований → клиент получает созданное бронирование и обновляет UI.
 
 ## Диаграмма потока запроса
 
 ```
 ┌──────────────────┐          ┌──────────────────┐          ┌──────────────────┐
 │     Браузер      │  HTTP    │   Vite dev :5173 │  proxy   │   Fastify :3000  │
-│  React-компонент │ ───────► │  proxy '/api'    │ ───────► │  server/index.ts │
+│  React-компонент │ ───────► │  proxy '/api'    │ ───────► │  server/app.ts   │
 │  → src/api/*     │ ◄─────── │                  │ ◄─────── │  маршруты /api/* │
 └──────────────────┘   JSON   └──────────────────┘          └────────┬─────────┘
                                                                      │ Drizzle ORM
