@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Календарь звонков — Roadmap по TODO</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --done: #22c55e;
+    --high: #ef4444;
+    --medium: #f59e0b;
+    --low: #38bdf8;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+  }
+  header {
+    padding: 32px 20px 16px; text-align: center;
+    animation: fadeDown .7s ease both;
+  }
+  header h1 { margin: 0 0 8px; font-size: 28px; }
+  header p { margin: 0; color: var(--muted); }
+  .progress-wrap {
+    max-width: 720px; margin: 20px auto 0; padding: 0 20px;
+  }
+  .progress-label { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+  .progress {
+    height: 12px; background: #334155; border-radius: 999px; overflow: hidden;
+  }
+  .progress > div {
+    height: 100%; width: 0; border-radius: 999px;
+    background: linear-gradient(90deg, var(--done), #86efac);
+    animation: fill 1.4s ease forwards;
+  }
+  @keyframes fill { to { width: 59%; } }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  .filters {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    margin: 20px 0 8px;
+  }
+  .filters button {
+    border: 1px solid #334155; background: var(--card); color: var(--text);
+    padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px;
+    transition: transform .15s ease, background .2s ease;
+  }
+  .filters button:hover { transform: translateY(-1px); }
+  .filters button.active { background: #334155; border-color: var(--text); }
+  main { max-width: 860px; margin: 0 auto; padding: 12px 20px 60px; }
+  section {
+    background: var(--card); border-radius: 14px; padding: 18px;
+    margin: 16px 0; border-left: 6px solid var(--muted);
+    opacity: 0;
+  }
+  section.visible { animation: fadeUp .6s ease both; }
+  section.done { border-color: var(--done); }
+  section.high { border-color: var(--high); }
+  section.medium { border-color: var(--medium); }
+  section.low { border-color: var(--low); }
+  section h2 { margin: 0 0 10px; font-size: 20px; }
+  .badge {
+    display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 999px;
+    background: #334155; color: var(--text); margin-left: 8px; vertical-align: middle;
+  }
+  ul { margin: 8px 0 0; padding-left: 20px; }
+  li { margin: 6px 0; }
+  li.done-item { color: #bbf7d0; }
+  .flow {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    color: var(--muted); font-size: 13px; margin: 4px 0;
+  }
+  .flow .arrow { animation: bounce 1.6s infinite; display: inline-block; }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
+  .hidden { display: none !important; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding-bottom: 30px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Календарь звонков — схема TODO</h1>
+  <p>Источник: <code>docs/todo.md</code> · Сделано 19 / Всего 32 · High → Medium → Low</p>
+  <div class="progress-wrap">
+    <div class="progress-label">Прогресс MVP: 59%</div>
+    <div class="progress"><div></div></div>
+  </div>
+  <div class="filters">
+    <button data-filter="all" class="active">Все</button>
+    <button data-filter="done">Сделано</button>
+    <button data-filter="high">High</button>
+    <button data-filter="medium">Medium</button>
+    <button data-filter="low">Low</button>
+  </div>
+</header>
+<main>
+  <section class="done" data-group="done">
+    <h2>✅ Сделано <span class="badge">19</span></h2>
+    <ul>
+      <li class="done-item">Каркас: Fastify :3000 (/health, /api/slots, /api/bookings), Vite, линтер, тесты, CI</li>
+      <li class="done-item">SQLite + Drizzle (slots, bookings) и сидирование 8 слотов</li>
+      <li class="done-item">POST /api/bookings: 400/404/409/201; GET /api/slots с isBooked</li>
+      <li class="done-item">UI: список слотов (loading/error/empty), «Забронировать»/«Занято»</li>
+      <li class="done-item">Диалог брони: имя + телефон, блокировка submit, сброс полей</li>
+      <li class="done-item">Тосты sonner, ApiError, хуки use-availability / use-booking</li>
+      <li class="done-item">Типы синхронизированы фронт/бэк, 6 тестов, hexlet-check.yml не тронут</li>
+      <li class="done-item">Обязательный email (zod, API 400, БД ALTER). ADR-0002</li>
+      <li class="done-item">Валидация телефона: 10–15 цифр</li>
+      <li class="done-item">Фильтр прошедших слотов + 400 на прошедший слот</li>
+      <li class="done-item">Ре-сид слотов, когда будущих не осталось</li>
+      <li class="done-item">Интеграционные тесты API: buildApp() + app.inject(), in-memory БД</li>
+    </ul>
+  </section>
+  <div class="flow"><span>поток работ</span><span class="arrow">⬇</span></div>
+  <section class="high" data-group="high">
+    <h2>🔴 High <span class="badge">2</span></h2>
+    <ul>
+      <li>GET /api/bookings (для будущей панели организатора)</li>
+      <li>Обновить README.md: установка, запуск, примеры, asciinema</li>
+    </ul>
+  </section>
+  <div class="flow"><span class="arrow">⬇</span></div>
+  <section class="medium" data-group="medium">
+    <h2>🟡 Medium <span class="badge">6</span></h2>
+    <ul>
+      <li>Транзакция / уникальный индекс на bookings.slotId — race condition</li>
+      <li>Экран успеха («Встреча запланирована», сводка) вместо только тоста</li>
+      <li>Месячная сетка календаря с выбором даты</li>
+      <li>Селектор таймзоны и хранение времени в UTC</li>
+      <li>Генерация слотов по правилам (рабочие часы, буфер, minNotice)</li>
+      <li>Поле «комментарий» (multiline) в форму, API, БД</li>
+    </ul>
+  </section>
+  <div class="flow"><span class="arrow">⬇</span></div>
+  <section class="low" data-group="low">
+    <h2>🔵 Low <span class="badge">5</span></h2>
+    <ul>
+      <li>Таблицы hosts, availability_rules и GET /api/v1/hosts/:slug/...</li>
+      <li>/dashboard: список броней, отмена, настройки доступности</li>
+      <li>422 вместо 400 на невалидное тело (по спеке) или зафиксировать отклонение</li>
+      <li>.ics / Google Calendar и ссылка отмены на экране успеха</li>
+      <li>Исправить pre-existing ESLint warning в src/components/ui/button.tsx</li>
+    </ul>
+  </section>
+  <section data-group="high medium low">
+    <h2>⚠️ Ключевые расхождения со спекой <span class="badge">6</span></h2>
+    <ul>
+      <li>Схема БД: нет hosts / availability_rules, статусов</li>
+      <li>API: нет версионирования /api/v1, хостов, фильтра по дате</li>
+      <li>Форма: нет telegram и комментария; телефон пока обязателен</li>
+      <li>Экраны: нет /book/:hostId, экрана успеха и /dashboard</li>
+      <li>Логика слотов: только статический сид, без генерации §4.1</li>
+      <li>Гонки: check-then-insert без транзакции</li>
+    </ul>
+  </section>
+</main>
+<footer>Сгенерировано из docs/todo.md · автономный файл, внешних зависимостей нет</footer>
+<script>
+  const sections = document.querySelectorAll('section');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        e.target.style.animationDelay = (i * 0.05) + 's';
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  sections.forEach(s => io.observe(s));
+
+  const buttons = document.querySelectorAll('.filters button');
+  buttons.forEach(btn => btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    sections.forEach(s => {
+      const g = s.dataset.group || '';
+      s.classList.toggle('hidden', !(f === 'all' || g.includes(f)));
+    });
+  }));
+</script>
+</body>
+</html>
