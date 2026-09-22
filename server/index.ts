@@ -1,3 +1,7 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import fastifyStatic from '@fastify/static'
 import { eq } from 'drizzle-orm'
 import Fastify from 'fastify'
 import { db } from './db'
@@ -68,6 +72,23 @@ app.post('/api/bookings', (request, reply) => {
   return reply.code(201).send(created)
 })
 
+// В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/
+const currentDir = path.dirname(fileURLToPath(import.meta.url))
+const distDir = path.resolve(currentDir, '..', 'dist')
+
+if (existsSync(distDir)) {
+  await app.register(fastifyStatic, { root: distDir, prefix: '/' })
+
+  // SPA fallback: любой GET вне /api отдаёт index.html
+  app.setNotFoundHandler((request, reply) => {
+    if (request.raw.method === 'GET' && !request.url.startsWith('/api')) {
+      return reply.sendFile('index.html')
+    }
+
+    return reply.code(404).send({ error: 'Не найдено' })
+  })
+}
+
 // Корректное завершение по сигналам ОС
 const shutdown = async (signal: string) => {
   app.log.info(`Получен ${signal}, завершаю работу`)
@@ -78,10 +99,11 @@ process.once('SIGINT', () => void shutdown('SIGINT'))
 process.once('SIGTERM', () => void shutdown('SIGTERM'))
 
 try {
-  await app.listen({ port: 3000, host: '0.0.0.0' })
+  const port = Number(process.env.PORT) || 3000
+  await app.listen({ port, host: '0.0.0.0' })
 } catch (error) {
   app.log.error(error)
   process.exit(1)
 }
 
-// Запуск: npm run server:dev
+// Запуск: npm run server:dev (разработка) / npm run start (продакшен)
