@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Medium #2: экран успеха; #1: race condition)
+> Дата последнего обновления: 2026-09-23 (Medium #3: поле «комментарий»; #2: экран успеха; #1: race condition)
 
 ## Текущее состояние
 
@@ -101,7 +101,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 28/28 passed (5 файлов: App, home-page, booking-dialog, use-availability, server/app)
+✅ test: 33/33 passed (5 файлов: App, home-page, booking-dialog, use-availability, server/app)
 ✅ build: vite v6.4.3 — 339.08 kB JS (gzip 105.54), 16.17 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
@@ -168,11 +168,11 @@
 22. ✅ README (High): стек, требования (Node 22/24), установка, запуск dev/prod, таблица env, таблица API + curl-примеры, скрипты, структура, тесты, деплой; добавлен `.env.example` (PORT, DATABASE_PATH). Asciinema — заглушка + TODO.
 23. ✅ Race condition (Medium #1): `UNIQUE`-индекс `bookings_slotId_unique` (`CREATE UNIQUE INDEX IF NOT EXISTS` в `server/db/index.ts` + `.unique()` в Drizzle-схеме), предпроверка дубля удалена, `SQLITE_CONSTRAINT_UNIQUE` → `409`; тест на уровне БД + существующий API-тест 409. [ADR-0003](docs/adr/0003-unique-slot-booking.md).
 24. ✅ Экран успеха (Medium #2): `src/components/booking-success.tsx` — «Встреча успешно запланирована!», сводка (дата/время, длительность, имя, email), кнопка «Выбрать другое время» (сброс + refetch); `useBooking.bookSlot` возвращает `Booking | null`, `onBooked(booking)`; HomePage рендерит экран вместо списка. 2 RTL-теста (`src/pages/home-page.test.tsx`).
+25. ✅ Комментарий (Medium #3): колонка `comment TEXT` (+ALTER при старте), zod `max(1000)` с пустым → `null`, зеркала схем и типов обновлены, `Textarea` (`src/components/ui/textarea.tsx`) в диалоге, `comment` в `POST`/`GET /api/bookings`; 5 серверных + 1 RTL-тест. Билд-объём CSS 16.47 kB, JS 341.48 kB (gzip 106.10).
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Поле «комментарий» в форму/API/БД (следующий по archify-порядку)
 - [ ] Телефон как опциональный (по спеке) — сейчас обязателен
 - [ ] Месячная сетка календаря, таймзоны, генерация слотов по правилам доступности
 - [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
