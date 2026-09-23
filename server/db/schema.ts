@@ -14,6 +14,7 @@ export const bookings = sqliteTable('bookings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   slotId: integer('slotId')
     .notNull()
+    .unique()
     .references(() => slots.id),
   name: text('name').notNull(),
   phone: text('phone').notNull(),

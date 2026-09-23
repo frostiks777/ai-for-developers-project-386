@@ -77,18 +77,21 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
     }
 
-    const existingBooking = db.select().from(bookings).where(eq(bookings.slotId, slotId)).get()
-    if (existingBooking) {
-      return reply.code(409).send({ error: 'Слот уже занят' })
+    try {
+      const created = db
+        .insert(bookings)
+        .values({ slotId, name, phone, email })
+        .returning()
+        .get()
+
+      return reply.code(201).send(created)
+    } catch (error) {
+      if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        return reply.code(409).send({ error: 'Слот уже занят' })
+      }
+
+      throw error
     }
-
-    const created = db
-      .insert(bookings)
-      .values({ slotId, name, phone, email })
-      .returning()
-      .get()
-
-    return reply.code(201).send(created)
   })
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/
