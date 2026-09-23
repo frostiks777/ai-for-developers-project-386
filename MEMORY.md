@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Medium закрыт + телефон сделан опциональным)
+> Дата последнего обновления: 2026-09-23 (Low-этап: панель организатора `/dashboard` — список броней, отмена, настройки доступности)
 
 ## Текущее состояние
 
@@ -27,26 +27,35 @@
 ├── render.yaml               ✅ Render Blueprint (docker, free, frankfurt)
 ├── src/
 │   ├── main.tsx              ✅
-│   ├── App.tsx               ✅
-│   ├── App.test.tsx          ✅ smoke-тест
+│   ├── App.tsx               ✅ маршруты (React Router): / и /dashboard
+│   ├── App.test.tsx          ✅ smoke-тесты (MemoryRouter)
 │   ├── index.css             ✅ shadcn CSS-переменные + Tailwind
 │   ├── lib/utils.ts          ✅ cn()
-│   ├── lib/validation.ts     ✅ zod-схема брони (зеркало server/validation.ts)
+│   ├── lib/validation.ts     ✅ zod-схемы брони + правил доступности (зеркало server/validation.ts)
 │   ├── types/booking.ts      ✅ TimeSlot, Booking, CreateBookingBody (+email)
-│   ├── api/client.ts         ✅ fetchSlots, createBooking
+│   ├── types/availability.ts ✅ AvailabilityRules (зеркало server/availability.ts)
+│   ├── api/client.ts         ✅ fetchSlots, createBooking, fetchBookings, cancelBooking, fetch/updateAvailability
 │   ├── hooks/use-availability.ts ✅ (no-unsafe-finally исправлен, фильтр прошедших)
 │   ├── hooks/use-availability.test.tsx ✅ 2 теста (фильтр, ошибка загрузки)
 │   ├── pages/home-page.tsx   ✅
+│   ├── pages/home-page.test.tsx ✅ 4 теста (экран успеха, TZ, фильтр по дате)
+│   ├── pages/dashboard-page.tsx ✅ панель организатора (список + отмена + настройки)
+│   ├── pages/dashboard-page.test.tsx ✅ 6 тестов
+│   ├── components/bookings-table.tsx ✅ таблица броней + отмена
+│   ├── components/availability-form.tsx ✅ форма настроек доступности
 │   ├── components/ui/button.tsx ✅ shadcn Button
 │   └── test/setup.ts         ✅ jest-dom/vitest + jsdom-полифилы (safe для node)
 ├── server/
 │   ├── index.ts              ✅ точка входа: buildApp() + listen + graceful shutdown
 │   ├── app.ts                ✅ фабрика buildApp(): /health, /api/*, статика dist/ (SPA)
 │   ├── app.test.ts           ✅ 11 интеграционных тестов (app.inject, in-memory БД)
-│   ├── validation.ts         ✅ zod createBookingSchema
+│   ├── dashboard.test.ts     ✅ 7 интеграционных тестов (отмена, availability)
+│   ├── validation.ts         ✅ zod createBookingSchema + availabilityRulesSchema
+│   ├── availability.ts       ✅ AvailabilityRules, defaultAvailabilityRules, generateSlotStarts, rulesFromRow/ToRow
+│   ├── rules.ts              ✅ load/save правил + regenerateFutureSlots
 │   ├── types.ts              ✅ TimeSlot, Booking, CreateBookingBody (+email)
-│   ├── db/schema.ts          ✅ Drizzle: slots, bookings (+email)
-│   ├── db/index.ts           ✅ клиент БД (DATABASE_PATH) + ALTER + авто-сид
+│   ├── db/schema.ts          ✅ Drizzle: slots, bookings (+email), availability_rules
+│   ├── db/index.ts           ✅ клиент БД (DATABASE_PATH) + ALTER + авто-сид по правилам
 │   └── README.md             ✅
 ├── docs/
 │   ├── architecture.md       ✅
@@ -92,6 +101,7 @@
   "drizzle-orm": "^0.45.3",
   "drizzle-kit": "^0.31.11",
   "tailwindcss": "^3.4.17",
+  "react-router-dom": "^7",
   "zod": "^4.6.5"
 }
 ```
@@ -101,8 +111,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 53/53 passed (9 файлов: App, home-page, month-calendar, timezone-select, booking-dialog, use-availability, server/app, server/availability, timezone)
-✅ build: vite v6.4.3 — 345.20 kB JS (gzip 107.37), 16.93 kB CSS
+✅ test: 66/66 passed (11 файлов: App, home-page, dashboard-page, month-calendar, timezone-select, booking-dialog, use-availability, server/app, server/dashboard, server/availability, timezone)
+✅ build: vite v6.4.3 — 391.99 kB JS (gzip 123.39), 17.43 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
    GET /api/bookings 200 (бронь с startAt/durationMin)
@@ -175,11 +185,12 @@
 29. ✅ Телефон опциональный (по спеке): zod `optional` + `transform` (пустой/`undefined` → не задан) + `refine` (валиден только если задан) в `server/validation.ts` ↔ `src/lib/validation.ts`; колонка `phone` стала nullable в Drizzle-схеме, миграция старых БД через пересборку таблицы (SQLite не умеет снимать `NOT NULL`); контракт `phone?: string` (вход) / `phone: string | null` (выход); в форме пометка «необязательно»; в экране успеха телефон показывается только если указан. 2 API + 1 RTL-тест.
 30. ✅ ESLint полностью чистый: `buttonVariants` перестал экспортироваться из `src/components/ui/button.tsx` (внутренний, потребителей нет) — убран warning `react-refresh/only-export-components`.
 31. ✅ Деплой на Render подтверждён как живой: https://calendar-slots-app.onrender.com (см. `docs/ci_cd_render.md`). Проверено: `/health` 200, `/` 200 (SPA), `/api/slots` 200, `/api/bookings` 200; собранный JS-хеш совпадает с локальным. В README исправлен неверный URL (`ai-for-developers-project-386.onrender.com` → `calendar-slots-app.onrender.com`).
+32. ✅ Панель организатора `/dashboard` (Low): `react-router-dom` 7 (`BrowserRouter` в `main.tsx`, `/` и `/dashboard`); `DashboardPage` + `BookingsTable` (список броней с отменой) + `AvailabilityForm` (чекбоксы дней, числовые поля, zod до отправки). Бэкенд: таблица `availability_rules` (одна строка `id=1`), `server/rules.ts` (`load`/`save`/`regenerateFutureSlots` — свободные будущие слоты пересобираются, занятые не трогаются), `GET/PUT /api/availability`, `DELETE /api/bookings/:id` (`204/404/400`), `minNotice` читается из правил. Схемы/типы-зеркала (`availabilityRulesSchema`, `src/types/availability.ts`). [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md). 7 API + 6 RTL-тестов.
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: `hosts`/`availability_rules` + `/api/v1`, `/dashboard`, 422 vs 400, `.ics`/Google Calendar
+- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, `422` vs `400`, `.ics`/Google Calendar, авторизация `/dashboard`
 
 ## Ключевые решения
 
@@ -191,12 +202,15 @@
 | UI | shadcn/ui + Tailwind v3.4 | Хорошая поддержка coding-агентами |
 | Тесты | Vitest 4 + React Testing Library | Нативная интеграция с Vite 6; пул без tinypool — фикс `Channel closed` |
 | CI | GitHub Actions: lint + typecheck + test + build на Node 22 и 24 | Node 20 EOL (апрель 2026); vitest 4 требует Node ^20 \|\| ^22 \|\| >=24 |
-| `GET /api/bookings` | Плоский массив `BookingWithSlot`, сортировка по `startAt` | Фундамент панели организатора; потребителей нет, контракт простой |
+| `GET /api/bookings` | Плоский массив `BookingWithSlot`, сортировка по `startAt` | Потребитель — `/dashboard` (`BookingsTable`); контракт простой |
 | Защита от двойных броней | `UNIQUE(slotId)` на уровне SQLite + `409` из перехвата constraint | [ADR-0003](docs/adr/0003-unique-slot-booking.md); exclusion constraint спеки в SQLite недоступен |
 | Фильтр слотов по дате | Клиентский (группировка по локальной дате в `MonthCalendar`/HomePage) | `GET /api/slots?date=` требует TZ-семантики — отложен к TZ-шагу; слотов ≤ ~112 (14 дней) |
 | Генерация слотов | Правила-константы в `server/availability.ts`, материализация в `slots` при старте, правила в UTC | [ADR-0004](docs/adr/0004-slot-generation-rules.md); `hosts/availability_rules` — Low-этап |
 | Таймзоны | Хранение — UTC ISO; отображение и группировка по дням — на клиенте в выбранном поясе (`Intl`, без зависимостей) | Селектор в UI, browser TZ по умолчанию; серверные `?date=`/`timezone` не нужны, пока слотов ≤ ~112 |
 | Телефон опционален | nullable-колонка + пересборка таблицы при старте (SQLite не умеет DROP NOT NULL) | По спеке телефон необязателен; `ALTER TABLE … ADD COLUMN` недостаточно |
+| Панель организатора | `/dashboard` + `react-router-dom`: список броней, отмена, настройки доступности | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); без auth (учебный MVP) |
+| Правила доступности | Персистентная таблица `availability_rules` — одна строка `id=1`; `PUT` пересобирает свободные будущие слоты, занятые не трогает | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); `hosts`/`/api/v1` отложены |
+| Отмена брони | `DELETE /api/bookings/:id` удаляет строку → `isBooked` вычисляется join-ом, слот освобождается | Несовместимо с soft-delete из-за `UNIQUE(slotId)`; partial index отложен ([ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md)) |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
