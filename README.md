@@ -80,6 +80,8 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `POST` | `/api/bookings/reschedule` | перенести бронь: `{ token, slotId }` |
 | `GET` | `/api/availability` | правила доступности организатора |
 | `PUT` | `/api/availability` | обновить правила (пересобирает будущие слоты) |
+| `GET` | `/api/v1/hosts/:slug/settings` | настройки хоста + правила доступности (`404` — неизвестный slug) |
+| `GET` | `/api/v1/hosts/:slug/slots` | слоты хоста; необязательные `?date=YYYY-MM-DD` и `?timezone=IANA` |
 
 Примеры:
 

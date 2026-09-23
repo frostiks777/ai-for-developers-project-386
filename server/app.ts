@@ -6,9 +6,10 @@ import fastifyStatic from '@fastify/static'
 import { eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
-import { bookings, slots } from './db/schema'
+import { bookings, hosts, slots } from './db/schema'
+import { dateKeyInZone, dateKeyPattern, isValidTimeZone } from './hosts'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
-import type { BookingWithSlot, TimeSlot } from './types'
+import type { BookingWithSlot, HostSettings, TimeSlot } from './types'
 import { availabilityRulesSchema, cancelBookingSchema, createBookingSchema, rescheduleBookingSchema } from './validation'
 
 // Единый набор колонок для выборок «бронь + данные слота»
@@ -34,7 +35,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get('/health', () => ({ status: 'ok' }))
 
   // Слоты в будущем с признаком занятости, отсортированные по startAt
-  app.get('/api/slots', (): TimeSlot[] => {
+  const selectFutureSlots = (): TimeSlot[] => {
     const rows = db
       .select({
         id: slots.id,
@@ -54,7 +55,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       durationMin: row.durationMin,
       isBooked: row.bookingId !== null,
     }))
-  })
+  }
+
+  app.get('/api/slots', (): TimeSlot[] => selectFutureSlots())
 
   // Список броней с данными слота (для панели организатора), по времени начала
   app.get('/api/bookings', (): BookingWithSlot[] => {
@@ -235,6 +238,49 @@ export async function buildApp(): Promise<FastifyInstance> {
     regenerateFutureSlots(parsed.data)
 
     return loadAvailabilityRules()
+  })
+
+  // ── API v1: мульти-хост ──────────────────────────────────────────────
+  // Читает хост по slug; null, если не найден (роуты отвечают 404)
+  const findHost = (slug: string) => db.select().from(hosts).where(eq(hosts.slug, slug)).get()
+
+  // Настройки хоста и его правила доступности
+  app.get('/api/v1/hosts/:slug/settings', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    const settings: HostSettings = { ...host, availability: loadAvailabilityRules() }
+
+    return settings
+  })
+
+  // Слоты хоста; необязательные ?date=YYYY-MM-DD и ?timezone=IANA
+  app.get('/api/v1/hosts/:slug/slots', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    const { date, timezone } = request.query as { date?: string; timezone?: string }
+    const timeZone = timezone ?? host.timezone
+
+    if (!isValidTimeZone(timeZone)) {
+      return reply.code(400).send({ error: 'Неверный часовой пояс' })
+    }
+
+    if (date && !dateKeyPattern.test(date)) {
+      return reply.code(400).send({ error: 'Неверный формат даты, ожидается YYYY-MM-DD' })
+    }
+
+    const result = selectFutureSlots()
+
+    return date ? result.filter((slot) => dateKeyInZone(slot.startAt, timeZone) === date) : result
   })
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/

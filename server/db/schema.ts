@@ -39,3 +39,14 @@ export const availabilityRules = sqliteTable('availability_rules', {
   minNoticeMin: integer('minNoticeMin').notNull(),
   horizonDays: integer('horizonDays').notNull(),
 })
+
+// Хосты (мульти-хост). MVP заводит одного дефолтного организатора
+export const hosts = sqliteTable('hosts', {
+  id: text('id').primaryKey(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  timezone: text('timezone').notNull().default('UTC'),
+  createdAt: text('createdAt')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+})
