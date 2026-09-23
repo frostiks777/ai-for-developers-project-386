@@ -1,10 +1,12 @@
 import { mkdirSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
 import { gte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { defaultAvailabilityRules, generateSlotStarts, rulesFromRow } from '../availability'
+import { defaultHost } from '../hosts'
 import * as schema from './schema'
 
 // ESM: __dirname недоступен, вычисляем пути от import.meta.url
@@ -47,6 +49,13 @@ client.exec(`
     bufferMin INTEGER NOT NULL,
     minNoticeMin INTEGER NOT NULL,
     horizonDays INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS hosts (
+    id TEXT PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    timezone TEXT NOT NULL DEFAULT 'UTC',
+    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `)
 
@@ -95,6 +104,13 @@ if (bookingColumns().find((column) => column.name === 'phone')?.notnull === 1) {
 }
 
 export const db = drizzle(client, { schema })
+
+// Сидирование дефолтного хоста для /api/v1 (мульти-хост в MVP не используется)
+if (!db.select().from(schema.hosts).get()) {
+  db.insert(schema.hosts)
+    .values({ id: randomUUID(), ...defaultHost })
+    .run()
+}
 
 // Сидирование: если будущих слотов нет — генерируем по правилам доступности
 // (рабочие дни и окно, шаг «длительность + буфер», minNotice, горизонт).

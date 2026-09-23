@@ -33,17 +33,18 @@
 - [x] Отмена брони по токену-ссылке (Экран 3): колонка `bookings.cancelToken` (nullable+unique), токен `randomUUID` в ответе на создание, `POST /api/bookings/cancel` (`204/404/400`), ссылка `${origin}/cancel/:token` с копированием на экране успеха, страница `/cancel/:token`; [ADR-0006](adr/0006-cancellation-by-token.md); 4 API + 3 RTL-теста
 - [x] Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token`, `POST /api/bookings/reschedule` (`UPDATE slotId`; `200/400/404/409`), страница `/reschedule/:token` с календарём и свободными слотами, ссылка «Перенести» на экране успеха; [ADR-0008](adr/0008-reschedule-by-token.md); 6 API + 2 RTL-теста
 - [x] `422` вместо `400` на невалидное тело (по спеке): zod-ошибки в `POST /api/bookings`, `POST /api/bookings/cancel`, `PUT /api/availability` → `422 Unprocessable Entity`; бизнес-ошибки (прошедший слот, `minNotice`, некорректный `:id`) остаются `400`; тесты и доки обновлены
+- [x] Хосты + версионированный API v1 (Low, аддитивно): таблица `hosts` (UUID PK, unique slug), сид дефолтного хоста, `GET /api/v1/hosts/:slug/settings` и `GET /api/v1/hosts/:slug/slots?date=&timezone=` (`404` неизвестный slug, `400` дата/пояс); `/api/*` не тронут; [ADR-0009](adr/0009-hosts-and-api-v1.md); 7 API-тестов
 
 ## Осталось
 
 ### Low
 
-- [ ] Таблицы `hosts` и эндпоинты `GET /api/v1/hosts/:slug/...` (мульти-хост + версионирование API)
+- [ ] Полная мульти-хост-модель: `host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, страница `/book/:hostId` (текущий v1 — аддитивный, однохостовый по факту)
 - [ ] Авторизация `/dashboard` (сейчас панель публична)
 
 ## Ключевые расхождения со спекой
 
 1. **Схема БД**: есть `availability_rules` (одна строка, один хост), нет `hosts`, статусов и диапазонов времени по дням; правила доступности — персистентны, [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md).
-2. **API**: нет версионирования `/api/v1`, хостов, фильтра по дате; тело брони другое, отмена реализована как `DELETE /api/bookings/:id`.
+2. **API**: `/api/v1` и хосты добавлены аддитивно ([ADR-0009](adr/0009-hosts-and-api-v1.md)): есть `GET /api/v1/hosts/:slug/settings|slots?date=&timezone=`; полной мульти-хост-модели (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`) нет. Тело брони другое, отмена реализована как `DELETE /api/bookings/:id`.
 3. **Форма**: email (обяз.) добавлен, телефон валидируется по формату и теперь опционален (как допускает спека); нет telegram.
 4. **Экраны**: `/dashboard` реализован (список, отмена, настройки, без auth); нет `/book/:hostId`.
