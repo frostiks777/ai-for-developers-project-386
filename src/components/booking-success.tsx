@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import type { Booking, TimeSlot } from '@/types/booking'
+import { buildIcs, downloadIcs, googleCalendarUrl } from '@/utils/calendar'
 import { formatDateTimeInZone } from '@/utils/timezone'
 
 interface BookingSuccessProps {
@@ -58,9 +59,20 @@ export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSucc
         </div>
       </dl>
 
-      <Button className="mt-6" onClick={onReset}>
-        Выбрать другое время
-      </Button>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Button
+          variant="outline"
+          onClick={() => downloadIcs(`booking-${booking.id}.ics`, buildIcs(booking, slot))}
+        >
+          Скачать .ics
+        </Button>
+        <Button variant="outline" asChild>
+          <a href={googleCalendarUrl(booking, slot)} target="_blank" rel="noreferrer">
+            Добавить в Google Календарь
+          </a>
+        </Button>
+        <Button onClick={onReset}>Выбрать другое время</Button>
+      </div>
     </section>
   )
 }
