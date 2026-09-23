@@ -50,7 +50,7 @@ curl http://localhost:3000/api/bookings
 # [{"id":1,...,"startAt":"...","durationMin":30}, ...]
 ```
 
-### `DELETE /api/bookings/:id` — отмена брони
+### `DELETE /api/bookings/:id` — отмена брони организатором
 
 ```bash
 curl -X DELETE http://localhost:3000/api/bookings/1
@@ -58,6 +58,17 @@ curl -X DELETE http://localhost:3000/api/bookings/1
 ```
 
 Ошибки: `400` — некорректный id, `404` — брони нет.
+
+### `POST /api/bookings/cancel` — отмена брони по токену
+
+```bash
+curl -X POST http://localhost:3000/api/bookings/cancel \
+  -H "Content-Type: application/json" \
+  -d '{"token":"<cancelToken из ответа на создание брони>"}'
+# 204 (слот снова свободен)
+```
+
+`cancelToken` возвращается только в ответе `201` на создание брони (`GET /api/bookings` токен не отдаёт). Ошибки: `400` — нет токена, `404` — неизвестный токен.
 
 ### `GET /api/availability` — правила доступности
 
