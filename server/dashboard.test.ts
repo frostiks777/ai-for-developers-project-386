@@ -130,14 +130,14 @@ describe('POST /api/bookings/cancel', () => {
     expect(response.statusCode).toBe(404)
   })
 
-  it('отвечает 400 без токена', async () => {
+  it('отвечает 422 без токена', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/bookings/cancel',
       payload: {},
     })
 
-    expect(response.statusCode).toBe(400)
+    expect(response.statusCode).toBe(422)
   })
 })
 
@@ -272,7 +272,7 @@ describe('GET/PUT /api/availability', () => {
     expect(generated.every((slot) => new Date(slot.startAt).getUTCHours() === 9)).toBe(true)
   })
 
-  it('отвечает 400, если не выбран ни один рабочий день', async () => {
+  it('отвечает 422, если не выбран ни один рабочий день', async () => {
     const response = await app.inject({
       method: 'PUT',
       url: '/api/availability',
@@ -287,10 +287,10 @@ describe('GET/PUT /api/availability', () => {
       },
     })
 
-    expect(response.statusCode).toBe(400)
+    expect(response.statusCode).toBe(422)
   })
 
-  it('отвечает 400, если конец окна раньше начала', async () => {
+  it('отвечает 422, если конец окна раньше начала', async () => {
     const response = await app.inject({
       method: 'PUT',
       url: '/api/availability',
@@ -305,6 +305,6 @@ describe('GET/PUT /api/availability', () => {
       },
     })
 
-    expect(response.statusCode).toBe(400)
+    expect(response.statusCode).toBe(422)
   })
 })

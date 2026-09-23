@@ -196,12 +196,13 @@
 33. ✅ Кнопка «Назад» на экране успеха (`BookingSuccess`): `Button variant="ghost"` с иконкой `ArrowLeft` вверху карточки, вызывает `onReset` → возврат к списку слотов; +1 RTL-тест.
 34. ✅ Экспорт брони в календарь (Экран 3 спеки): `src/utils/calendar.ts` (`buildIcs` — VCALENDAR/VEVENT с UTC `DTSTART/DTEND`, CRLF, экранирование переводов строк; `googleCalendarUrl` — шаблон события; `downloadIcs` — Blob-скачивание). Кнопки «Скачать .ics» и «Добавить в Google Календарь» на экране успеха. 3 unit + 1 RTL-теста. Ссылка отмены отложена (нужен токен/API).
 35. ✅ Отмена брони по токену-ссылке (Экран 3): колонка `bookings.cancelToken` (nullable + unique; миграция `ALTER`+индекс после колонки), токен `crypto.randomUUID()` в ответе `201` (`CreatedBooking`), `POST /api/bookings/cancel` (`204/404/400`), ссылка `${origin}/cancel/:token` с копированием на экране успеха, страница `/cancel/:token` (отмена по явной кнопке, не при открытии). [ADR-0006](docs/adr/0006-cancellation-by-token.md). 4 API + 3 RTL-теста.
-36. ✅ Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token` (capability, 404), `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` (старый слот свободен, новый занят; `200/400/404/409`, no-op на тот же слот), страница `/reschedule/:token` (текущее время + календарь + свободные слоты), ссылка «Перенести» на экране успеха. Схема БД не менялась. [ADR-0007](docs/adr/0008-reschedule-by-token.md). 6 API + 2 RTL-теста.
+36. ✅ Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token` (capability, 404), `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` (старый слот свободен, новый занят; `200/400/404/409`, no-op на тот же слот), страница `/reschedule/:token` (текущее время + календарь + свободные слоты), ссылка «Перенести» на экране успеха. Схема БД не менялась. [ADR-0008](docs/adr/0008-reschedule-by-token.md). 6 API + 2 RTL-теста.
+37. ✅ `422` вместо `400` на невалидное тело (спека): zod-ошибки в `POST /api/bookings`, `POST /api/bookings/cancel`, `PUT /api/availability` → `422 Unprocessable Entity`; бизнес-ошибки (прошедший слот, `minNotice`, некорректный `:id`) остаются `400`. Тесты и доки обновлены.
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, `422` vs `400`, авторизация `/dashboard`
+- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, авторизация `/dashboard`
 
 ## Ключевые решения
 
