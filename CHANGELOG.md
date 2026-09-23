@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.4.0...v1.5.0) (2026-09-23)
+
+
+### Features
+
+* add ics and Google Calendar export on success screen ([7273933](https://github.com/frostiks777/ai-for-developers-project-386/commit/72739331974b5f74a66f7bbad3aeb1b325c92cc8))
+
 ## [1.4.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.3.0...v1.4.0) (2026-09-23)
 
 
