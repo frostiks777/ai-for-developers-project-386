@@ -276,7 +276,7 @@ describe('POST /api/bookings', () => {
     ['с коротким телефоном', { phone: '+7 900' }],
     ['с слишком длинным комментарием', { comment: 'x'.repeat(1001) }],
     ['без slotId', { slotId: undefined }],
-  ])('отвечает 400 %s', async (_case, overrides) => {
+  ])('отвечает 422 %s', async (_case, overrides) => {
     const slot = firstFreeSlot(await requestSlots())
 
     const response = await app.inject({
@@ -285,7 +285,7 @@ describe('POST /api/bookings', () => {
       payload: { ...validBody(slot.id), ...overrides },
     })
 
-    expect(response.statusCode).toBe(400)
+    expect(response.statusCode).toBe(422)
   })
 
   it('отвечает 400, если слот прошедший', async () => {
