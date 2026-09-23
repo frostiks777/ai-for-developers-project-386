@@ -28,6 +28,37 @@ export function formatDateTimeInZone(iso: string, timeZone: string): string {
   }).format(new Date(iso))
 }
 
+export function formatTimeInZone(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(iso))
+}
+
+// День календаря не зависит от пояса: собираем дату из ключа и форматируем в UTC
+export function formatDayTitle(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const title = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+
+  return title.charAt(0).toUpperCase() + title.slice(1)
+}
+
+export function formatTimeRange(
+  slot: { startAt: string; durationMin: number },
+  timeZone: string,
+): string {
+  const start = new Date(slot.startAt)
+  const end = new Date(start.getTime() + slot.durationMin * 60_000)
+
+  return `${formatTimeInZone(start.toISOString(), timeZone)} – ${formatTimeInZone(end.toISOString(), timeZone)}`
+}
+
 export function timeZoneOptionLabel(timeZone: string): string {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' })
     .formatToParts(new Date())

@@ -169,4 +169,25 @@ describe('HomePage: экран успеха', () => {
     expect(screen.getByText(/15:00/)).toBeInTheDocument()
     expect(screen.queryByText(/10:00/)).toBeNull()
   })
+
+  it('автоматически выбирает первый свободный слот и переносит выбор по клику', async () => {
+    const slots: TimeSlot[] = [
+      { id: 1, startAt: new Date(2099, 8, 24, 7, 0).toISOString(), durationMin: 30, isBooked: true },
+      { id: 2, startAt: new Date(2099, 8, 24, 8, 0).toISOString(), durationMin: 30, isBooked: false },
+      { id: 3, startAt: new Date(2099, 8, 24, 9, 0).toISOString(), durationMin: 30, isBooked: false },
+    ]
+    vi.stubGlobal('fetch', mockFetch(slots))
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    const confirm = await screen.findByRole('button', { name: 'Забронировать' })
+    expect(confirm).toHaveAttribute('aria-pressed', 'true')
+    expect(confirm).toHaveTextContent('08:00')
+
+    await user.click(screen.getByRole('button', { name: '09:00' }))
+
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toHaveTextContent('09:00')
+  })
 })
+
