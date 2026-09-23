@@ -20,6 +20,8 @@ export const bookings = sqliteTable('bookings', {
   phone: text('phone'),
   email: text('email').notNull(),
   comment: text('comment'),
+  // Токен для публичной отмены брони по ссылке (у старых броней может быть null)
+  cancelToken: text('cancelToken').unique(),
   createdAt: text('createdAt')
     .notNull()
     .default(sql`(datetime('now'))`),

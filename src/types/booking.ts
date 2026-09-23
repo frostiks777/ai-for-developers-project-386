@@ -28,3 +28,8 @@ export interface BookingWithSlot extends Booking {
   startAt: string
   durationMin: number
 }
+
+// Ответ на создание брони: содержит токен для публичной отмены по ссылке
+export interface CreatedBooking extends Booking {
+  cancelToken: string
+}

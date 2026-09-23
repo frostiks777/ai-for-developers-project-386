@@ -1,12 +1,14 @@
 import { ArrowLeft } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import type { Booking, TimeSlot } from '@/types/booking'
+import { Input } from '@/components/ui/input'
+import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { buildIcs, downloadIcs, googleCalendarUrl } from '@/utils/calendar'
 import { formatDateTimeInZone } from '@/utils/timezone'
 
 interface BookingSuccessProps {
-  booking: Booking
+  booking: CreatedBooking
   slot: TimeSlot
   timeZone: string
   onReset: () => void
@@ -25,6 +27,17 @@ function formatTimeRange(slot: TimeSlot, timeZone: string): string {
 }
 
 export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSuccessProps) {
+  const cancelUrl = `${window.location.origin}/cancel/${booking.cancelToken}`
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(cancelUrl)
+      toast.success('Ссылка скопирована')
+    } catch {
+      toast.error('Не удалось скопировать ссылку')
+    }
+  }
+
   return (
     <section className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
       <Button variant="ghost" size="sm" className="-ml-2 mb-2" onClick={onReset}>
@@ -72,6 +85,18 @@ export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSucc
           </a>
         </Button>
         <Button onClick={onReset}>Выбрать другое время</Button>
+      </div>
+
+      <div className="mt-6 grid gap-2 text-sm">
+        <span className="text-muted-foreground">
+          Ссылка для отмены (сохраните её — по ней можно отменить встречу):
+        </span>
+        <div className="flex gap-2">
+          <Input readOnly value={cancelUrl} aria-label="Ссылка для отмены" />
+          <Button type="button" variant="outline" onClick={handleCopy}>
+            Скопировать
+          </Button>
+        </div>
       </div>
     </section>
   )

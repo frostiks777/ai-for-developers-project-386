@@ -5,7 +5,7 @@ import type { AvailabilityRules } from './availability'
 import { buildApp } from './app'
 import { db } from './db'
 import { slots } from './db/schema'
-import type { Booking, BookingWithSlot, TimeSlot } from './types'
+import type { Booking, BookingWithSlot, CreatedBooking, TimeSlot } from './types'
 
 let app: FastifyInstance
 
@@ -60,6 +60,78 @@ describe('GET /api/bookings + DELETE /api/bookings/:id', () => {
 
   it('отвечает 400 на некорректный id', async () => {
     const response = await app.inject({ method: 'DELETE', url: '/api/bookings/abc' })
+    expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('POST /api/bookings/cancel', () => {
+  it('создание брони возвращает токен отмены', async () => {
+    const slot = createFutureSlot()
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: slot.id, name: 'Иван', email: 'ivan@example.com' },
+    })
+
+    expect(created.statusCode).toBe(201)
+    const booking = created.json<CreatedBooking>()
+    expect(typeof booking.cancelToken).toBe('string')
+    expect(booking.cancelToken.length).toBeGreaterThan(0)
+
+    // убираем бронь, чтобы не влиять на другие тесты в файле
+    await app.inject({
+      method: 'POST',
+      url: '/api/bookings/cancel',
+      payload: { token: booking.cancelToken },
+    })
+  })
+
+  it('отменяет бронь по токену и освобождает слот', async () => {
+    const slot = createFutureSlot()
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: slot.id, name: 'Иван', email: 'ivan@example.com' },
+    })
+    const { cancelToken } = created.json<CreatedBooking>()
+
+    const cancelled = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/cancel',
+      payload: { token: cancelToken },
+    })
+    expect(cancelled.statusCode).toBe(204)
+
+    const list = (await app.inject({ method: 'GET', url: '/api/bookings' })).json<
+      BookingWithSlot[]
+    >()
+    expect(list.some((item) => item.slotId === slot.id)).toBe(false)
+
+    const freedSlot = (await app.inject({ method: 'GET', url: '/api/slots' }))
+      .json<TimeSlot[]>()
+      .find((item) => item.id === slot.id)
+    expect(freedSlot?.isBooked).toBe(false)
+  })
+
+  it('отвечает 404 на неизвестный токен', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/cancel',
+      payload: { token: 'unknown-token' },
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('отвечает 400 без токена', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/cancel',
+      payload: {},
+    })
+
     expect(response.statusCode).toBe(400)
   })
 })

@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
@@ -8,7 +9,7 @@ import { db } from './db'
 import { bookings, slots } from './db/schema'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
 import type { BookingWithSlot, TimeSlot } from './types'
-import { availabilityRulesSchema, createBookingSchema } from './validation'
+import { availabilityRulesSchema, cancelBookingSchema, createBookingSchema } from './validation'
 
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
@@ -88,7 +89,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     try {
       const created = db
         .insert(bookings)
-        .values({ slotId, name, phone: phone ?? null, email, comment: comment ?? null })
+        .values({
+          slotId,
+          name,
+          phone: phone ?? null,
+          email,
+          comment: comment ?? null,
+          cancelToken: randomUUID(),
+        })
         .returning()
         .get()
 
@@ -111,6 +119,28 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     const deleted = db.delete(bookings).where(eq(bookings.id, id)).returning().get()
+
+    if (!deleted) {
+      return reply.code(404).send({ error: 'Бронь не найдена' })
+    }
+
+    return reply.code(204).send()
+  })
+
+  // Публичная отмена брони по токену из ссылки на экране успеха
+  app.post('/api/bookings/cancel', (request, reply) => {
+    const parsed = cancelBookingSchema.safeParse(request.body)
+
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Укажите токен отмены'
+      return reply.code(400).send({ error: message })
+    }
+
+    const deleted = db
+      .delete(bookings)
+      .where(eq(bookings.cancelToken, parsed.data.token))
+      .returning()
+      .get()
 
     if (!deleted) {
       return reply.code(404).send({ error: 'Бронь не найдена' })
