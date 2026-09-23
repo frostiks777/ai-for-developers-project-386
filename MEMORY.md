@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (High #3: vitest 4 + CI матрица [22,24], `GET /api/bookings`, README)
+> Дата последнего обновления: 2026-09-23 (Medium #1: race condition закрыт — unique index + ADR-0003)
 
 ## Текущее состояние
 
@@ -76,6 +76,7 @@
 | `test` | `src/test/setup.ts` падал в node-окружении (`Element is not defined`) | jsdom-полифилы обёрнуты в `typeof Element !== 'undefined'` |
 | `test` | `App.test.tsx` — фикстура слота с прошедшей датой ломалась о новый фильтр | `startAt` генерируется как `now + 1h` |
 | CI | `lint-and-test (20)`: `Channel closed` (`ERR_IPC_CHANNEL_CLOSED`, tinypool) — баг vitest 3.x ([vitest#8201](https://github.com/vitest-dev/vitest/issues/8201)) | vitest `3.2.7 → 4.1.11` (пул переписан без tinypool) + Node 20 (EOL) убран из матрицы: `[22, 24]` |
+| API/БД | check-then-insert: гонка при параллельных бронированиях; после отказа от предпроверки дубль давал `500` | [ADR-0003](docs/adr/0003-unique-slot-booking.md): `UNIQUE`-индекс `bookings_slotId_unique` + перехват `SQLITE_CONSTRAINT_UNIQUE` → `409` |
 | `docs sync` | `opencode/mimo-v2.5-free` удалён из каталога моделей, заменён на `opencode/mimo-v2.6-flash-free` | Обновлено во всех 4 файлах: `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` |
 
 ## Версии зависимостей (финальные)
@@ -100,7 +101,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 25/25 passed (4 файла: App, booking-dialog, use-availability, server/app)
+✅ test: 26/26 passed (4 файла: App, booking-dialog, use-availability, server/app)
 ✅ build: vite v6.4.3 — 339.08 kB JS (gzip 105.54), 16.17 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
@@ -165,11 +166,11 @@
 20. ✅ CI зелёный (High): vitest `3.2.7 → 4.1.11` — устранён `ERR_IPC_CHANNEL_CLOSED`/`Channel closed` (баг tinypool, [vitest#8201](https://github.com/vitest-dev/vitest/issues/8201)); матрица CI `node-version: [20, 22] → [22, 24]` (Node 20 EOL). Проверки: 25/25 тестов, typecheck, lint, build — зелёные. Запушено (`d5954e7`); CI run [35885094173](https://github.com/frostiks777/ai-for-developers-project-386/actions/runs/35885094173): оба job (22, 24) — success. Release-please выпустил v1.1.0.
 21. ✅ `GET /api/bookings` (High): список броней с данными слота (`BookingWithSlot extends Booking` + `startAt`, `durationMin`), `innerJoin(slots)`, сортировка по `startAt`; типы-зеркала в `server/types.ts` и `src/types/booking.ts`; 2 интеграционных теста (TDD: red → green). Фронтовых потребителей пока нет.
 22. ✅ README (High): стек, требования (Node 22/24), установка, запуск dev/prod, таблица env, таблица API + curl-примеры, скрипты, структура, тесты, деплой; добавлен `.env.example` (PORT, DATABASE_PATH). Asciinema — заглушка + TODO.
+23. ✅ Race condition (Medium #1): `UNIQUE`-индекс `bookings_slotId_unique` (`CREATE UNIQUE INDEX IF NOT EXISTS` в `server/db/index.ts` + `.unique()` в Drizzle-схеме), предпроверка дубля удалена, `SQLITE_CONSTRAINT_UNIQUE` → `409`; тест на уровне БД + существующий API-тест 409. [ADR-0003](docs/adr/0003-unique-slot-booking.md).
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Транзакция / уникальный индекс на `bookings.slotId` — закрыть race condition ([`docs/archi-scheme.md`](docs/archi-scheme.md) → «делать первым»)
 - [ ] Экран успеха («Встреча запланирована», сводка) вместо только тоста
 - [ ] Поле «комментарий», телефон как опциональный (по спеке)
 - [ ] Месячная сетка календаря, таймзоны, генерация слотов по правилам доступности
@@ -186,6 +187,7 @@
 | Тесты | Vitest 4 + React Testing Library | Нативная интеграция с Vite 6; пул без tinypool — фикс `Channel closed` |
 | CI | GitHub Actions: lint + typecheck + test + build на Node 22 и 24 | Node 20 EOL (апрель 2026); vitest 4 требует Node ^20 \|\| ^22 \|\| >=24 |
 | `GET /api/bookings` | Плоский массив `BookingWithSlot`, сортировка по `startAt` | Фундамент панели организатора; потребителей нет, контракт простой |
+| Защита от двойных броней | `UNIQUE(slotId)` на уровне SQLite + `409` из перехвата constraint | [ADR-0003](docs/adr/0003-unique-slot-booking.md); exclusion constraint спеки в SQLite недоступен |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
