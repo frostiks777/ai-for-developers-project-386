@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Redesign этап 2 + скиллы Matt Pocock + хосты/API v1)
+> Дата последнего обновления: 2026-09-23 (Редизайн A + D и светлая/тёмная тема завершены, этапы 1–7; [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) Accepted)
 
 ## Текущее состояние
 
@@ -118,8 +118,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 98/98 passed (16 файлов: App, home-page, dashboard-page, cancel-page, reschedule-page, month-calendar, timezone-select, booking-dialog, theme-toggle, use-availability, calendar, server/app, server/dashboard, server/hosts, server/availability, timezone)
-✅ build: vite v6.4.3 — 413.54 kB JS (gzip 129.38), 37.80 kB CSS
+✅ test: 105/105 passed (17 файлов: App, home-page, dashboard-page, cancel-page, reschedule-page, month-calendar, timezone-select, booking-dialog, theme-toggle, date-strip, use-availability, calendar, server/app, server/dashboard, server/hosts, server/availability, timezone)
+✅ build: vite v6.4.3 — 439.64 kB JS (gzip 134.53), 43.15 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
    GET /api/bookings 200 (бронь с startAt/durationMin)
@@ -202,10 +202,16 @@
 39. ✅ Визуальный редизайн, **Этап 2** (`14df808`): Desktop-раскладка страницы бронирования — `AppHeader`, `HostInfo` (слот-карточка хоста), `SlotGrid`, `MonthCalendar`/`TimeZoneSelect` обновлены, `src/config/host.ts`, `src/utils/plural.ts`. `minNoticeMin` поднят из `HostInfo` в `HomePage` (порядок `fetch` важен для контрактного `App.test`). 91/91 тестов зелёные.
 40. ✅ Скиллы и агентная среда (шаг курса, `6aa21ce`): установлен набор [mattpocock/skills](https://github.com/mattpocock/skills) в `.agents/skills/` (`npx skills@latest add mattpocock/skills --agent '*' -y`, 38 скилов) + `skills-lock.json`; настроено через `setup-matt-pocock-skills`: трекер — GitHub Issues, метки — дефолтные, домен — single-context. Записано в `docs/agents/{issue-tracker,triage-labels,domain}.md`, в `AGENTS.md` добавлен раздел `## Agent skills`. Лишние `.claude/`/`agent/` удалены (конвенция `.agents/skills/`).
 41. ✅ Хосты + API v1 (`server/hosts.ts`, аддитивно): таблица `hosts` (UUID PK, unique slug), сид дефолтного хоста (`slug=default`), `GET /api/v1/hosts/:slug/settings` и `GET /api/v1/hosts/:slug/slots?date=&timezone=` (`404` unknown slug, `400` дата/пояс); `selectFutureSlots()` переиспользован; `/api/*` без изменений. [ADR-0009](docs/adr/0009-hosts-and-api-v1.md). 7 API-тестов. Итог: 98/98 тестов.
+42. ✅ Визуальный редизайн, **Этап 3** (`b163d03`): мобильная раскладка D — `src/components/date-strip.tsx` (лента доступных дат, `aria-pressed`, прокрутка к выбранной), `src/components/booking-bar.tsx` (sticky-панель снизу с выбранным временем), `HomePage` при `useMediaQuery('(min-width: 1024px)') === false` (`AppHeader variant="mobile"`, кнопка «Весь месяц» с `aria-expanded`, `SlotGrid columns={3}`). Тесты: `date-strip.test.tsx` + тест страницы с `matchMedia → false`.
+43. ✅ Визуальный редизайн, фикс (`5a4e95e`): `ThemeToggle` добавлен в панель организатора до этапа 6 (переключатель темы доступен на обеих страницах).
+44. ✅ Визуальный редизайн, **Этап 4** (`8d0513a`): рестайл формы брони — `DialogContent` с пропом `hideClose`, заголовок Lora, сводка с иконкой `Calendar`, порядок полей Имя → Email → Телефон → Комментарий, счётчик «N / 1000» под комментарием, на телефоне — панель снизу с ручкой и кнопкой во всю ширину, фокус на поле «Имя» при открытии; ошибка 409/400 из API: toast + закрыть диалог + `refetch` + снять выбор в `home-page.tsx`.
+45. ✅ Визуальный редизайн, **Этап 5** (`db5aec2`): рестайл экрана успеха — `src/components/booking-success.tsx` по `design-spec.md` §3.4 (десктоп — карточка 600 px, телефон — колонка с кнопками внизу), кнопка «Назад» — ghost со стрелкой.
+46. ✅ Визуальный редизайн, **Этап 6** (`7293469`): редизайн панели организатора — `src/components/dashboard-sidebar.tsx` (десктопный сайдбар: лого-`h1`, «Встречи» со счётчиком, «Доступность» → `#availability`, `ThemeToggle`), `src/components/bookings-list.tsx` вместо `bookings-table.tsx` (группировка по дню через `toDateKeyInZone`, карточки `<li>`, пустое состояние «Пока нет ни одной брони»; старый файл удалён), `src/components/booking-filter.tsx` (сегменты «Все / Неделя / Сегодня», `role="tablist"`, фильтр на клиенте), `src/components/availability-form.tsx` (дни-«таблетки», select часов, подсказка «≈ N слотов в рабочий день», кнопка «Сохранить» во всю ширину; `id` полей и zod-схема сохранены). Тесты: `closest('tr') → closest('li')` + новые (группировка, фильтр «Сегодня», подсказка «≈ 12 слотов»).
+47. ✅ Внешний бэклог Gemini: добавлен `docs/gemini-code-1790192589378.md` (спека от внешнего ревью) + раздел «Backlog из внешней спеки» в `docs/todo.md` (только MISSING/PARTIAL, P0/P1); `docs/roadmap.html` перегенерирован. Итог: 105/105 тестов (17 файлов).
+48. ✅ Визуальный редизайн, **Этап 7** (документация, текущий): [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) переведён в **Accepted** (ветка `feat/redesign-a-d-themes` смержена в `main`), индекс `docs/adr/README.md` обновлён; `README.md` упоминает светлую/тёмную тему и десктоп/мобильные раскладки; `MEMORY.md` и `docs/todo.md` отмечают завершение этапов 1–7.
 
 ## Что осталось (следующие шаги)
 
-- [ ] Дальнейшие этапы редизайна (этапы 3–7 по `docs/design/implementation-plan.md`)
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
@@ -245,6 +251,8 @@
 | Upstream-скилы | Копия upstream-репо в `.agents/skills/<name>/`, имена = frontmatter `name:`, deep-рекурсия (`references/`, `scripts/`) | Доступны всем агентам в проекте (не только opencode); не зависят от локального кеша персональных скилов и плагинов |
 | Хосты + API v1 | Аддитивный слой: таблица `hosts` (UUID PK, unique slug), `/api/v1/hosts/:slug/settings|slots`; `/api/*` не тронут | [ADR-0009](docs/adr/0009-hosts-and-api-v1.md); основа мульти-хоста без ломающей миграции |
 | Скиллы Matt Pocock | Набор `mattpocock/skills` в `.agents/skills/` + `skills-lock.json`; конфиг трекера/меток/домена в `docs/agents/` | Требование шага курса: GitHub Issues, дефолтные метки, single-context (`CONTEXT.md` + `docs/adr/`) |
+| Раскладки редизайна | Десктоп A / телефон D выбираются хуком `useMediaQuery('(min-width: 1024px)')`, а не скрытием через CSS | В DOM нет дублей календаря — не ломаются тесты и доступность ([ADR-0007](docs/adr/0007-visual-redesign-and-themes.md)) |
+| Светлая/тёмная тема | `ThemeProvider` + `localStorage` (`call-calendar-theme`, режим `system` по умолчанию) + inline-анти-флеш-скрипт в `index.html`; `sonner` берёт `resolvedTheme` | Токены shadcn (HSL) для обеих тем, без «белых вспышек» при первой загрузке ([ADR-0007](docs/adr/0007-visual-redesign-and-themes.md)) |
 
 ## Окружение
 

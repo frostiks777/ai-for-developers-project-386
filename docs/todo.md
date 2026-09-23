@@ -34,6 +34,7 @@
 - [x] Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token`, `POST /api/bookings/reschedule` (`UPDATE slotId`; `200/400/404/409`), страница `/reschedule/:token` с календарём и свободными слотами, ссылка «Перенести» на экране успеха; [ADR-0008](adr/0008-reschedule-by-token.md); 6 API + 2 RTL-теста
 - [x] `422` вместо `400` на невалидное тело (по спеке): zod-ошибки в `POST /api/bookings`, `POST /api/bookings/cancel`, `PUT /api/availability` → `422 Unprocessable Entity`; бизнес-ошибки (прошедший слот, `minNotice`, некорректный `:id`) остаются `400`; тесты и доки обновлены
 - [x] Хосты + версионированный API v1 (Low, аддитивно): таблица `hosts` (UUID PK, unique slug), сид дефолтного хоста, `GET /api/v1/hosts/:slug/settings` и `GET /api/v1/hosts/:slug/slots?date=&timezone=` (`404` неизвестный slug, `400` дата/пояс); `/api/*` не тронут; [ADR-0009](adr/0009-hosts-and-api-v1.md); 7 API-тестов
+- [x] Визуальный редизайн A + D и светлая/тёмная тема, этапы 1–7 ([ADR-0007](adr/0007-visual-redesign-and-themes.md)): 1 — токены/шрифты/тема (`ThemeProvider`, `ThemeToggle`, `useMediaQuery`, анти-флеш-скрипт); 2 — десктоп-раскладка бронирования; 3 — мобильная раскладка (`date-strip.tsx`, `booking-bar.tsx`); 4 — рестайл диалога брони; 5 — рестайл экрана успеха; 6 — редизайн панели организатора (`dashboard-sidebar.tsx`, `bookings-list.tsx`, `booking-filter.tsx`, `availability-form.tsx`); 7 — документация (данный этап)
 
 ## Осталось
 
@@ -48,3 +49,44 @@
 2. **API**: `/api/v1` и хосты добавлены аддитивно ([ADR-0009](adr/0009-hosts-and-api-v1.md)): есть `GET /api/v1/hosts/:slug/settings|slots?date=&timezone=`; полной мульти-хост-модели (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`) нет. Тело брони другое, отмена реализована как `DELETE /api/bookings/:id`.
 3. **Форма**: email (обяз.) добавлен, телефон валидируется по формату и теперь опционален (как допускает спека); нет telegram.
 4. **Экраны**: `/dashboard` реализован (список, отмена, настройки, без auth); нет `/book/:hostId`.
+
+## Backlog из внешней спеки (Gemini, docs/gemini-code-1790192589378.md)
+
+Сверка пунктов спеки с фактическим кодом: DONE здесь не дублируется, ниже — только MISSING и PARTIAL (`<частично: …>` — что уже есть и чего не хватает).
+Умышленные расхождения MVP (один хост, токены вместо uuid, форма `name/email/phone/comment` без `guests`/согласия, `/dashboard` без auth) — бэклог, не баги.
+
+### P0 — Публичный флоу бронирования (§1.1–1.3)
+
+- [ ] Маршрут `/book/:slug` (§1.1): сейчас единый `/` под одного хоста; slug знает только v1 API
+- [ ] `TimezoneSelector`: поиск по IANA (§1.1) <частично: селект есть (`src/components/timezone-select.tsx`), поиска нет>
+- [ ] Переключатель 12/24-часового формата (§1.1)
+- [ ] Валидация имени min 2 (§1.2) <частично: сейчас min 1 (`src/lib/validation.ts`)>
+- [ ] Маска телефона (§1.2) <частично: опциональность и формат «10–15 цифр» есть, маски ввода нет>
+- [ ] Лимит `notes` 500 (§1.2) <частично: поле `comment` есть, но max 1000>
+- [ ] Поле `guests` — массив email с добавлением по Enter (§1.2)
+- [ ] Чекбокс согласия с правилами/ПДн (§1.2)
+- [ ] Заголовок `Idempotency-Key` (§1.2)
+- [ ] Обработка 409 (§1.2) <частично: тост + refetch есть, спец-алерта «слот только что заняли» нет>
+- [ ] Экран `/booking/:uuid/confirmed` (§1.3) <частично: `BookingSuccess` на `/` есть (дата/пояс, GCal, .ics, «Перенести»); нет отдельного роута, аватара/названия встречи, ссылки на конференцию>
+- [ ] Ссылка «Отменить встречу» на экране успеха (§1.3) <частично: только копируемая ссылка отмены, прямой кнопки нет>
+
+### P1 — Self-service (§2.1–2.2)
+
+- [ ] Роуты `/booking/:uuid/cancel` и `/booking/:uuid/reschedule` (§2.1–2.2): сейчас `/cancel/:token`, `/reschedule/:token`
+- [ ] Детали встречи на странице отмены (§2.1)
+- [ ] Поле `cancellation_reason` (§2.1)
+- [ ] Модалка подтверждения отмены (§2.1) <частично: inline-подтверждение на странице есть>
+- [ ] `POST /api/bookings/:uuid/cancel` (§2.1) <частично: есть `POST /api/bookings/cancel` по токену в теле>
+
+### P1 — Дашборд организатора (§3.1–3.3)
+
+- [ ] Роут `/admin/availability` (§3.1) <частично: секция «Доступность» на `/dashboard` есть>
+- [ ] Несколько интервалов в день (§3.1; сейчас одно окно `windowStartHour`–`windowEndHour`)
+- [ ] Кнопка «Скопировать понедельник на будни» (§3.1)
+- [ ] `buffer_before` / `buffer_after` (§3.1) <частично: один `bufferMin` 0–480>
+- [ ] Пресеты `max_future_days` 14/30/60 (§3.1) <частично: свободный ввод `horizonDays` 1–90>
+- [ ] `/admin/event-types` + `EventForm` (`title`/`slug`/`description`/`location_type`) (§3.2)
+- [ ] Роут `/admin/bookings` (§3.3) <частично: список на `/dashboard` есть>
+- [ ] Табы Upcoming / Past / Canceled (§3.3) <частично: фильтр Все / Неделя / Сегодня>
+- [ ] Поиск по имени и email (§3.3)
+- [ ] `BlockTimeModal` + форма блокировки времени (§3.3)
