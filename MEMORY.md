@@ -100,7 +100,7 @@
 
 ```
 ✅ typecheck: tsc --noEmit — чисто
-✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
+✅ lint: 0 ошибок, 0 warnings
 ✅ test: 53/53 passed (9 файлов: App, home-page, month-calendar, timezone-select, booking-dialog, use-availability, server/app, server/availability, timezone)
 ✅ build: vite v6.4.3 — 345.20 kB JS (gzip 107.37), 16.93 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
@@ -177,7 +177,7 @@
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: `hosts`/`availability_rules` + `/api/v1`, `/dashboard`, 422 vs 400, `.ics`/Google Calendar, ESLint warning в `button.tsx`
+- [ ] Low-этап: `hosts`/`availability_rules` + `/api/v1`, `/dashboard`, 422 vs 400, `.ics`/Google Calendar
 - [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
 
 ## Ключевые решения
