@@ -25,7 +25,7 @@ npm test
 |---|---|---|
 | `npm run lint` | `0 errors` | `.eslint` flat config в корне |
 | `npm run typecheck` | `0 errors` | `tsconfig.json` strict |
-| `npm test` | `All tests passed` (или N/N пройдено) | Vitest 3 |
+| `npm test` | `All tests passed` (или N/N пройдено) | Vitest 4 |
 
 Допустимый baseline-warning фиксируется в `MEMORY.md` (раздел «Исправленные ошибки»). Если новый warning — стоп, чинить **до** коммита.
 

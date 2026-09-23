@@ -16,7 +16,7 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - API: Fastify 5 (порт 3000, vite proxy `/api`)
 - БД: SQLite + Drizzle ORM 0.45
 - Валидация: zod 4 (схемы-зеркала: `server/validation.ts` ↔ `src/lib/validation.ts`)
-- Тесты: Vitest 3 + React Testing Library (API — `server/app.test.ts`, `app.inject()`, in-memory БД)
+- Тесты: Vitest 4 + React Testing Library (API — `server/app.test.ts`, `app.inject()`, in-memory БД)
 - Линтеры: ESLint 9 (flat config), Prettier
 
 ## Directory structure
