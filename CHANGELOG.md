@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.5.0...v1.6.0) (2026-09-23)
+
+
+### Features
+
+* allow cancelling a booking by token link ([d39fc31](https://github.com/frostiks777/ai-for-developers-project-386/commit/d39fc316e249d503995fc1625d1ca54c5da9a26c))
+
 ## [1.5.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.4.0...v1.5.0) (2026-09-23)
 
 
