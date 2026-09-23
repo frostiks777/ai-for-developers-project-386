@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-09-23.
+Accepted — 2026-09-23. Частично заменён [ADR-0005](0005-dashboard-availability-and-cancellation.md): алгоритм генерации и UTC сохранены, но правила перестали быть захардкоженными — они перенесены в таблицу `availability_rules`.
 
 ## Context
 

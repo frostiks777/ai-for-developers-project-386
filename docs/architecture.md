@@ -38,14 +38,18 @@ import type { Slot } from '@/types/slot'
 
 - `server/index.ts` — точка входа: создаёт приложение через `buildApp()` и слушает порт 3000. Запуск в dev-режиме — `npm run server:dev` (через `tsx watch`).
 - `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты `/api/*` и раздачу собранного фронтенда из `dist/`. Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
-- `server/validation.ts` — zod-схема API-контракта (`createBookingSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).
-- `server/db/schema.ts` — схема БД в терминах Drizzle ORM (таблицы слотов и бронирований).
+- `server/validation.ts` — zod-схемы API-контракта (`createBookingSchema`, `availabilityRulesSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).
+- `server/availability.ts` — правила доступности (`AvailabilityRules`), дефолт и чистая генерация слотов `generateSlotStarts`; конверсия строк таблицы `availability_rules`. См. [ADR-0004](adr/0004-slot-generation-rules.md), [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md).
+- `server/rules.ts` — персистентные правила: `loadAvailabilityRules` / `saveAvailabilityRules` / `regenerateFutureSlots` (пересборка свободных будущих слотов, занятые не трогаются).
+- `server/db/schema.ts` — схема БД в терминах Drizzle ORM (таблицы `slots`, `bookings`, `availability_rules`).
 - `server/db/` — клиент Drizzle поверх `better-sqlite3`; путь к файлу БД переопределяется переменной `DATABASE_PATH` (`:memory:` используется в тестах).
 - `server/data/app.db` — файл базы SQLite. БД **in-app**: не требует отдельного сервера СУБД, файл живёт внутри проекта.
 
-Миграции и синхронизация схемы выполняются через drizzle-kit (`npm run db:generate` / `npm run db:push`). Для скелета при старте создаются недостающие таблицы и колонки, а также сидируются слоты на ближайшие 4 дня (если будущих слотов нет).
+Миграции и синхронизация схемы выполняются через drizzle-kit (`npm run db:generate` / `npm run db:push`). Для скелета при старте создаются недостающие таблицы и колонки, а также сидируются слоты по правилам доступности (если будущих слотов нет).
 
-Интеграционные тесты API живут в `server/app.test.ts` и работают с in-memory БД (`DATABASE_PATH=:memory:` в `vite.config.ts` → `test.env`).
+Маршруты фронтенда (React Router): `/` — страница гостя (`HomePage`), `/dashboard` — панель организатора (`DashboardPage`: список броней с отменой и настройки доступности).
+
+Интеграционные тесты API живут в `server/app.test.ts` и `server/dashboard.test.ts` и работают с in-memory БД (`DATABASE_PATH=:memory:` в `vite.config.ts` → `test.env`).
 
 ## Поток данных
 

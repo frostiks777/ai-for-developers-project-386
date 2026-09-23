@@ -8,6 +8,10 @@
 Учебный проект Хекслета: https://ru.hexlet.io/programs/ai-for-developers
 Как это должно работать: https://files.hexlet.app/a/2ipc5m
 
+Страницы:
+- `/` — гость: календарь, слоты, форма бронирования.
+- `/dashboard` — организатор: список броней с отменой и настройки доступности.
+
 ## Демо
 
 <!-- TODO: записать asciinema и заменить ссылку: asciinema rec demo.cast -->
@@ -17,7 +21,7 @@
 
 ## Стек
 
-- **Frontend:** React 18, TypeScript, Vite 6, shadcn/ui, Tailwind CSS 3.4
+- **Frontend:** React 18, TypeScript, Vite 6, React Router 7, shadcn/ui, Tailwind CSS 3.4
 - **Backend:** Node.js, Fastify 5, zod 4
 - **БД:** SQLite (better-sqlite3) + Drizzle ORM
 - **Тесты:** Vitest 4 + React Testing Library
@@ -66,6 +70,9 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `GET` | `/api/slots` | будущие слоты с признаком `isBooked` |
 | `POST` | `/api/bookings` | создать бронь: `slotId`, `name`, `email`, `phone?`, `comment?` (до 1000 символов) |
 | `GET` | `/api/bookings` | брони с данными слота (панель организатора) |
+| `DELETE` | `/api/bookings/:id` | отменить бронь (слот освобождается) |
+| `GET` | `/api/availability` | правила доступности организатора |
+| `PUT` | `/api/availability` | обновить правила (пересобирает будущие слоты) |
 
 Примеры:
 
