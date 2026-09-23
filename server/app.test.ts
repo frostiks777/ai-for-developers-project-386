@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import { buildApp } from './app'
 import { db } from './db'
 import { slots } from './db/schema'
-import type { Booking, TimeSlot } from './types'
+import type { Booking, BookingWithSlot, TimeSlot } from './types'
 
 let app: FastifyInstance
 
@@ -62,6 +62,49 @@ describe('GET /api/slots', () => {
 
     expect(allSlots.every((slot) => slot.startAt >= nowIso)).toBe(true)
     expect(allSlots.some((slot) => slot.startAt === pastStartAt)).toBe(false)
+  })
+})
+
+describe('GET /api/bookings', () => {
+  it('отвечает 200 и отдаёт брони с данными слота', async () => {
+    const slot = firstFreeSlot(await requestSlots())
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(slot.id),
+    })
+    expect(created.statusCode).toBe(201)
+
+    const response = await app.inject({ method: 'GET', url: '/api/bookings' })
+    expect(response.statusCode).toBe(200)
+
+    const booking = response
+      .json<BookingWithSlot[]>()
+      .find((item) => item.slotId === slot.id)
+
+    expect(booking).toBeDefined()
+    expect(booking?.email).toBe('ivan@example.com')
+    expect(booking?.startAt).toBe(slot.startAt)
+    expect(booking?.durationMin).toBe(slot.durationMin)
+  })
+
+  it('сортирует брони по времени начала слота', async () => {
+    const freeSlots = (await requestSlots()).filter((item) => !item.isBooked)
+
+    for (const slot of freeSlots.slice(0, 2)) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/bookings',
+        payload: validBody(slot.id),
+      })
+      expect(response.statusCode).toBe(201)
+    }
+
+    const response = await app.inject({ method: 'GET', url: '/api/bookings' })
+    const startAtList = response.json<BookingWithSlot[]>().map((item) => item.startAt)
+
+    expect(startAtList).toEqual([...startAtList].sort())
   })
 })
 

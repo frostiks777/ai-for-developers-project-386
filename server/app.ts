@@ -6,7 +6,7 @@ import { eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
 import { bookings, slots } from './db/schema'
-import type { TimeSlot } from './types'
+import type { BookingWithSlot, TimeSlot } from './types'
 import { createBookingSchema } from './validation'
 
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
@@ -37,6 +37,25 @@ export async function buildApp(): Promise<FastifyInstance> {
       durationMin: row.durationMin,
       isBooked: row.bookingId !== null,
     }))
+  })
+
+  // Список броней с данными слота (для панели организатора), по времени начала
+  app.get('/api/bookings', (): BookingWithSlot[] => {
+    return db
+      .select({
+        id: bookings.id,
+        slotId: bookings.slotId,
+        name: bookings.name,
+        phone: bookings.phone,
+        email: bookings.email,
+        createdAt: bookings.createdAt,
+        startAt: slots.startAt,
+        durationMin: slots.durationMin,
+      })
+      .from(bookings)
+      .innerJoin(slots, eq(bookings.slotId, slots.id))
+      .orderBy(slots.startAt)
+      .all()
   })
 
   app.post('/api/bookings', (request, reply) => {

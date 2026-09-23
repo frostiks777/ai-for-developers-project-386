@@ -22,3 +22,9 @@ export interface Booking {
   email: string
   createdAt: string
 }
+
+// Бронь вместе с данными слота — для панели организатора
+export interface BookingWithSlot extends Booking {
+  startAt: string
+  durationMin: number
+}
