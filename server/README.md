@@ -70,6 +70,21 @@ curl -X POST http://localhost:3000/api/bookings/cancel \
 
 `cancelToken` возвращается только в ответе `201` на создание брони (`GET /api/bookings` токен не отдаёт). Ошибки: `400` — нет токена, `404` — неизвестный токен.
 
+### `GET /api/bookings/by-token/:token` — бронь по токену
+
+Возвращает бронь с данными слота (для страницы переноса). `404` — неизвестный токен.
+
+### `POST /api/bookings/reschedule` — перенос брони
+
+```bash
+curl -X POST http://localhost:3000/api/bookings/reschedule \
+  -H "Content-Type: application/json" \
+  -d '{"token":"<cancelToken>","slotId":2}'
+# 200 {"id":1,...,"slotId":2,"startAt":"...","durationMin":30}
+```
+
+Старый слот освобождается, новый занимается. Ошибки: `400` — слот в прошлом/в пределах `minNotice`, `404` — токен или слот не найден, `409` — целевой слот уже занят.
+
 ### `GET /api/availability` — правила доступности
 
 ```bash

@@ -39,4 +39,5 @@
 | [0004](0004-slot-generation-rules.md) | Генерация слотов по правилам доступности | Accepted (частично заменён 0005) | 2026-09-23 |
 | [0005](0005-dashboard-availability-and-cancellation.md) | Панель организатора: персистентные правила и отмена брони | Accepted | 2026-09-23 |
 | [0006](0006-cancellation-by-token.md) | Отмена брони по токену-ссылке | Accepted | 2026-09-23 |
+| [0007](0007-reschedule-by-token.md) | Перенос брони по токену-ссылке | Accepted | 2026-09-23 |
 | [0007](0007-visual-redesign-and-themes.md) | Визуальный редизайн (A + D) и светлая/тёмная тема | Proposed | 2026-09-23 |
