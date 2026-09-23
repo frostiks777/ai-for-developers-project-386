@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import type { AvailabilityRules } from './availability'
 import { buildApp } from './app'
 import { db } from './db'
-import { slots } from './db/schema'
+import { bookings, slots } from './db/schema'
 import type { Booking, BookingWithSlot, CreatedBooking, TimeSlot } from './types'
 
 let app: FastifyInstance
@@ -18,11 +18,16 @@ afterAll(async () => {
   await app.close()
 })
 
-function createFutureSlot() {
+// Изолируем тесты: брони не должны влиять на перегенерацию слотов в других describe
+afterEach(() => {
+  db.delete(bookings).run()
+})
+
+function createFutureSlot(offsetHours = 3) {
   return db
     .insert(slots)
     .values({
-      startAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+      startAt: new Date(Date.now() + offsetHours * 60 * 60 * 1000).toISOString(),
       durationMin: 30,
     })
     .returning()
@@ -130,6 +135,101 @@ describe('POST /api/bookings/cancel', () => {
       method: 'POST',
       url: '/api/bookings/cancel',
       payload: {},
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+})
+
+describe('перенос брони по токену', () => {
+  it('GET by-token отдаёт бронь с данными слота', async () => {
+    const slot = createFutureSlot()
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: slot.id, name: 'Иван', email: 'ivan@example.com' },
+    })
+    const { cancelToken } = created.json<CreatedBooking>()
+
+    const response = await app.inject({ method: 'GET', url: `/api/bookings/by-token/${cancelToken}` })
+    expect(response.statusCode).toBe(200)
+    const booking = response.json<BookingWithSlot>()
+    expect(booking.slotId).toBe(slot.id)
+    expect(booking.startAt).toBe(slot.startAt)
+  })
+
+  it('отвечает 404 на неизвестный токен', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/bookings/by-token/unknown' })
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('переносит бронь на другой слот и освобождает старый', async () => {
+    const firstSlot = createFutureSlot(3)
+    const secondSlot = createFutureSlot(5)
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: firstSlot.id, name: 'Иван', email: 'ivan@example.com' },
+    })
+    const { cancelToken } = created.json<CreatedBooking>()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/reschedule',
+      payload: { token: cancelToken, slotId: secondSlot.id },
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json<BookingWithSlot>().slotId).toBe(secondSlot.id)
+
+    const allSlots = (await app.inject({ method: 'GET', url: '/api/slots' })).json<TimeSlot[]>()
+    expect(allSlots.find((item) => item.id === firstSlot.id)?.isBooked).toBe(false)
+    expect(allSlots.find((item) => item.id === secondSlot.id)?.isBooked).toBe(true)
+  })
+
+  it('отвечает 409, если целевой слот уже занят', async () => {
+    const firstSlot = createFutureSlot(3)
+    const takenSlot = createFutureSlot(5)
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: takenSlot.id, name: 'Пётр', email: 'petr@example.com' },
+    })
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: firstSlot.id, name: 'Иван', email: 'ivan@example.com' },
+    })
+    const { cancelToken } = created.json<CreatedBooking>()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/reschedule',
+      payload: { token: cancelToken, slotId: takenSlot.id },
+    })
+
+    expect(response.statusCode).toBe(409)
+  })
+
+  it('отвечает 404 на неизвестный токен', async () => {
+    const slot = createFutureSlot()
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/reschedule',
+      payload: { token: 'unknown', slotId: slot.id },
+    })
+
+    expect(response.statusCode).toBe(404)
+  })
+
+  it('отвечает 400 без обязательных полей', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings/reschedule',
+      payload: { token: '' },
     })
 
     expect(response.statusCode).toBe(400)

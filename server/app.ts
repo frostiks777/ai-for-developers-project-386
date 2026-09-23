@@ -9,7 +9,20 @@ import { db } from './db'
 import { bookings, slots } from './db/schema'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
 import type { BookingWithSlot, TimeSlot } from './types'
-import { availabilityRulesSchema, cancelBookingSchema, createBookingSchema } from './validation'
+import { availabilityRulesSchema, cancelBookingSchema, createBookingSchema, rescheduleBookingSchema } from './validation'
+
+// Единый набор колонок для выборок «бронь + данные слота»
+const bookingWithSlotColumns = {
+  id: bookings.id,
+  slotId: bookings.slotId,
+  name: bookings.name,
+  phone: bookings.phone,
+  email: bookings.email,
+  comment: bookings.comment,
+  createdAt: bookings.createdAt,
+  startAt: slots.startAt,
+  durationMin: slots.durationMin,
+}
 
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
@@ -46,17 +59,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Список броней с данными слота (для панели организатора), по времени начала
   app.get('/api/bookings', (): BookingWithSlot[] => {
     return db
-      .select({
-        id: bookings.id,
-        slotId: bookings.slotId,
-        name: bookings.name,
-        phone: bookings.phone,
-        email: bookings.email,
-        comment: bookings.comment,
-        createdAt: bookings.createdAt,
-        startAt: slots.startAt,
-        durationMin: slots.durationMin,
-      })
+      .select(bookingWithSlotColumns)
       .from(bookings)
       .innerJoin(slots, eq(bookings.slotId, slots.id))
       .orderBy(slots.startAt)
@@ -147,6 +150,73 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     return reply.code(204).send()
+  })
+
+  // Бронь по токену (для страницы переноса): отдаёт текущее время слота
+  app.get('/api/bookings/by-token/:token', (request, reply) => {
+    const { token } = request.params as { token: string }
+
+    const booking = db
+      .select(bookingWithSlotColumns)
+      .from(bookings)
+      .innerJoin(slots, eq(bookings.slotId, slots.id))
+      .where(eq(bookings.cancelToken, token))
+      .get()
+
+    if (!booking) {
+      return reply.code(404).send({ error: 'Бронь не найдена' })
+    }
+
+    return booking
+  })
+
+  // Перенос брони на другой слот по токену; старый слот освобождается
+  app.post('/api/bookings/reschedule', (request, reply) => {
+    const parsed = rescheduleBookingSchema.safeParse(request.body)
+
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидный запрос переноса'
+      return reply.code(400).send({ error: message })
+    }
+
+    const { token, slotId } = parsed.data
+
+    const booking = db.select().from(bookings).where(eq(bookings.cancelToken, token)).get()
+    if (!booking) {
+      return reply.code(404).send({ error: 'Бронь не найдена' })
+    }
+
+    const slot = db.select().from(slots).where(eq(slots.id, slotId)).get()
+    if (!slot) {
+      return reply.code(404).send({ error: 'Слот не найден' })
+    }
+
+    if (slot.startAt < new Date().toISOString()) {
+      return reply.code(400).send({ error: 'Слот уже прошёл' })
+    }
+
+    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+      return reply.code(400).send({ error: 'Слот уже недоступен' })
+    }
+
+    if (booking.slotId !== slotId) {
+      try {
+        db.update(bookings).set({ slotId }).where(eq(bookings.id, booking.id)).run()
+      } catch (error) {
+        if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+          return reply.code(409).send({ error: 'Слот уже занят' })
+        }
+
+        throw error
+      }
+    }
+
+    return db
+      .select(bookingWithSlotColumns)
+      .from(bookings)
+      .innerJoin(slots, eq(bookings.slotId, slots.id))
+      .where(eq(bookings.id, booking.id))
+      .get()
   })
 
   // Текущие правила доступности организатора
