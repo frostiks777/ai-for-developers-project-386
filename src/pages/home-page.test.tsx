@@ -78,6 +78,19 @@ describe('HomePage: экран успеха', () => {
     expect(screen.getByText('30 мин')).toBeInTheDocument()
   })
 
+  it('на экране успеха есть экспорт в календарь', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    await bookSlot(user)
+
+    expect(await screen.findByRole('button', { name: 'Скачать .ics' })).toBeInTheDocument()
+    const googleLink = screen.getByRole('link', { name: 'Добавить в Google Календарь' })
+    expect(googleLink).toHaveAttribute('href', expect.stringContaining('calendar.google.com'))
+  })
+
   it('кнопка «Выбрать другое время» возвращает к списку слотов', async () => {
     vi.stubGlobal('fetch', mockFetch())
 
