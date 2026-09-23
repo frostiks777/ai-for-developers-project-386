@@ -38,3 +38,4 @@
 | [0003](0003-unique-slot-booking.md) | UNIQUE-индекс на `bookings.slotId` вместо exclusion constraint | Accepted | 2026-09-23 |
 | [0004](0004-slot-generation-rules.md) | Генерация слотов по правилам доступности | Accepted (частично заменён 0005) | 2026-09-23 |
 | [0005](0005-dashboard-availability-and-cancellation.md) | Панель организатора: персистентные правила и отмена брони | Accepted | 2026-09-23 |
+| [0006](0006-cancellation-by-token.md) | Отмена брони по токену-ссылке | Accepted | 2026-09-23 |

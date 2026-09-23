@@ -34,7 +34,7 @@
 │   ├── lib/validation.ts     ✅ zod-схемы брони + правил доступности (зеркало server/validation.ts)
 │   ├── types/booking.ts      ✅ TimeSlot, Booking, CreateBookingBody (+email)
 │   ├── types/availability.ts ✅ AvailabilityRules (зеркало server/availability.ts)
-│   ├── api/client.ts         ✅ fetchSlots, createBooking, fetchBookings, cancelBooking, fetch/updateAvailability
+│   ├── api/client.ts         ✅ fetchSlots, createBooking, fetchBookings, cancelBooking, cancelBookingByToken, fetch/updateAvailability
 │   ├── hooks/use-availability.ts ✅ (no-unsafe-finally исправлен, фильтр прошедших)
 │   ├── hooks/use-availability.test.tsx ✅ 2 теста (фильтр, ошибка загрузки)
 │   ├── utils/dates.ts        ✅ (toDateKey/parseDateKey/startOfDay)
@@ -44,6 +44,8 @@
 │   ├── pages/home-page.test.tsx ✅ 6 тестов (экран успеха, экспорт, назад, TZ, фильтр)
 │   ├── pages/dashboard-page.tsx ✅ панель организатора (список + отмена + настройки)
 │   ├── pages/dashboard-page.test.tsx ✅ 6 тестов
+│   ├── pages/cancel-page.tsx ✅ отмена брони по токену (/cancel/:token)
+│   ├── pages/cancel-page.test.tsx ✅ 2 теста
 │   ├── components/bookings-table.tsx ✅ таблица броней + отмена
 │   ├── components/availability-form.tsx ✅ форма настроек доступности
 │   ├── components/ui/button.tsx ✅ shadcn Button
@@ -114,8 +116,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 72/72 passed (12 файлов: App, home-page, dashboard-page, month-calendar, timezone-select, booking-dialog, use-availability, calendar, server/app, server/dashboard, server/availability, timezone)
-✅ build: vite v6.4.3 — 394.05 kB JS (gzip 124.18), 17.50 kB CSS
+✅ test: 79/79 passed (13 файлов: App, home-page, dashboard-page, cancel-page, month-calendar, timezone-select, booking-dialog, use-availability, calendar, server/app, server/dashboard, server/availability, timezone)
+✅ build: vite v6.4.3 — 396.73 kB JS (gzip 125.28), 17.57 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
    GET /api/bookings 200 (бронь с startAt/durationMin)
@@ -191,11 +193,12 @@
 32. ✅ Панель организатора `/dashboard` (Low): `react-router-dom` 7 (`BrowserRouter` в `main.tsx`, `/` и `/dashboard`); `DashboardPage` + `BookingsTable` (список броней с отменой) + `AvailabilityForm` (чекбоксы дней, числовые поля, zod до отправки). Бэкенд: таблица `availability_rules` (одна строка `id=1`), `server/rules.ts` (`load`/`save`/`regenerateFutureSlots` — свободные будущие слоты пересобираются, занятые не трогаются), `GET/PUT /api/availability`, `DELETE /api/bookings/:id` (`204/404/400`), `minNotice` читается из правил. Схемы/типы-зеркала (`availabilityRulesSchema`, `src/types/availability.ts`). [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md). 7 API + 6 RTL-тестов.
 33. ✅ Кнопка «Назад» на экране успеха (`BookingSuccess`): `Button variant="ghost"` с иконкой `ArrowLeft` вверху карточки, вызывает `onReset` → возврат к списку слотов; +1 RTL-тест.
 34. ✅ Экспорт брони в календарь (Экран 3 спеки): `src/utils/calendar.ts` (`buildIcs` — VCALENDAR/VEVENT с UTC `DTSTART/DTEND`, CRLF, экранирование переводов строк; `googleCalendarUrl` — шаблон события; `downloadIcs` — Blob-скачивание). Кнопки «Скачать .ics» и «Добавить в Google Календарь» на экране успеха. 3 unit + 1 RTL-теста. Ссылка отмены отложена (нужен токен/API).
+35. ✅ Отмена брони по токену-ссылке (Экран 3): колонка `bookings.cancelToken` (nullable + unique; миграция `ALTER`+индекс после колонки), токен `crypto.randomUUID()` в ответе `201` (`CreatedBooking`), `POST /api/bookings/cancel` (`204/404/400`), ссылка `${origin}/cancel/:token` с копированием на экране успеха, страница `/cancel/:token` (отмена по явной кнопке, не при открытии). [ADR-0006](docs/adr/0006-cancellation-by-token.md). 4 API + 3 RTL-теста.
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, `422` vs `400`, ссылка отмены (токен), авторизация `/dashboard`
+- [ ] Low-этап: перенос (reschedule), `hosts` + `/api/v1/hosts/:slug/...`, `422` vs `400`, авторизация `/dashboard`
 
 ## Ключевые решения
 
@@ -216,6 +219,7 @@
 | Панель организатора | `/dashboard` + `react-router-dom`: список броней, отмена, настройки доступности | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); без auth (учебный MVP) |
 | Правила доступности | Персистентная таблица `availability_rules` — одна строка `id=1`; `PUT` пересобирает свободные будущие слоты, занятые не трогает | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); `hosts`/`/api/v1` отложены |
 | Отмена брони | `DELETE /api/bookings/:id` удаляет строку → `isBooked` вычисляется join-ом, слот освобождается | Несовместимо с soft-delete из-за `UNIQUE(slotId)`; partial index отложен ([ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md)) |
+| Отмена гостем | Токен `cancelToken` (UUID, `UNIQUE`) в ответе на создание + `POST /api/bookings/cancel`; ссылка `/cancel/:token` | [ADR-0006](docs/adr/0006-cancellation-by-token.md); capability-модель без auth |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
