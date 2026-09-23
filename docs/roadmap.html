@@ -38,7 +38,7 @@
     background: linear-gradient(90deg, var(--done), #86efac);
     animation: fill 1.4s ease forwards;
   }
-  @keyframes fill { to { width: 68%; } }
+  @keyframes fill { to { width: 74%; } }
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
   .filters {
@@ -84,9 +84,9 @@
 <body>
 <header>
   <h1>Календарь звонков — схема TODO</h1>
-  <p>Источник: <code>docs/todo.md</code> · Сделано 19 / Всего 28 · Medium → Low</p>
+  <p>Источник: <code>docs/todo.md</code> · Сделано 20 / Всего 27 · Medium → Low</p>
   <div class="progress-wrap">
-    <div class="progress-label">Прогресс MVP: 68%</div>
+    <div class="progress-label">Прогресс MVP: 74%</div>
     <div class="progress"><div></div></div>
   </div>
   <div class="filters">
@@ -98,7 +98,7 @@
 </header>
 <main>
   <section class="done" data-group="done">
-    <h2>✅ Сделано <span class="badge">19</span></h2>
+    <h2>✅ Сделано <span class="badge">20</span></h2>
     <ul>
       <li class="done-item">Каркас: Fastify :3000 (/health, /api/slots, /api/bookings), Vite, линтер, тесты, CI</li>
       <li class="done-item">SQLite + Drizzle (slots, bookings) и сидирование 8 слотов</li>
@@ -118,16 +118,15 @@
       <li class="done-item">Race condition: уникальный индекс bookings.slotId + 409 через SQLITE_CONSTRAINT_UNIQUE (ADR-0003)</li>
       <li class="done-item">Экран успеха: BookingSuccess со сводкой и кнопкой «Выбрать другое время»</li>
       <li class="done-item">Поле «комментарий»: БД + zod max(1000) + Textarea в форме</li>
-      <li class="done-item">Месячная сетка календаря: MonthCalendar + фильтр списка по дню</li>
+<li class="done-item">Месячная сетка календаря: MonthCalendar + фильтр списка по дню</li>
+      <li class="done-item">Генерация слотов по правилам (availability.ts, minNotice, ADR-0004)</li>
     </ul>
   </section>
   <div class="flow"><span>поток работ</span><span class="arrow">⬇</span></div>
   <section class="medium" data-group="medium">
-    <h2>🟡 Medium <span class="badge">2</span></h2>
+    <h2>🟡 Medium <span class="badge">1</span></h2>
     <ul>
       <li>Селектор таймзоны и хранение времени в UTC</li>
-      <li>Генерация слотов по правилам (рабочие часы, буфер, minNotice)</li>
-      <li>Поле «комментарий» (multiline) в форму, API, БД</li>
     </ul>
   </section>
   <div class="flow"><span class="arrow">⬇</span></div>
@@ -142,13 +141,12 @@
     </ul>
   </section>
   <section data-group="high medium low">
-    <h2>⚠️ Ключевые расхождения со спекой <span class="badge">5</span></h2>
+    <h2>⚠️ Ключевые расхождения со спекой <span class="badge">4</span></h2>
     <ul>
       <li>Схема БД: нет hosts / availability_rules, статусов</li>
       <li>API: нет версионирования /api/v1, хостов, фильтра по дате</li>
       <li>Форма: нет telegram; телефон пока обязателен</li>
       <li>Экраны: нет /book/:hostId и /dashboard</li>
-      <li>Логика слотов: только статический сид, без генерации §4.1</li>
     </ul>
   </section>
 </main>

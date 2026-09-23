@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Medium #4: месячная сетка календаря; #1–#3 закрыты)
+> Дата последнего обновления: 2026-09-23 (Medium #5: генерация слотов по правилам; остался TZ)
 
 ## Текущее состояние
 
@@ -101,7 +101,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 38/38 passed (6 файлов: App, home-page, month-calendar, booking-dialog, use-availability, server/app)
+✅ test: 44/44 passed (7 файлов: App, home-page, month-calendar, booking-dialog, use-availability, server/app, server/availability)
 ✅ build: vite v6.4.3 — 343.86 kB JS (gzip 106.95), 16.87 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
@@ -170,12 +170,13 @@
 24. ✅ Экран успеха (Medium #2): `src/components/booking-success.tsx` — «Встреча успешно запланирована!», сводка (дата/время, длительность, имя, email), кнопка «Выбрать другое время» (сброс + refetch); `useBooking.bookSlot` возвращает `Booking | null`, `onBooked(booking)`; HomePage рендерит экран вместо списка. 2 RTL-теста (`src/pages/home-page.test.tsx`).
 25. ✅ Комментарий (Medium #3): колонка `comment TEXT` (+ALTER при старте), zod `max(1000)` с пустым → `null`, зеркала схем и типов обновлены, `Textarea` (`src/components/ui/textarea.tsx`) в диалоге, `comment` в `POST`/`GET /api/bookings`; 5 серверных + 1 RTL-тест. Билд-объём CSS 16.47 kB, JS 341.48 kB (gzip 106.10).
 26. ✅ Месячная сетка (Medium #4): `src/components/month-calendar.tsx` (навигация по месяцам, метки дней со слотами, прошлые/пустые/занятые дни disabled, `aria-label=YYYY-MM-DD`), `src/utils/dates.ts` (`toDateKey`/`parseDateKey`/`startOfDay`); HomePage фильтрует список по выбранному дню на клиенте (activeDate = earliest slot, если выбранного дня больше нет). 3 теста компонента + интеграционный; API `?date=` сознательно отложен к генерации/TZ.
+27. ✅ Генерация слотов (Medium #5): `server/availability.ts` — `defaultAvailabilityRules` (Пн–Пт, 10:00–18:00 UTC, 30 мин, буфер 10, minNotice 120 мин, горизонт 14 дней) и чистая `generateSlotStarts(now, rules)`; сид в `server/db/index.ts` заменён генератором; `GET /api/slots` фильтрует `now + minNotice`; `POST /api/bookings` → 400 «Слот уже недоступен» в пределах minNotice. [ADR-0004](docs/adr/0004-slot-generation-rules.md). 4 unit + 2 API-теста.
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Телефон как опциональный (по спеке) — сейчас обязателен
-- [ ] Таймзоны (хранение/отображение UTC), генерация слотов по правилам доступности
+- [ ] Таймзоны: селектор отображения (хранение в UTC уже есть)
 - [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
 
 ## Ключевые решения
@@ -190,7 +191,8 @@
 | CI | GitHub Actions: lint + typecheck + test + build на Node 22 и 24 | Node 20 EOL (апрель 2026); vitest 4 требует Node ^20 \|\| ^22 \|\| >=24 |
 | `GET /api/bookings` | Плоский массив `BookingWithSlot`, сортировка по `startAt` | Фундамент панели организатора; потребителей нет, контракт простой |
 | Защита от двойных броней | `UNIQUE(slotId)` на уровне SQLite + `409` из перехвата constraint | [ADR-0003](docs/adr/0003-unique-slot-booking.md); exclusion constraint спеки в SQLite недоступен |
-| Фильтр слотов по дате | Клиентский (группировка по локальной дате в `MonthCalendar`/HomePage) | `GET /api/slots?date=` требует TZ-семантики — отложен к генерации/TZ; сид мал (≤8 слотов) |
+| Фильтр слотов по дате | Клиентский (группировка по локальной дате в `MonthCalendar`/HomePage) | `GET /api/slots?date=` требует TZ-семантики — отложен к TZ-шагу; слотов ≤ ~112 (14 дней) |
+| Генерация слотов | Правила-константы в `server/availability.ts`, материализация в `slots` при старте, правила в UTC | [ADR-0004](docs/adr/0004-slot-generation-rules.md); `hosts/availability_rules` — Low-этап |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
