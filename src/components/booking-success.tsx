@@ -1,3 +1,5 @@
+import { ArrowLeft } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
 import type { Booking, TimeSlot } from '@/types/booking'
 import { formatDateTimeInZone } from '@/utils/timezone'
@@ -24,6 +26,11 @@ function formatTimeRange(slot: TimeSlot, timeZone: string): string {
 export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSuccessProps) {
   return (
     <section className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
+      <Button variant="ghost" size="sm" className="-ml-2 mb-2" onClick={onReset}>
+        <ArrowLeft className="size-4" />
+        Назад
+      </Button>
+
       <h2 className="text-2xl font-semibold tracking-tight">Встреча успешно запланирована!</h2>
 
       <dl className="mt-4 grid gap-2 text-sm">
