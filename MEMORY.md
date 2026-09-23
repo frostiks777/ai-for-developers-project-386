@@ -37,8 +37,11 @@
 │   ├── api/client.ts         ✅ fetchSlots, createBooking, fetchBookings, cancelBooking, fetch/updateAvailability
 │   ├── hooks/use-availability.ts ✅ (no-unsafe-finally исправлен, фильтр прошедших)
 │   ├── hooks/use-availability.test.tsx ✅ 2 теста (фильтр, ошибка загрузки)
+│   ├── utils/dates.ts        ✅ (toDateKey/parseDateKey/startOfDay)
+│   ├── utils/calendar.ts     ✅ buildIcs / googleCalendarUrl / downloadIcs
+│   ├── utils/timezone.ts     ✅ toDateKeyInZone / formatDateTimeInZone / timeZoneOptionLabel
 │   ├── pages/home-page.tsx   ✅
-│   ├── pages/home-page.test.tsx ✅ 4 теста (экран успеха, TZ, фильтр по дате)
+│   ├── pages/home-page.test.tsx ✅ 6 тестов (экран успеха, экспорт, назад, TZ, фильтр)
 │   ├── pages/dashboard-page.tsx ✅ панель организатора (список + отмена + настройки)
 │   ├── pages/dashboard-page.test.tsx ✅ 6 тестов
 │   ├── components/bookings-table.tsx ✅ таблица броней + отмена
@@ -111,8 +114,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 67/67 passed (11 файлов: App, home-page, dashboard-page, month-calendar, timezone-select, booking-dialog, use-availability, server/app, server/dashboard, server/availability, timezone)
-✅ build: vite v6.4.3 — 391.99 kB JS (gzip 123.39), 17.43 kB CSS
+✅ test: 72/72 passed (12 файлов: App, home-page, dashboard-page, month-calendar, timezone-select, booking-dialog, use-availability, calendar, server/app, server/dashboard, server/availability, timezone)
+✅ build: vite v6.4.3 — 394.05 kB JS (gzip 124.18), 17.50 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
    GET /api/bookings 200 (бронь с startAt/durationMin)
@@ -187,11 +190,12 @@
 31. ✅ Деплой на Render подтверждён как живой: https://calendar-slots-app.onrender.com (см. `docs/ci_cd_render.md`). Проверено: `/health` 200, `/` 200 (SPA), `/api/slots` 200, `/api/bookings` 200; собранный JS-хеш совпадает с локальным. В README исправлен неверный URL (`ai-for-developers-project-386.onrender.com` → `calendar-slots-app.onrender.com`).
 32. ✅ Панель организатора `/dashboard` (Low): `react-router-dom` 7 (`BrowserRouter` в `main.tsx`, `/` и `/dashboard`); `DashboardPage` + `BookingsTable` (список броней с отменой) + `AvailabilityForm` (чекбоксы дней, числовые поля, zod до отправки). Бэкенд: таблица `availability_rules` (одна строка `id=1`), `server/rules.ts` (`load`/`save`/`regenerateFutureSlots` — свободные будущие слоты пересобираются, занятые не трогаются), `GET/PUT /api/availability`, `DELETE /api/bookings/:id` (`204/404/400`), `minNotice` читается из правил. Схемы/типы-зеркала (`availabilityRulesSchema`, `src/types/availability.ts`). [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md). 7 API + 6 RTL-тестов.
 33. ✅ Кнопка «Назад» на экране успеха (`BookingSuccess`): `Button variant="ghost"` с иконкой `ArrowLeft` вверху карточки, вызывает `onReset` → возврат к списку слотов; +1 RTL-тест.
+34. ✅ Экспорт брони в календарь (Экран 3 спеки): `src/utils/calendar.ts` (`buildIcs` — VCALENDAR/VEVENT с UTC `DTSTART/DTEND`, CRLF, экранирование переводов строк; `googleCalendarUrl` — шаблон события; `downloadIcs` — Blob-скачивание). Кнопки «Скачать .ics» и «Добавить в Google Календарь» на экране успеха. 3 unit + 1 RTL-теста. Ссылка отмены отложена (нужен токен/API).
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, `422` vs `400`, `.ics`/Google Calendar, авторизация `/dashboard`
+- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, `422` vs `400`, ссылка отмены (токен), авторизация `/dashboard`
 
 ## Ключевые решения
 

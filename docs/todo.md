@@ -29,6 +29,7 @@
 - [x] Телефон опциональный (по спеке): zod `optional` + `refine` (пустой → не задан), колонка `phone` nullable (миграция-пересборка таблицы для старых БД), `phone: string | null` в контракте, пометка «необязательно» в форме, телефон в экране успеха только если указан; 2 API + 1 RTL-тест
 - [x] Убран ESLint warning в `src/components/ui/button.tsx`: `buttonVariants` больше не экспортируется (внутренний, потребителей нет) → `react-refresh/only-export-components` чист
 - [x] `/dashboard` организатора: `react-router-dom` (`/` и `/dashboard`), список броней (`BookingsTable`) + отмена (`DELETE /api/bookings/:id`, `204/404/400`), настройки доступности (`AvailabilityForm`) поверх `availability_rules` (одна строка `id=1`) + `GET/PUT /api/availability`; `server/rules.ts` (`load`/`save`/`regenerateFutureSlots` — занятые слоты не трогаются); `minNotice` читается из правил; [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md); 7 API + 6 RTL-тестов
+- [x] Экспорт брони в календарь (Экран 3): `src/utils/calendar.ts` (`buildIcs`, `googleCalendarUrl`, `downloadIcs`), кнопки «Скачать .ics» и «Добавить в Google Календарь» на экране успеха; 3 unit + 1 RTL-теста. Ссылка отмены — отложена (токен/API)
 
 ## Осталось
 
@@ -36,7 +37,7 @@
 
 - [ ] Таблицы `hosts` и эндпоинты `GET /api/v1/hosts/:slug/...` (мульти-хост + версионирование API)
 - [ ] `422` вместо `400` на невалидное тело (по спеке) или зафиксировать отклонение
-- [ ] `.ics` / Google Calendar и ссылка отмены на экране успеха
+- [ ] Ссылка отмены/переноса на экране успеха (нужен токен и `DELETE`-по-токену)
 - [ ] Авторизация `/dashboard` (сейчас панель публична)
 
 ## Ключевые расхождения со спекой
