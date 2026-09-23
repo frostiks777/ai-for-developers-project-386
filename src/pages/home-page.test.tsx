@@ -82,6 +82,24 @@ describe('HomePage: экран успеха', () => {
     expect(screen.queryByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeNull()
   })
 
+  it('пересчитывает время слотов при смене часового пояса', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetch([
+        { id: 1, startAt: '2099-09-24T07:00:00.000Z', durationMin: 30, isBooked: false },
+      ]),
+    )
+
+    const user = userEvent.setup()
+    render(<HomePage />)
+
+    await screen.findByRole('button', { name: 'Забронировать' })
+
+    await user.selectOptions(screen.getByLabelText('Часовой пояс'), 'UTC')
+
+    expect(screen.getByText(/07:00/)).toBeInTheDocument()
+  })
+
   it('фильтрует слоты по выбранной в календаре дате', async () => {
     const firstDay = new Date(2099, 8, 24, 10, 0)
     const secondDay = new Date(2099, 8, 25, 15, 0)

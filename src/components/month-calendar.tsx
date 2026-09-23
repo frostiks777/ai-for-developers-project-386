@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { TimeSlot } from '@/types/booking'
 import { parseDateKey, startOfDay, toDateKey } from '@/utils/dates'
+import { toDateKeyInZone } from '@/utils/timezone'
 
 const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
@@ -12,6 +13,7 @@ const monthTitleFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long', ye
 interface MonthCalendarProps {
   slots: TimeSlot[]
   selectedDate: string
+  timeZone: string
   onSelectDate: (dateKey: string) => void
 }
 
@@ -29,14 +31,21 @@ function buildMonthDays(monthDate: Date): (Date | null)[] {
   return cells
 }
 
-export function MonthCalendar({ slots, selectedDate, onSelectDate }: MonthCalendarProps) {
+export function MonthCalendar({
+  slots,
+  selectedDate,
+  timeZone,
+  onSelectDate,
+}: MonthCalendarProps) {
   const [visibleMonth, setVisibleMonth] = useState(() => parseDateKey(selectedDate))
 
   useEffect(() => {
     setVisibleMonth(parseDateKey(selectedDate))
   }, [selectedDate])
 
-  const availableDates = new Set(slots.map((slot) => toDateKey(new Date(slot.startAt))))
+  const availableDates = new Set(
+    slots.map((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone)),
+  )
   const today = startOfDay(new Date())
   const days = buildMonthDays(visibleMonth)
 

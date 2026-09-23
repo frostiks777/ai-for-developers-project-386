@@ -3,19 +3,11 @@ import { useState } from 'react'
 import { BookingDialog } from '@/components/booking-dialog'
 import { BookingSuccess } from '@/components/booking-success'
 import { MonthCalendar } from '@/components/month-calendar'
+import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
 import { useAvailability } from '@/hooks/use-availability'
 import type { Booking, TimeSlot } from '@/types/booking'
-import { toDateKey } from '@/utils/dates'
-
-const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
-
-function formatStartAt(startAt: string): string {
-  return dateTimeFormatter.format(new Date(startAt))
-}
+import { formatDateTimeInZone, defaultTimeZone, toDateKeyInZone } from '@/utils/timezone'
 
 export default function HomePage() {
   const { slots, isLoading, error, refetch } = useAvailability()
@@ -23,14 +15,15 @@ export default function HomePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [bookedBooking, setBookedBooking] = useState<Booking | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [timeZone, setTimeZone] = useState(defaultTimeZone)
 
-  const slotDates = slots.map((slot) => toDateKey(new Date(slot.startAt)))
+  const slotDates = slots.map((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone))
   const activeDate =
     selectedDate !== null && slotDates.includes(selectedDate)
       ? selectedDate
       : (slotDates[0] ?? null)
   const visibleSlots = activeDate
-    ? slots.filter((slot) => toDateKey(new Date(slot.startAt)) === activeDate)
+    ? slots.filter((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone) === activeDate)
     : slots
 
   const handleBookingClick = (slot: TimeSlot) => {
@@ -57,8 +50,17 @@ export default function HomePage() {
         </p>
       </header>
 
+      <div className="mb-6 sm:max-w-xs">
+        <TimeZoneSelect value={timeZone} onChange={setTimeZone} />
+      </div>
+
       {bookedBooking && selectedSlot ? (
-        <BookingSuccess booking={bookedBooking} slot={selectedSlot} onReset={handleReset} />
+        <BookingSuccess
+          booking={bookedBooking}
+          slot={selectedSlot}
+          timeZone={timeZone}
+          onReset={handleReset}
+        />
       ) : (
         <>
           {isLoading && <p>Загрузка слотов…</p>}
@@ -72,6 +74,7 @@ export default function HomePage() {
               <MonthCalendar
                 slots={slots}
                 selectedDate={activeDate ?? ''}
+                timeZone={timeZone}
                 onSelectDate={setSelectedDate}
               />
               <ul className="grid gap-4 sm:grid-cols-2">
@@ -80,7 +83,9 @@ export default function HomePage() {
                     key={slot.id}
                     className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm"
                   >
-                    <p className="font-medium">{formatStartAt(slot.startAt)}</p>
+                    <p className="font-medium">
+                      {formatDateTimeInZone(slot.startAt, timeZone)}
+                    </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       Длительность: {slot.durationMin} мин
                     </p>
@@ -101,6 +106,7 @@ export default function HomePage() {
 
       <BookingDialog
         slot={selectedSlot}
+        timeZone={timeZone}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onBooked={handleBooked}
