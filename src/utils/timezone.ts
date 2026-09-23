@@ -62,6 +62,21 @@ export function formatDayShortTitle(dateKey: string): string {
   return title.charAt(0).toUpperCase() + title.slice(1)
 }
 
+// Дата для диалога брони с годом: «Чт, 24 сентября 2026»
+export function formatDialogDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const raw = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+
+  const withoutYearSuffix = raw.replace(/\s*г\.?$/, '')
+  return withoutYearSuffix.charAt(0).toUpperCase() + withoutYearSuffix.slice(1)
+}
+
 export function formatTimeRange(
   slot: { startAt: string; durationMin: number },
   timeZone: string,

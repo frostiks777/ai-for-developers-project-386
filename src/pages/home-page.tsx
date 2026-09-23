@@ -381,6 +381,11 @@ export default function HomePage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onBooked={handleBooked}
+        onFailed={() => {
+          setIsDialogOpen(false)
+          setSelectedSlotId(null)
+          refetch()
+        }}
       />
     </div>
   )
