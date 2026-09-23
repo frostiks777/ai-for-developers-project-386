@@ -117,6 +117,40 @@ describe('BookingDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
+  it('отправляет комментарий, если он заполнен', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: 1,
+            slotId: 1,
+            name: 'Иван',
+            phone: '+79000000000',
+            email: 'ivan@example.com',
+            comment: 'Хочу обсудить проект',
+            createdAt: '2026-09-22T07:00:00.000Z',
+          }),
+          { status: 201 },
+        ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const user = userEvent.setup()
+    renderDialog()
+
+    await fillValidForm(user)
+    await user.type(screen.getByLabelText('Комментарий'), 'Хочу обсудить проект')
+    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/bookings',
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"comment":"Хочу обсудить проект"'),
+      }),
+    )
+  })
+
   it('показывает ошибку, если слот уже занят', async () => {
     const fetchMock = vi.fn(
       async () => new Response(JSON.stringify({ error: 'Слот уже занят' }), { status: 409 }),

@@ -32,6 +32,7 @@ client.exec(`
     name TEXT NOT NULL,
     phone TEXT NOT NULL,
     email TEXT NOT NULL,
+    comment TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
@@ -42,6 +43,10 @@ const bookingColumns = client.pragma('table_info(bookings)') as Array<{ name: st
 
 if (!bookingColumns.some((column) => column.name === 'email')) {
   client.exec(`ALTER TABLE bookings ADD COLUMN email TEXT NOT NULL DEFAULT ''`)
+}
+
+if (!bookingColumns.some((column) => column.name === 'comment')) {
+  client.exec(`ALTER TABLE bookings ADD COLUMN comment TEXT`)
 }
 
 export const db = drizzle(client, { schema })

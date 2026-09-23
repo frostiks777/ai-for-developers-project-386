@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
 import { createBookingSchema } from '@/lib/validation'
 import type { Booking, TimeSlot } from '@/types/booking'
@@ -36,6 +37,7 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [comment, setComment] = useState('')
   const { isSubmitting, bookSlot } = useBooking()
 
   useEffect(() => {
@@ -43,10 +45,17 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
       setName('')
       setPhone('')
       setEmail('')
+      setComment('')
     }
   }, [open])
 
-  const parseResult = createBookingSchema.safeParse({ slotId: slot?.id ?? 0, name, phone, email })
+  const parseResult = createBookingSchema.safeParse({
+    slotId: slot?.id ?? 0,
+    name,
+    phone,
+    email,
+    comment,
+  })
   const isFormValid = parseResult.success
   const issues = parseResult.success ? [] : parseResult.error.issues
   const phoneError =
@@ -127,6 +136,17 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
                 {emailError}
               </p>
             )}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="booking-comment">Комментарий</Label>
+            <Textarea
+              id="booking-comment"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder="Вопрос или тема встречи (необязательно)"
+              rows={3}
+            />
           </div>
 
           <DialogFooter>

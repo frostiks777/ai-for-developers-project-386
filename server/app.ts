@@ -48,6 +48,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         name: bookings.name,
         phone: bookings.phone,
         email: bookings.email,
+        comment: bookings.comment,
         createdAt: bookings.createdAt,
         startAt: slots.startAt,
         durationMin: slots.durationMin,
@@ -66,7 +67,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: message })
     }
 
-    const { slotId, name, phone, email } = parsed.data
+    const { slotId, name, phone, email, comment } = parsed.data
 
     const slot = db.select().from(slots).where(eq(slots.id, slotId)).get()
     if (!slot) {
@@ -80,7 +81,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     try {
       const created = db
         .insert(bookings)
-        .values({ slotId, name, phone, email })
+        .values({ slotId, name, phone, email, comment: comment ?? null })
         .returning()
         .get()
 

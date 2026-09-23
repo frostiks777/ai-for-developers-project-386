@@ -43,6 +43,14 @@ function validBody(slotId: number) {
   }
 }
 
+function createFutureSlot() {
+  return db
+    .insert(slots)
+    .values({ startAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), durationMin: 30 })
+    .returning()
+    .get()
+}
+
 describe('GET /health', () => {
   it('отвечает 200 со статусом ok', async () => {
     const response = await app.inject({ method: 'GET', url: '/health' })
@@ -110,11 +118,7 @@ describe('GET /api/bookings', () => {
 
 describe('целостность bookings.slotId', () => {
   it('запрещает вторую бронь на тот же слот на уровне БД', async () => {
-    const slot = db
-      .insert(slots)
-      .values({ startAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), durationMin: 30 })
-      .returning()
-      .get()
+    const slot = createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -156,6 +160,48 @@ describe('POST /api/bookings', () => {
     expect(updatedSlot?.isBooked).toBe(true)
   })
 
+  it('сохраняет комментарий и отдаёт его в GET /api/bookings', async () => {
+    const slot = createFutureSlot()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { ...validBody(slot.id), comment: 'Хочу обсудить архитектуру' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json<Booking>().comment).toBe('Хочу обсудить архитектуру')
+
+    const list = (await app.inject({ method: 'GET', url: '/api/bookings' })).json<BookingWithSlot[]>()
+    expect(list.find((item) => item.slotId === slot.id)?.comment).toBe('Хочу обсудить архитектуру')
+  })
+
+  it('сохраняет null, если комментарий не передан', async () => {
+    const slot = createFutureSlot()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(slot.id),
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json<Booking>().comment).toBeNull()
+  })
+
+  it('сохраняет null для пустого комментария', async () => {
+    const slot = createFutureSlot()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { ...validBody(slot.id), comment: '   ' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json<Booking>().comment).toBeNull()
+  })
+
   it('отвечает 409 на повторную бронь того же слота', async () => {
     const slot = firstFreeSlot(await requestSlots())
 
@@ -191,6 +237,7 @@ describe('POST /api/bookings', () => {
     ['с пустым телефоном', { phone: '  ' }],
     ['с невалидным телефоном', { phone: 'abcdef' }],
     ['с коротким телефоном', { phone: '+7 900' }],
+    ['с слишком длинным комментарием', { comment: 'x'.repeat(1001) }],
     ['без slotId', { slotId: undefined }],
   ])('отвечает 400 %s', async (_case, overrides) => {
     const slot = firstFreeSlot(await requestSlots())

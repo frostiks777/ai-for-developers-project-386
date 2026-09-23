@@ -14,4 +14,10 @@ export const createBookingSchema = z.object({
   name: z.string().trim().min(1, 'Укажите имя'),
   phone: z.string().trim().min(1, 'Укажите телефон').refine(isValidPhone, 'Неверный номер телефона'),
   email: z.string().trim().pipe(z.email('Неверный email')),
+  comment: z
+    .string()
+    .trim()
+    .max(1000, 'Комментарий слишком длинный')
+    .optional()
+    .transform((value) => value || undefined),
 })
