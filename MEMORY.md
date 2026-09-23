@@ -196,7 +196,7 @@
 33. ✅ Кнопка «Назад» на экране успеха (`BookingSuccess`): `Button variant="ghost"` с иконкой `ArrowLeft` вверху карточки, вызывает `onReset` → возврат к списку слотов; +1 RTL-тест.
 34. ✅ Экспорт брони в календарь (Экран 3 спеки): `src/utils/calendar.ts` (`buildIcs` — VCALENDAR/VEVENT с UTC `DTSTART/DTEND`, CRLF, экранирование переводов строк; `googleCalendarUrl` — шаблон события; `downloadIcs` — Blob-скачивание). Кнопки «Скачать .ics» и «Добавить в Google Календарь» на экране успеха. 3 unit + 1 RTL-теста. Ссылка отмены отложена (нужен токен/API).
 35. ✅ Отмена брони по токену-ссылке (Экран 3): колонка `bookings.cancelToken` (nullable + unique; миграция `ALTER`+индекс после колонки), токен `crypto.randomUUID()` в ответе `201` (`CreatedBooking`), `POST /api/bookings/cancel` (`204/404/400`), ссылка `${origin}/cancel/:token` с копированием на экране успеха, страница `/cancel/:token` (отмена по явной кнопке, не при открытии). [ADR-0006](docs/adr/0006-cancellation-by-token.md). 4 API + 3 RTL-теста.
-36. ✅ Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token` (capability, 404), `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` (старый слот свободен, новый занят; `200/400/404/409`, no-op на тот же слот), страница `/reschedule/:token` (текущее время + календарь + свободные слоты), ссылка «Перенести» на экране успеха. Схема БД не менялась. [ADR-0007](docs/adr/0007-reschedule-by-token.md). 6 API + 2 RTL-теста.
+36. ✅ Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token` (capability, 404), `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` (старый слот свободен, новый занят; `200/400/404/409`, no-op на тот же слот), страница `/reschedule/:token` (текущее время + календарь + свободные слоты), ссылка «Перенести» на экране успеха. Схема БД не менялась. [ADR-0007](docs/adr/0008-reschedule-by-token.md). 6 API + 2 RTL-теста.
 
 ## Что осталось (следующие шаги)
 
@@ -223,7 +223,7 @@
 | Правила доступности | Персистентная таблица `availability_rules` — одна строка `id=1`; `PUT` пересобирает свободные будущие слоты, занятые не трогает | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); `hosts`/`/api/v1` отложены |
 | Отмена брони | `DELETE /api/bookings/:id` удаляет строку → `isBooked` вычисляется join-ом, слот освобождается | Несовместимо с soft-delete из-за `UNIQUE(slotId)`; partial index отложен ([ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md)) |
 | Отмена гостем | Токен `cancelToken` (UUID, `UNIQUE`) в ответе на создание + `POST /api/bookings/cancel`; ссылка `/cancel/:token` | [ADR-0006](docs/adr/0006-cancellation-by-token.md); capability-модель без auth |
-| Перенос гостем | `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` по токену; старый слот свободен | [ADR-0007](docs/adr/0007-reschedule-by-token.md); переиспользует `UNIQUE(slotId)` и токен |
+| Перенос гостем | `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` по токену; старый слот свободен | [ADR-0007](docs/adr/0008-reschedule-by-token.md); переиспользует `UNIQUE(slotId)` и токен |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
