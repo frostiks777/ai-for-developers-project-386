@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.7.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.6.0...v1.7.0) (2026-09-23)
+
+
+### Features
+
+* allow rescheduling a booking by token link ([6d9cfff](https://github.com/frostiks777/ai-for-developers-project-386/commit/6d9cfff7599d694c4865e6aaa8cdf642219ace81))
+* **server:** add hosts table and versioned API v1 ([445b40c](https://github.com/frostiks777/ai-for-developers-project-386/commit/445b40cc608b529a88b3b0cd9ddcb95782df27bc))
+* **ui:** add design tokens, fonts and light/dark theme ([3c97980](https://github.com/frostiks777/ai-for-developers-project-386/commit/3c97980e0448dd0cb5fdcb2ab8cb8100b7a0d0b6))
+* **ui:** add mobile booking layout ([b163d03](https://github.com/frostiks777/ai-for-developers-project-386/commit/b163d036a467c219d0d9adddd4f35bf0e0d8e5c4))
+* **ui:** redesign booking page desktop layout ([14df808](https://github.com/frostiks777/ai-for-developers-project-386/commit/14df808e8463d0f34cd3a1505030a01fb10dd899))
+* **ui:** redesign organizer dashboard ([7293469](https://github.com/frostiks777/ai-for-developers-project-386/commit/7293469fc6e06a386f1a705f7501eff602533053))
+* **ui:** restyle booking dialog ([8d0513a](https://github.com/frostiks777/ai-for-developers-project-386/commit/8d0513a11c7cf5ea2f0acf2453d7cb8ce3177236))
+* **ui:** restyle booking success screen ([db5aec2](https://github.com/frostiks777/ai-for-developers-project-386/commit/db5aec205256e0663bcd49be0ec6444ec2e68a35))
+
+
+### Bug Fixes
+
+* **ui:** add theme toggle to organizer dashboard ([5a4e95e](https://github.com/frostiks777/ai-for-developers-project-386/commit/5a4e95e5d7fdae7cefb61628eec6d51858eb7706))
+
 ## [1.6.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.5.0...v1.6.0) (2026-09-23)
 
 
