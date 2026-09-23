@@ -42,3 +42,8 @@ export const availabilityRulesSchema = z
     message: 'Конец окна должен быть позже начала',
     path: ['windowEndHour'],
   })
+
+// Отмена брони по токену из ссылки (только сервер, зеркала на фронте нет)
+export const cancelBookingSchema = z.object({
+  token: z.string().trim().min(1, 'Укажите токен отмены'),
+})

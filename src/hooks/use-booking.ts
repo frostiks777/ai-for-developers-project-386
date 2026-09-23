@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { ApiError, createBooking } from '@/api/client'
-import type { Booking, CreateBookingBody } from '@/types/booking'
+import type { CreateBookingBody, CreatedBooking } from '@/types/booking'
 
 export function useBooking() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const bookSlot = async (body: CreateBookingBody): Promise<Booking | null> => {
+  const bookSlot = async (body: CreateBookingBody): Promise<CreatedBooking | null> => {
     setIsSubmitting(true)
 
     try {

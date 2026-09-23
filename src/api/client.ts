@@ -1,5 +1,10 @@
 import type { AvailabilityRules } from '@/types/availability'
-import type { Booking, BookingWithSlot, CreateBookingBody, TimeSlot } from '@/types/booking'
+import type {
+  BookingWithSlot,
+  CreateBookingBody,
+  CreatedBooking,
+  TimeSlot,
+} from '@/types/booking'
 
 export class ApiError extends Error {
   readonly status: number
@@ -49,8 +54,8 @@ export function fetchSlots(): Promise<TimeSlot[]> {
   return request<TimeSlot[]>('/api/slots')
 }
 
-export function createBooking(body: CreateBookingBody): Promise<Booking> {
-  return request<Booking>('/api/bookings', {
+export function createBooking(body: CreateBookingBody): Promise<CreatedBooking> {
+  return request<CreatedBooking>('/api/bookings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -65,6 +70,16 @@ export function fetchBookings(): Promise<BookingWithSlot[]> {
 
 export function cancelBooking(id: number): Promise<void> {
   return requestVoid(`/api/bookings/${id}`, { method: 'DELETE' })
+}
+
+export function cancelBookingByToken(token: string): Promise<void> {
+  return requestVoid('/api/bookings/cancel', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token }),
+  })
 }
 
 export function fetchAvailability(): Promise<AvailabilityRules> {

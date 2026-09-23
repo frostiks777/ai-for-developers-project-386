@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
 import { createBookingSchema } from '@/lib/validation'
-import type { Booking, TimeSlot } from '@/types/booking'
+import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { formatDateTimeInZone } from '@/utils/timezone'
 
 interface BookingDialogProps {
@@ -23,7 +23,7 @@ interface BookingDialogProps {
   timeZone: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  onBooked: (booking: Booking) => void
+  onBooked: (booking: CreatedBooking) => void
 }
 
 export function BookingDialog({

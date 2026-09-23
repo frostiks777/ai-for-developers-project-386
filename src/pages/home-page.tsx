@@ -7,14 +7,14 @@ import { MonthCalendar } from '@/components/month-calendar'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
 import { useAvailability } from '@/hooks/use-availability'
-import type { Booking, TimeSlot } from '@/types/booking'
+import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { formatDateTimeInZone, defaultTimeZone, toDateKeyInZone } from '@/utils/timezone'
 
 export default function HomePage() {
   const { slots, isLoading, error, refetch } = useAvailability()
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [bookedBooking, setBookedBooking] = useState<Booking | null>(null)
+  const [bookedBooking, setBookedBooking] = useState<CreatedBooking | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [timeZone, setTimeZone] = useState(defaultTimeZone)
 
@@ -32,7 +32,7 @@ export default function HomePage() {
     setIsDialogOpen(true)
   }
 
-  const handleBooked = (booking: Booking) => {
+  const handleBooked = (booking: CreatedBooking) => {
     setBookedBooking(booking)
     refetch()
   }

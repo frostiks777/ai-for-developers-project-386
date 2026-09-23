@@ -36,6 +36,7 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
           name: 'Иван',
           phone: '+79000000000',
           email: 'ivan@example.com',
+          cancelToken: 'test-token',
           createdAt: '2099-09-23T07:00:00.000Z',
         }),
         { status: 201 },
@@ -76,6 +77,18 @@ describe('HomePage: экран успеха', () => {
     expect(screen.getByText('Иван')).toBeInTheDocument()
     expect(screen.getByText('ivan@example.com')).toBeInTheDocument()
     expect(screen.getByText('30 мин')).toBeInTheDocument()
+  })
+
+  it('на экране успеха есть ссылка для отмены', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    await bookSlot(user)
+
+    const cancelLink = await screen.findByLabelText('Ссылка для отмены')
+    expect((cancelLink as HTMLInputElement).value).toContain('/cancel/test-token')
   })
 
   it('на экране успеха есть экспорт в календарь', async () => {

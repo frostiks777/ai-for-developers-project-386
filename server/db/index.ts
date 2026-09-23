@@ -34,6 +34,7 @@ client.exec(`
     phone TEXT,
     email TEXT NOT NULL,
     comment TEXT,
+    cancelToken TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
@@ -63,6 +64,13 @@ if (!bookingColumns().some((column) => column.name === 'comment')) {
   client.exec(`ALTER TABLE bookings ADD COLUMN comment TEXT`)
 }
 
+// cancelToken появился позже — колонка nullable (у старых броней токена нет)
+if (!bookingColumns().some((column) => column.name === 'cancelToken')) {
+  client.exec(`ALTER TABLE bookings ADD COLUMN cancelToken TEXT`)
+}
+
+client.exec(`CREATE UNIQUE INDEX IF NOT EXISTS bookings_cancelToken_unique ON bookings(cancelToken)`)
+
 // phone стал необязательным: SQLite не умеет снимать NOT NULL, пересобираем таблицу
 if (bookingColumns().find((column) => column.name === 'phone')?.notnull === 1) {
   client.exec(`
@@ -75,12 +83,14 @@ if (bookingColumns().find((column) => column.name === 'phone')?.notnull === 1) {
       phone TEXT,
       email TEXT NOT NULL,
       comment TEXT,
+      cancelToken TEXT,
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    INSERT INTO bookings (id, slotId, name, phone, email, comment, createdAt)
-      SELECT id, slotId, name, phone, email, comment, createdAt FROM bookings_old;
+    INSERT INTO bookings (id, slotId, name, phone, email, comment, cancelToken, createdAt)
+      SELECT id, slotId, name, phone, email, comment, cancelToken, createdAt FROM bookings_old;
     DROP TABLE bookings_old;
     CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
+    CREATE UNIQUE INDEX IF NOT EXISTS bookings_cancelToken_unique ON bookings(cancelToken);
   `)
 }
 
