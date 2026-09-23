@@ -1,8 +1,17 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 
 import type { TimeSlot } from '@/types/booking'
 import HomePage from './home-page'
+
+function renderHomePage() {
+  return render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>,
+  )
+}
 
 const slot: TimeSlot = {
   id: 1,
@@ -57,7 +66,7 @@ describe('HomePage: экран успеха', () => {
     vi.stubGlobal('fetch', mockFetch())
 
     const user = userEvent.setup()
-    render(<HomePage />)
+    renderHomePage()
 
     await bookSlot(user)
 
@@ -73,7 +82,7 @@ describe('HomePage: экран успеха', () => {
     vi.stubGlobal('fetch', mockFetch())
 
     const user = userEvent.setup()
-    render(<HomePage />)
+    renderHomePage()
 
     await bookSlot(user)
     await user.click(await screen.findByRole('button', { name: 'Выбрать другое время' }))
@@ -91,7 +100,7 @@ describe('HomePage: экран успеха', () => {
     )
 
     const user = userEvent.setup()
-    render(<HomePage />)
+    renderHomePage()
 
     await screen.findByRole('button', { name: 'Забронировать' })
 
@@ -110,7 +119,7 @@ describe('HomePage: экран успеха', () => {
     vi.stubGlobal('fetch', mockFetch(twoSlots))
 
     const user = userEvent.setup()
-    render(<HomePage />)
+    renderHomePage()
 
     expect(await screen.findAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
     expect(screen.getByText(/10:00/)).toBeInTheDocument()

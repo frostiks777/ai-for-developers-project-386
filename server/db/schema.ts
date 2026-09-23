@@ -24,3 +24,16 @@ export const bookings = sqliteTable('bookings', {
     .notNull()
     .default(sql`(datetime('now'))`),
 })
+
+// Правила доступности организатора — одна строка с id = 1 (MVP: один хост)
+export const availabilityRules = sqliteTable('availability_rules', {
+  id: integer('id').primaryKey(),
+  // Дни недели по JS (0 — вс … 6 — сб), JSON-массив
+  weekdays: text('weekdays').notNull(),
+  windowStartHour: integer('windowStartHour').notNull(),
+  windowEndHour: integer('windowEndHour').notNull(),
+  slotDurationMin: integer('slotDurationMin').notNull(),
+  bufferMin: integer('bufferMin').notNull(),
+  minNoticeMin: integer('minNoticeMin').notNull(),
+  horizonDays: integer('horizonDays').notNull(),
+})

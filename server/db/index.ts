@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
 import { gte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { defaultAvailabilityRules, generateSlotStarts } from '../availability'
+import { defaultAvailabilityRules, generateSlotStarts, rulesFromRow } from '../availability'
 import * as schema from './schema'
 
 // ESM: __dirname недоступен, вычисляем пути от import.meta.url
@@ -37,6 +37,16 @@ client.exec(`
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
+  CREATE TABLE IF NOT EXISTS availability_rules (
+    id INTEGER PRIMARY KEY,
+    weekdays TEXT NOT NULL,
+    windowStartHour INTEGER NOT NULL,
+    windowEndHour INTEGER NOT NULL,
+    slotDurationMin INTEGER NOT NULL,
+    bufferMin INTEGER NOT NULL,
+    minNoticeMin INTEGER NOT NULL,
+    horizonDays INTEGER NOT NULL
+  );
 `)
 
 // Обратная совместимость: приводим старые БД к актуальной схеме
@@ -77,7 +87,11 @@ if (bookingColumns().find((column) => column.name === 'phone')?.notnull === 1) {
 export const db = drizzle(client, { schema })
 
 // Сидирование: если будущих слотов нет — генерируем по правилам доступности
-// (рабочие дни и окно, шаг «длительность + буфер», minNotice, горизонт)
+// (рабочие дни и окно, шаг «длительность + буфер», minNotice, горизонт).
+// Правила берём из таблицы, если организатор их сохранял, иначе — дефолтные.
+const storedRules = db.select().from(schema.availabilityRules).get()
+const rules = storedRules ? rulesFromRow(storedRules) : defaultAvailabilityRules
+
 const hasFutureSlots = db
   .select()
   .from(schema.slots)
@@ -85,13 +99,13 @@ const hasFutureSlots = db
   .get()
 
 if (!hasFutureSlots) {
-  const slotStarts = generateSlotStarts(new Date())
+  const slotStarts = generateSlotStarts(new Date(), rules)
 
   db.insert(schema.slots)
     .values(
       slotStarts.map((startAt) => ({
         startAt,
-        durationMin: defaultAvailabilityRules.slotDurationMin,
+        durationMin: rules.slotDurationMin,
       })),
     )
     .run()

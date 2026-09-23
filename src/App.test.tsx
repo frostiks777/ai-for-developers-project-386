@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+
 import { App } from './App'
 
 vi.stubGlobal(
@@ -6,9 +8,17 @@ vi.stubGlobal(
   vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
 )
 
+function renderApp() {
+  return render(
+    <MemoryRouter>
+      <App />
+    </MemoryRouter>,
+  )
+}
+
 describe('App', () => {
   it('показывает заголовок страницы', async () => {
-    render(<App />)
+    renderApp()
     expect(await screen.findByRole('heading', { name: 'Календарь звонков' })).toBeInTheDocument()
   })
 
@@ -27,7 +37,7 @@ describe('App', () => {
       ),
     )
 
-    render(<App />)
+    renderApp()
 
     expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
   })

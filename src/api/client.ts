@@ -1,4 +1,5 @@
-import type { Booking, CreateBookingBody, TimeSlot } from '@/types/booking'
+import type { AvailabilityRules } from '@/types/availability'
+import type { Booking, BookingWithSlot, CreateBookingBody, TimeSlot } from '@/types/booking'
 
 export class ApiError extends Error {
   readonly status: number
@@ -36,6 +37,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
+async function requestVoid(path: string, init?: RequestInit): Promise<void> {
+  const response = await fetch(path, init)
+
+  if (!response.ok) {
+    throw new ApiError(response.status, await readErrorMessage(response))
+  }
+}
+
 export function fetchSlots(): Promise<TimeSlot[]> {
   return request<TimeSlot[]>('/api/slots')
 }
@@ -47,5 +56,27 @@ export function createBooking(body: CreateBookingBody): Promise<Booking> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
+  })
+}
+
+export function fetchBookings(): Promise<BookingWithSlot[]> {
+  return request<BookingWithSlot[]>('/api/bookings')
+}
+
+export function cancelBooking(id: number): Promise<void> {
+  return requestVoid(`/api/bookings/${id}`, { method: 'DELETE' })
+}
+
+export function fetchAvailability(): Promise<AvailabilityRules> {
+  return request<AvailabilityRules>('/api/availability')
+}
+
+export function updateAvailability(rules: AvailabilityRules): Promise<AvailabilityRules> {
+  return request<AvailabilityRules>('/api/availability', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(rules),
   })
 }

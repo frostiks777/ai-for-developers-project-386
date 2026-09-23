@@ -21,6 +21,56 @@ export const defaultAvailabilityRules: AvailabilityRules = {
   horizonDays: 14,
 }
 
+// Строка таблицы availability_rules: weekdays хранятся как JSON-массив
+export interface AvailabilityRulesRow {
+  weekdays: string
+  windowStartHour: number
+  windowEndHour: number
+  slotDurationMin: number
+  bufferMin: number
+  minNoticeMin: number
+  horizonDays: number
+}
+
+function parseWeekdays(value: string): number[] {
+  try {
+    const parsed: unknown = JSON.parse(value)
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (day): day is number => Number.isInteger(day) && day >= 0 && day <= 6,
+      )
+    }
+  } catch {
+    // повреждённое значение — вернём пустой список, вызывающий код отбросит правило
+  }
+
+  return []
+}
+
+export function rulesFromRow(row: AvailabilityRulesRow): AvailabilityRules {
+  return {
+    weekdays: parseWeekdays(row.weekdays),
+    windowStartHour: row.windowStartHour,
+    windowEndHour: row.windowEndHour,
+    slotDurationMin: row.slotDurationMin,
+    bufferMin: row.bufferMin,
+    minNoticeMin: row.minNoticeMin,
+    horizonDays: row.horizonDays,
+  }
+}
+
+export function rulesToRow(rules: AvailabilityRules): AvailabilityRulesRow {
+  return {
+    weekdays: JSON.stringify([...new Set(rules.weekdays)].sort((a, b) => a - b)),
+    windowStartHour: rules.windowStartHour,
+    windowEndHour: rules.windowEndHour,
+    slotDurationMin: rules.slotDurationMin,
+    bufferMin: rules.bufferMin,
+    minNoticeMin: rules.minNoticeMin,
+    horizonDays: rules.horizonDays,
+  }
+}
+
 const MS_PER_MINUTE = 60 * 1000
 
 // Генерирует ISO-времена начал слотов от now на горизонт вперёд.

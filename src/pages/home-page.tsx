@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { BookingDialog } from '@/components/booking-dialog'
 import { BookingSuccess } from '@/components/booking-success'
@@ -44,7 +45,12 @@ export default function HomePage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Календарь звонков</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold tracking-tight">Календарь звонков</h1>
+          <Link to="/dashboard" className="text-sm text-primary underline-offset-4 hover:underline">
+            Панель организатора
+          </Link>
+        </div>
         <p className="mt-2 text-muted-foreground">
           Выберите свободное время и забронируйте звонок в один клик.
         </p>
