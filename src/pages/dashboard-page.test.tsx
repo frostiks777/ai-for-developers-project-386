@@ -4,6 +4,11 @@ import { MemoryRouter } from 'react-router-dom'
 
 import type { AvailabilityRules } from '@/types/availability'
 import type { BookingWithSlot } from '@/types/booking'
+import {
+  defaultTimeZone,
+  formatDayTitle,
+  toDateKeyInZone,
+} from '@/utils/timezone'
 import DashboardPage from './dashboard-page'
 
 const booking: BookingWithSlot = {
@@ -157,8 +162,76 @@ describe('BookingsTable', () => {
     vi.stubGlobal('fetch', mockFetch([{ ...booking, phone: null }]))
     renderDashboard()
 
-    const row = (await screen.findByText('Иван')).closest('tr')
+    const row = (await screen.findByText('Иван')).closest('li')
     expect(row).not.toBeNull()
     expect(within(row as HTMLElement).queryByText('+79000000000')).toBeNull()
+  })
+})
+
+describe('DashboardPage grouping and filter', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('группирует брони по дням', async () => {
+    const second: BookingWithSlot = {
+      ...booking,
+      id: 2,
+      slotId: 11,
+      name: 'Мария',
+      email: 'maria@example.com',
+      comment: null,
+      startAt: '2099-09-25T07:00:00.000Z',
+    }
+    vi.stubGlobal('fetch', mockFetch([booking, second]))
+    renderDashboard()
+
+    expect(await screen.findByText('Иван')).toBeInTheDocument()
+    expect(screen.getByText('Мария')).toBeInTheDocument()
+
+    const firstHeading = formatDayTitle(
+      toDateKeyInZone(new Date(booking.startAt), defaultTimeZone),
+    )
+    const secondHeading = formatDayTitle(
+      toDateKeyInZone(new Date(second.startAt), defaultTimeZone),
+    )
+    expect(screen.getByRole('heading', { name: firstHeading })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: secondHeading })).toBeInTheDocument()
+  })
+
+  it('фильтр «Сегодня» скрывает завтрашнюю бронь', async () => {
+    const now = new Date()
+    const todayBooking: BookingWithSlot = {
+      ...booking,
+      id: 3,
+      slotId: 12,
+      name: 'Сегодняшний',
+      startAt: now.toISOString(),
+    }
+    const tomorrowBooking: BookingWithSlot = {
+      ...booking,
+      id: 4,
+      slotId: 13,
+      name: 'Завтрашний',
+      startAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+    }
+    vi.stubGlobal('fetch', mockFetch([todayBooking, tomorrowBooking]))
+    renderDashboard()
+
+    const user = userEvent.setup()
+    expect(await screen.findByText('Сегодняшний')).toBeInTheDocument()
+    expect(screen.getByText('Завтрашний')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Сегодня' }))
+
+    await waitFor(() => expect(screen.queryByText('Завтрашний')).toBeNull())
+    expect(screen.getByText('Сегодняшний')).toBeInTheDocument()
+  })
+
+  it('показывает подсказку о числе слотов', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+    renderDashboard()
+
+    expect(await screen.findByText('≈ 12 слотов в рабочий день')).toBeInTheDocument()
   })
 })
