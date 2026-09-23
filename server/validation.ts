@@ -47,3 +47,9 @@ export const availabilityRulesSchema = z
 export const cancelBookingSchema = z.object({
   token: z.string().trim().min(1, 'Укажите токен отмены'),
 })
+
+// Перенос брони на другой слот по токену
+export const rescheduleBookingSchema = z.object({
+  token: z.string().trim().min(1, 'Укажите токен брони'),
+  slotId: z.int().positive('Некорректный слот'),
+})

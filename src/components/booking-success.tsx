@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -83,6 +84,9 @@ export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSucc
           <a href={googleCalendarUrl(booking, slot)} target="_blank" rel="noreferrer">
             Добавить в Google Календарь
           </a>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to={`/reschedule/${booking.cancelToken}`}>Перенести</Link>
         </Button>
         <Button onClick={onReset}>Выбрать другое время</Button>
       </div>

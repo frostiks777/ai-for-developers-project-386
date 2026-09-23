@@ -82,6 +82,20 @@ export function cancelBookingByToken(token: string): Promise<void> {
   })
 }
 
+export function fetchBookingByToken(token: string): Promise<BookingWithSlot> {
+  return request<BookingWithSlot>(`/api/bookings/by-token/${encodeURIComponent(token)}`)
+}
+
+export function rescheduleBookingByToken(token: string, slotId: number): Promise<BookingWithSlot> {
+  return request<BookingWithSlot>('/api/bookings/reschedule', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token, slotId }),
+  })
+}
+
 export function fetchAvailability(): Promise<AvailabilityRules> {
   return request<AvailabilityRules>('/api/availability')
 }
