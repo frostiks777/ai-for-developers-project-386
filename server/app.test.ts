@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 
 import { buildApp } from './app'
 import { db } from './db'
-import { slots } from './db/schema'
+import { bookings, slots } from './db/schema'
 import type { Booking, BookingWithSlot, TimeSlot } from './types'
 
 let app: FastifyInstance
@@ -105,6 +105,35 @@ describe('GET /api/bookings', () => {
     const startAtList = response.json<BookingWithSlot[]>().map((item) => item.startAt)
 
     expect(startAtList).toEqual([...startAtList].sort())
+  })
+})
+
+describe('целостность bookings.slotId', () => {
+  it('запрещает вторую бронь на тот же слот на уровне БД', async () => {
+    const slot = db
+      .insert(slots)
+      .values({ startAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), durationMin: 30 })
+      .returning()
+      .get()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(slot.id),
+    })
+    expect(response.statusCode).toBe(201)
+
+    expect(() =>
+      db
+        .insert(bookings)
+        .values({
+          slotId: slot.id,
+          name: 'Пётр',
+          phone: '+79100000001',
+          email: 'petr@example.com',
+        })
+        .run(),
+    ).toThrowError(/UNIQUE/)
   })
 })
 

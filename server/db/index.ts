@@ -34,6 +34,7 @@ client.exec(`
     email TEXT NOT NULL,
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
 `)
 
 // Обратная совместимость: в БД, созданных до появления email, добавляем колонку
