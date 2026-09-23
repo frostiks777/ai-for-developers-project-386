@@ -21,7 +21,13 @@ const onBooked = vi.fn()
 
 function renderDialog() {
   return render(
-    <BookingDialog slot={slot} open onOpenChange={onOpenChange} onBooked={onBooked} />,
+    <BookingDialog
+      slot={slot}
+      timeZone="UTC"
+      open
+      onOpenChange={onOpenChange}
+      onBooked={onBooked}
+    />,
   )
 }
 

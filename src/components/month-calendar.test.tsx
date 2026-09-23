@@ -12,7 +12,12 @@ const onSelectDate = vi.fn()
 
 function renderCalendar(selectedDate: string, slots: TimeSlot[]) {
   return render(
-    <MonthCalendar slots={slots} selectedDate={selectedDate} onSelectDate={onSelectDate} />,
+    <MonthCalendar
+      slots={slots}
+      selectedDate={selectedDate}
+      timeZone="UTC"
+      onSelectDate={onSelectDate}
+    />,
   )
 }
 

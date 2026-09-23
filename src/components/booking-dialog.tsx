@@ -16,24 +16,23 @@ import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
 import { createBookingSchema } from '@/lib/validation'
 import type { Booking, TimeSlot } from '@/types/booking'
+import { formatDateTimeInZone } from '@/utils/timezone'
 
 interface BookingDialogProps {
   slot: TimeSlot | null
+  timeZone: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onBooked: (booking: Booking) => void
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-})
-
-function formatStartAt(startAt: string): string {
-  return dateTimeFormatter.format(new Date(startAt))
-}
-
-export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDialogProps) {
+export function BookingDialog({
+  slot,
+  timeZone,
+  open,
+  onOpenChange,
+  onBooked,
+}: BookingDialogProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -84,7 +83,7 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
         <DialogHeader>
           <DialogTitle>Бронирование звонка</DialogTitle>
           <DialogDescription>
-            {slot ? `${formatStartAt(slot.startAt)}, ${slot.durationMin} мин` : ''}
+            {slot ? `${formatDateTimeInZone(slot.startAt, timeZone)}, ${slot.durationMin} мин` : ''}
           </DialogDescription>
         </DialogHeader>
 
