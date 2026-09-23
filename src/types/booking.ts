@@ -10,6 +10,7 @@ export interface CreateBookingBody {
   name: string
   phone: string
   email: string
+  comment?: string
 }
 
 export interface Booking {
@@ -18,6 +19,7 @@ export interface Booking {
   name: string
   phone: string
   email: string
+  comment: string | null
   createdAt: string
 }
 
