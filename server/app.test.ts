@@ -201,6 +201,32 @@ describe('POST /api/bookings', () => {
     expect(response.json<Booking>().comment).toBeNull()
   })
 
+  it('создаёт бронь без телефона и сохраняет null', async () => {
+    const slot = createFutureSlot()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { slotId: slot.id, name: 'Иван', email: 'ivan@example.com' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json<Booking>().phone).toBeNull()
+  })
+
+  it('считает пустой телефон отсутствующим', async () => {
+    const slot = createFutureSlot()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: { ...validBody(slot.id), phone: '   ' },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json<Booking>().phone).toBeNull()
+  })
+
   it('сохраняет null для пустого комментария', async () => {
     const slot = createFutureSlot()
 
@@ -246,7 +272,6 @@ describe('POST /api/bookings', () => {
     ['без email', { email: undefined }],
     ['с невалидным email', { email: 'not-an-email' }],
     ['с пустым именем', { name: '   ' }],
-    ['с пустым телефоном', { phone: '  ' }],
     ['с невалидным телефоном', { phone: 'abcdef' }],
     ['с коротким телефоном', { phone: '+7 900' }],
     ['с слишком длинным комментарием', { comment: 'x'.repeat(1001) }],

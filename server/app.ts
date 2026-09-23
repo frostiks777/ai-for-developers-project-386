@@ -88,7 +88,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     try {
       const created = db
         .insert(bookings)
-        .values({ slotId, name, phone, email, comment: comment ?? null })
+        .values({ slotId, name, phone: phone ?? null, email, comment: comment ?? null })
         .returning()
         .get()
 

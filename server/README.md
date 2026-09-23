@@ -31,13 +31,15 @@ curl http://localhost:3000/api/slots
 ```bash
 curl -X POST http://localhost:3000/api/bookings \
   -H "Content-Type: application/json" \
-  -d '{"slotId":1,"name":"Иван","phone":"+79001234567"}'
-# 201 {"id":1,"slotId":1,"name":"Иван","phone":"+79001234567","createdAt":"2026-09-21 12:00:00"}
+  -d '{"slotId":1,"name":"Иван","email":"ivan@example.com","phone":"+79001234567"}'
+# 201 {"id":1,"slotId":1,"name":"Иван","phone":"+79001234567","email":"ivan@example.com","comment":null,"createdAt":"2026-09-21 12:00:00"}
 ```
+
+`phone` и `comment` — необязательные поля. Пустой `phone` сохраняется как `null`.
 
 Ошибки:
 
-- `400 { "error": "Невалидное тело запроса" }` — slotId не положительное целое или пустые name/phone
+- `400 { "error": "Невалидное тело запроса" }` — slotId не положительное целое, пустое name, невалидные email/phone
 - `404 { "error": "Слот не найден" }` — слота с таким id нет
 - `409 { "error": "Слот уже занят" }` — на слот уже есть бронь
 

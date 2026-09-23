@@ -39,6 +39,12 @@ export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSucc
           <dt className="text-muted-foreground">Имя:</dt>
           <dd>{booking.name}</dd>
         </div>
+        {booking.phone && (
+          <div className="flex gap-2">
+            <dt className="text-muted-foreground">Телефон:</dt>
+            <dd>{booking.phone}</dd>
+          </div>
+        )}
         <div className="flex gap-2">
           <dt className="text-muted-foreground">Email:</dt>
           <dd>{booking.email}</dd>

@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Medium закрыт полностью: TZ-селектор — последний пункт)
+> Дата последнего обновления: 2026-09-23 (Medium закрыт + телефон сделан опциональным)
 
 ## Текущее состояние
 
@@ -101,8 +101,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 51/51 passed (9 файлов: App, home-page, month-calendar, timezone-select, booking-dialog, use-availability, server/app, server/availability, timezone)
-✅ build: vite v6.4.3 — 344.85 kB JS (gzip 107.33), 16.93 kB CSS
+✅ test: 53/53 passed (9 файлов: App, home-page, month-calendar, timezone-select, booking-dialog, use-availability, server/app, server/availability, timezone)
+✅ build: vite v6.4.3 — 345.20 kB JS (gzip 107.37), 16.93 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
    GET /api/bookings 200 (бронь с startAt/durationMin)
@@ -172,11 +172,11 @@
 26. ✅ Месячная сетка (Medium #4): `src/components/month-calendar.tsx` (навигация по месяцам, метки дней со слотами, прошлые/пустые/занятые дни disabled, `aria-label=YYYY-MM-DD`), `src/utils/dates.ts` (`toDateKey`/`parseDateKey`/`startOfDay`); HomePage фильтрует список по выбранному дню на клиенте (activeDate = earliest slot, если выбранного дня больше нет). 3 теста компонента + интеграционный; API `?date=` сознательно отложен к генерации/TZ.
 27. ✅ Генерация слотов (Medium #5): `server/availability.ts` — `defaultAvailabilityRules` (Пн–Пт, 10:00–18:00 UTC, 30 мин, буфер 10, minNotice 120 мин, горизонт 14 дней) и чистая `generateSlotStarts(now, rules)`; сид в `server/db/index.ts` заменён генератором; `GET /api/slots` фильтрует `now + minNotice`; `POST /api/bookings` → 400 «Слот уже недоступен» в пределах minNotice. [ADR-0004](docs/adr/0004-slot-generation-rules.md). 4 unit + 2 API-теста.
 28. ✅ Таймзоны (Medium #6, последний): `src/utils/timezone.ts` (`toDateKeyInZone` через en-CA, `formatDateTimeInZone`, `timeZoneOptionLabel` с GMT-offset), `TimeZoneSelect` (нативный select, browser TZ по умолчанию + 6 популярных), `timeZone` прокинут в MonthCalendar (группировка дней), BookingDialog, BookingSuccess и список слотов; хранение — по-прежнему UTC ISO. 4 unit + 2 RTL-теста.
+29. ✅ Телефон опциональный (по спеке): zod `optional` + `transform` (пустой/`undefined` → не задан) + `refine` (валиден только если задан) в `server/validation.ts` ↔ `src/lib/validation.ts`; колонка `phone` стала nullable в Drizzle-схеме, миграция старых БД через пересборку таблицы (SQLite не умеет снимать `NOT NULL`); контракт `phone?: string` (вход) / `phone: string | null` (выход); в форме пометка «необязательно»; в экране успеха телефон показывается только если указан. 2 API + 1 RTL-тест.
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Телефон как опциональный (по спеке) — сейчас обязателен
 - [ ] Low-этап: `hosts`/`availability_rules` + `/api/v1`, `/dashboard`, 422 vs 400, `.ics`/Google Calendar, ESLint warning в `button.tsx`
 - [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
 
@@ -195,6 +195,7 @@
 | Фильтр слотов по дате | Клиентский (группировка по локальной дате в `MonthCalendar`/HomePage) | `GET /api/slots?date=` требует TZ-семантики — отложен к TZ-шагу; слотов ≤ ~112 (14 дней) |
 | Генерация слотов | Правила-константы в `server/availability.ts`, материализация в `slots` при старте, правила в UTC | [ADR-0004](docs/adr/0004-slot-generation-rules.md); `hosts/availability_rules` — Low-этап |
 | Таймзоны | Хранение — UTC ISO; отображение и группировка по дням — на клиенте в выбранном поясе (`Intl`, без зависимостей) | Селектор в UI, browser TZ по умолчанию; серверные `?date=`/`timezone` не нужны, пока слотов ≤ ~112 |
+| Телефон опционален | nullable-колонка + пересборка таблицы при старте (SQLite не умеет DROP NOT NULL) | По спеке телефон необязателен; `ALTER TABLE … ADD COLUMN` недостаточно |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
