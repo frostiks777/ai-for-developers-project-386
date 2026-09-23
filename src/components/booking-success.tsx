@@ -1,9 +1,11 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Calendar, Check, Download } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useMediaQuery } from '@/hooks/use-media-query'
+import { cn } from '@/lib/utils'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { buildIcs, downloadIcs, googleCalendarUrl } from '@/utils/calendar'
 import { formatDateTimeInZone } from '@/utils/timezone'
@@ -28,7 +30,9 @@ function formatTimeRange(slot: TimeSlot, timeZone: string): string {
 }
 
 export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSuccessProps) {
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const cancelUrl = `${window.location.origin}/cancel/${booking.cancelToken}`
+  const googleUrl = googleCalendarUrl(booking, slot)
 
   const handleCopy = async () => {
     try {
@@ -39,67 +43,166 @@ export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSucc
     }
   }
 
+  const handleDownload = () => {
+    downloadIcs(`booking-${booking.id}.ics`, buildIcs(booking, slot))
+  }
+
   return (
-    <section className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-      <Button variant="ghost" size="sm" className="-ml-2 mb-2" onClick={onReset}>
-        <ArrowLeft className="size-4" />
+    <section
+      className={cn(
+        'flex w-full flex-col',
+        isDesktop
+          ? 'mx-auto max-w-[600px] gap-4 rounded-card border bg-card p-8 pb-9 shadow-soft'
+          : 'min-h-[60dvh] gap-3.5',
+      )}
+    >
+      <Button
+        variant="ghost"
+        onClick={onReset}
+        className="-ml-2 min-h-[44px] self-start px-2.5 text-sm font-medium shadow-none"
+      >
+        <ArrowLeft className="size-4" strokeWidth={1.8} aria-hidden="true" />
         Назад
       </Button>
 
-      <h2 className="text-2xl font-semibold tracking-tight">Встреча успешно запланирована!</h2>
+      <div
+        className={cn(
+          'flex flex-col',
+          isDesktop ? 'items-start gap-4' : 'items-center gap-3.5 text-center',
+        )}
+      >
+        <div
+          aria-hidden="true"
+          className={cn(
+            'flex items-center justify-center rounded-full bg-success-soft text-success',
+            isDesktop ? 'size-16' : 'size-20',
+          )}
+        >
+          <Check
+            className={isDesktop ? 'size-8' : 'size-10'}
+            strokeWidth={isDesktop ? 2.4 : 2.6}
+            aria-hidden="true"
+          />
+        </div>
+        <h2
+          className={cn(
+            'font-serif font-semibold',
+            isDesktop ? 'text-[30px]' : 'text-center text-[26px] leading-tight',
+          )}
+        >
+          Встреча успешно запланирована!
+        </h2>
+        <p className="text-[15px] text-muted-foreground">
+          {isDesktop
+            ? 'Добавьте встречу в свой календарь, чтобы не пропустить звонок.'
+            : 'Добавьте её в календарь, чтобы не пропустить.'}
+        </p>
+      </div>
 
-      <dl className="mt-4 grid gap-2 text-sm">
-        <div className="flex gap-2">
-          <dt className="text-muted-foreground">Когда:</dt>
-          <dd>{formatTimeRange(slot, timeZone)}</dd>
+      <dl
+        className={cn(
+          'text-[15px]',
+          !isDesktop && 'rounded-2xl border border-border bg-card px-4',
+        )}
+      >
+        <div
+          className={cn(
+            'flex justify-between gap-4 border-t py-3',
+            isDesktop ? 'border-border' : 'border-transparent',
+          )}
+        >
+          <dt className="text-muted-foreground">Когда</dt>
+          <dd className="text-right font-semibold">{formatTimeRange(slot, timeZone)}</dd>
         </div>
-        <div className="flex gap-2">
-          <dt className="text-muted-foreground">Длительность:</dt>
-          <dd>{slot.durationMin} мин</dd>
+        <div className="flex justify-between gap-4 border-t border-border py-3">
+          <dt className="text-muted-foreground">Длительность</dt>
+          <dd className="text-right font-semibold">{slot.durationMin} мин</dd>
         </div>
-        <div className="flex gap-2">
-          <dt className="text-muted-foreground">Имя:</dt>
-          <dd>{booking.name}</dd>
+        <div className="flex justify-between gap-4 border-t border-border py-3">
+          <dt className="text-muted-foreground">Имя</dt>
+          <dd className="text-right font-semibold">{booking.name}</dd>
         </div>
         {booking.phone && (
-          <div className="flex gap-2">
-            <dt className="text-muted-foreground">Телефон:</dt>
-            <dd>{booking.phone}</dd>
+          <div className="flex justify-between gap-4 border-t border-border py-3">
+            <dt className="text-muted-foreground">Телефон</dt>
+            <dd className="text-right font-semibold">{booking.phone}</dd>
           </div>
         )}
-        <div className="flex gap-2">
-          <dt className="text-muted-foreground">Email:</dt>
-          <dd>{booking.email}</dd>
+        <div className="flex justify-between gap-4 border-t border-border py-3">
+          <dt className="text-muted-foreground">Email</dt>
+          <dd className="text-right font-semibold">{booking.email}</dd>
         </div>
       </dl>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div className={cn('flex flex-col', isDesktop ? 'gap-2.5' : 'mt-auto gap-2.5 pt-2')}>
+        {isDesktop ? (
+          <div className="flex gap-2.5">
+            <Button variant="outline" asChild className="h-11 flex-1">
+              <a href={googleUrl} target="_blank" rel="noreferrer">
+                <Calendar className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                Добавить в Google Календарь
+              </a>
+            </Button>
+            <Button variant="outline" onClick={handleDownload} className="h-11 flex-1">
+              <Download className="size-4" strokeWidth={1.8} aria-hidden="true" />
+              Скачать .ics
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" asChild className="h-12 rounded-xl">
+              <a href={googleUrl} target="_blank" rel="noreferrer" aria-label="Добавить в Google Календарь">
+                <Calendar className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                Google
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownload}
+              className="h-12 rounded-xl"
+              aria-label="Скачать .ics"
+            >
+              <Download className="size-4" strokeWidth={1.8} aria-hidden="true" />
+              Файл .ics
+            </Button>
+          </div>
+        )}
+
         <Button
           variant="outline"
-          onClick={() => downloadIcs(`booking-${booking.id}.ics`, buildIcs(booking, slot))}
+          asChild
+          className={cn('w-full', isDesktop ? 'h-11' : 'h-12 rounded-xl')}
         >
-          Скачать .ics
-        </Button>
-        <Button variant="outline" asChild>
-          <a href={googleCalendarUrl(booking, slot)} target="_blank" rel="noreferrer">
-            Добавить в Google Календарь
-          </a>
-        </Button>
-        <Button variant="outline" asChild>
           <Link to={`/reschedule/${booking.cancelToken}`}>Перенести</Link>
         </Button>
-        <Button onClick={onReset}>Выбрать другое время</Button>
-      </div>
 
-      <div className="mt-6 grid gap-2 text-sm">
-        <span className="text-muted-foreground">
-          Ссылка для отмены (сохраните её — по ней можно отменить встречу):
-        </span>
-        <div className="flex gap-2">
-          <Input readOnly value={cancelUrl} aria-label="Ссылка для отмены" />
-          <Button type="button" variant="outline" onClick={handleCopy}>
-            Скопировать
-          </Button>
+        <Button
+          onClick={onReset}
+          className={cn('w-full', isDesktop ? 'h-12' : 'h-14 rounded-2xl text-base font-bold')}
+        >
+          Выбрать другое время
+        </Button>
+
+        <div className="grid gap-2 pt-1">
+          <p className="text-[13px] text-muted-foreground">
+            Ссылка для отмены (сохраните её — по ней можно отменить встречу):
+          </p>
+          <div className={cn('flex gap-2', isDesktop ? 'flex-row' : 'flex-col')}>
+            <Input
+              readOnly
+              value={cancelUrl}
+              aria-label="Ссылка для отмены"
+              className={cn(!isDesktop && 'h-12 rounded-xl text-base')}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCopy}
+              className={cn('min-h-[44px] shrink-0', !isDesktop && 'h-12 rounded-xl')}
+            >
+              Скопировать
+            </Button>
+          </div>
         </div>
       </div>
     </section>
