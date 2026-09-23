@@ -91,6 +91,19 @@ describe('HomePage: экран успеха', () => {
     expect(screen.queryByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeNull()
   })
 
+  it('кнопка «Назад» на экране успеха возвращает к списку слотов', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    await bookSlot(user)
+    await user.click(await screen.findByRole('button', { name: 'Назад' }))
+
+    expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeNull()
+  })
+
   it('пересчитывает время слотов при смене часового пояса', async () => {
     vi.stubGlobal(
       'fetch',
