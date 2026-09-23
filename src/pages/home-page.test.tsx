@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 
 import type { TimeSlot } from '@/types/booking'
+import { toDateKeyInZone } from '@/utils/timezone'
 import HomePage from './home-page'
 
 function renderHomePage() {
@@ -188,6 +189,55 @@ describe('HomePage: экран успеха', () => {
     await user.click(screen.getByRole('button', { name: '09:00' }))
 
     expect(screen.getByRole('button', { name: 'Забронировать' })).toHaveTextContent('09:00')
+  })
+})
+
+describe('HomePage: мобильная раскладка', () => {
+  const originalMatchMedia = window.matchMedia
+
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    window.matchMedia = (() =>
+      ({
+        matches: false,
+        media: '(min-width: 1024px)',
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia
+  })
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia
+  })
+
+  it('показывает ленту дат, раскрывает календарь по «Весь месяц» и одну кнопку «Забронировать»', async () => {
+    const mobileSlot: TimeSlot = {
+      id: 1,
+      startAt: new Date(2099, 8, 24, 10, 0).toISOString(),
+      durationMin: 30,
+      isBooked: false,
+    }
+    vi.stubGlobal('fetch', mockFetch([mobileSlot]))
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    const dateKey = toDateKeyInZone(
+      new Date(mobileSlot.startAt),
+      Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    )
+
+    expect(await screen.findByRole('button', { name: dateKey })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Следующий месяц' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Весь месяц' }))
+
+    expect(screen.getByRole('button', { name: 'Следующий месяц' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
   })
 })
 

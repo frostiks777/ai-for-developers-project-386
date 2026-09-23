@@ -49,6 +49,19 @@ export function formatDayTitle(dateKey: string): string {
   return title.charAt(0).toUpperCase() + title.slice(1)
 }
 
+// Короткий заголовок дня для мобильной панели: «Чт, 24 сентября»
+export function formatDayShortTitle(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const title = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+
+  return title.charAt(0).toUpperCase() + title.slice(1)
+}
+
 export function formatTimeRange(
   slot: { startAt: string; durationMin: number },
   timeZone: string,
