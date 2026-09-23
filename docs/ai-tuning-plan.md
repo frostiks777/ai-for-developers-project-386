@@ -1,6 +1,6 @@
 # План тюнинга AI-агентов для проекта «Календарь звонков»
 
-> Источник принципов: внешняя методичка `ai_agent_tuning_plan.md` (память/контекст, процессные скиллы, MCP, верификация, безопасность), адаптированная под этот стек: **Node.js + TypeScript + Fastify 5 + React 18 + Vite 6 + shadcn/ui + Drizzle ORM + SQLite + Vitest 3 + ESLint 9**.
+> Источник принципов: внешняя методичка `ai_agent_tuning_plan.md` (память/контекст, процессные скиллы, MCP, верификация, безопасность), адаптированная под этот стек: **Node.js + TypeScript + Fastify 5 + React 18 + Vite 6 + shadcn/ui + Drizzle ORM + SQLite + Vitest 4 + ESLint 9**.
 >
 > Дата: 2026-09-22.Автор: AI-агент (аудит + проектирование).
 
