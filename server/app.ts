@@ -68,7 +68,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
-      return reply.code(400).send({ error: message })
+      return reply.code(422).send({ error: message })
     }
 
     const { slotId, name, phone, email, comment } = parsed.data
@@ -133,7 +133,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Укажите токен отмены'
-      return reply.code(400).send({ error: message })
+      return reply.code(422).send({ error: message })
     }
 
     const deleted = db
@@ -158,7 +158,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Невалидные правила доступности'
-      return reply.code(400).send({ error: message })
+      return reply.code(422).send({ error: message })
     }
 
     saveAvailabilityRules(parsed.data)
