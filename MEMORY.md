@@ -212,6 +212,7 @@
 
 ## Что осталось (следующие шаги)
 
+- [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница через `grill-with-docs` + `CONTEXT.md` + ADR + `implement`; (2) проектирование бронирования через `wayfinder` → `to-spec` → `to-tickets`, Design First: `TypeSpec → OpenAPI → SDK + серверные артефакты`; (3) реализация тикетов через `implement` + Playwright; (4) Docker/деплой — **уже выполнено**. Шаги 1–3 не начаты; подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
