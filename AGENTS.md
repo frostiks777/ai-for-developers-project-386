@@ -44,10 +44,12 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   ├── Структура проекта.md
 │   └── Каркас приложения.md
 ├── docs/adr/          # Architecture Decision Records (ADR-0001, …)
+├── docs/agents/       # Конфиг скиллов: issue-tracker / triage-labels / domain
 ├── public/            # Статика
 ├── .agents/
 │   └── skills/        # OpenCode SKILL.md (commit-push, interview, plan, ponytail, tdd, verify)
 ├── MEMORY.md          # Долгосрочное состояние проекта между сессиями
+├── skills-lock.json   # Манифест установленных скиллов (mattpocock/skills)
 ├── opencode.jsonc     # Конфигурация opencode (модели, MCP, субагенты)
 ├── package.json
 ├── tsconfig.json

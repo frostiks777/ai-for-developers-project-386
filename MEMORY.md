@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Low-этап: панель организатора `/dashboard` — список броней, отмена, настройки доступности)
+> Дата последнего обновления: 2026-09-23 (Redesign этап 2 + скиллы Matt Pocock + хосты/API v1)
 
 ## Текущее состояние
 
@@ -118,8 +118,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 87/87 passed (14 файлов: App, home-page, dashboard-page, cancel-page, reschedule-page, month-calendar, timezone-select, booking-dialog, use-availability, calendar, server/app, server/dashboard, server/availability, timezone)
-✅ build: vite v6.4.3 — 400.10 kB JS (gzip 126.01), 17.57 kB CSS
+✅ test: 98/98 passed (16 файлов: App, home-page, dashboard-page, cancel-page, reschedule-page, month-calendar, timezone-select, booking-dialog, theme-toggle, use-availability, calendar, server/app, server/dashboard, server/hosts, server/availability, timezone)
+✅ build: vite v6.4.3 — 413.54 kB JS (gzip 129.38), 37.80 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
    GET /api/bookings 200 (бронь с startAt/durationMin)
@@ -198,11 +198,16 @@
 35. ✅ Отмена брони по токену-ссылке (Экран 3): колонка `bookings.cancelToken` (nullable + unique; миграция `ALTER`+индекс после колонки), токен `crypto.randomUUID()` в ответе `201` (`CreatedBooking`), `POST /api/bookings/cancel` (`204/404/400`), ссылка `${origin}/cancel/:token` с копированием на экране успеха, страница `/cancel/:token` (отмена по явной кнопке, не при открытии). [ADR-0006](docs/adr/0006-cancellation-by-token.md). 4 API + 3 RTL-теста.
 36. ✅ Перенос брони по токену (Экран 3): `GET /api/bookings/by-token/:token` (capability, 404), `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` (старый слот свободен, новый занят; `200/400/404/409`, no-op на тот же слот), страница `/reschedule/:token` (текущее время + календарь + свободные слоты), ссылка «Перенести» на экране успеха. Схема БД не менялась. [ADR-0008](docs/adr/0008-reschedule-by-token.md). 6 API + 2 RTL-теста.
 37. ✅ `422` вместо `400` на невалидное тело (спека): zod-ошибки в `POST /api/bookings`, `POST /api/bookings/cancel`, `PUT /api/availability` → `422 Unprocessable Entity`; бизнес-ошибки (прошедший слот, `minNotice`, некорректный `:id`) остаются `400`. Тесты и доки обновлены.
+38. ✅ Визуальный редизайн, **Этап 1** (`3c97980`): токены в `src/index.css`, шрифты (`@fontsource/golos-text`, `@fontsource/lora`), `ThemeProvider`/`useTheme`/`ThemeToggle`, `useMediaQuery`, анти-флеш-скрипт в `index.html`, стабы `matchMedia`/`localStorage` в `src/test/setup.ts`. [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) (Proposed).
+39. ✅ Визуальный редизайн, **Этап 2** (`14df808`): Desktop-раскладка страницы бронирования — `AppHeader`, `HostInfo` (слот-карточка хоста), `SlotGrid`, `MonthCalendar`/`TimeZoneSelect` обновлены, `src/config/host.ts`, `src/utils/plural.ts`. `minNoticeMin` поднят из `HostInfo` в `HomePage` (порядок `fetch` важен для контрактного `App.test`). 91/91 тестов зелёные.
+40. ✅ Скиллы и агентная среда (шаг курса, `6aa21ce`): установлен набор [mattpocock/skills](https://github.com/mattpocock/skills) в `.agents/skills/` (`npx skills@latest add mattpocock/skills --agent '*' -y`, 38 скилов) + `skills-lock.json`; настроено через `setup-matt-pocock-skills`: трекер — GitHub Issues, метки — дефолтные, домен — single-context. Записано в `docs/agents/{issue-tracker,triage-labels,domain}.md`, в `AGENTS.md` добавлен раздел `## Agent skills`. Лишние `.claude/`/`agent/` удалены (конвенция `.agents/skills/`).
+41. ✅ Хосты + API v1 (`server/hosts.ts`, аддитивно): таблица `hosts` (UUID PK, unique slug), сид дефолтного хоста (`slug=default`), `GET /api/v1/hosts/:slug/settings` и `GET /api/v1/hosts/:slug/slots?date=&timezone=` (`404` unknown slug, `400` дата/пояс); `selectFutureSlots()` переиспользован; `/api/*` без изменений. [ADR-0009](docs/adr/0009-hosts-and-api-v1.md). 7 API-тестов. Итог: 98/98 тестов.
 
 ## Что осталось (следующие шаги)
 
+- [ ] Дальнейшие этапы редизайна (этапы 3–7 по `docs/design/implementation-plan.md`)
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: `hosts` + `/api/v1/hosts/:slug/...`, авторизация `/dashboard`
+- [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
 ## Ключевые решения
 
@@ -238,6 +243,8 @@
 | Архитектура сервера | Фабрика `buildApp()` в `server/app.ts`, `server/index.ts` — только listen | Тесты через `app.inject()` без реального порта |
 | БД в тестах | `DATABASE_PATH=:memory:` (`vite.config.ts` → `test.env`) | Изоляция тестов от `server/data/app.db` |
 | Upstream-скилы | Копия upstream-репо в `.agents/skills/<name>/`, имена = frontmatter `name:`, deep-рекурсия (`references/`, `scripts/`) | Доступны всем агентам в проекте (не только opencode); не зависят от локального кеша персональных скилов и плагинов |
+| Хосты + API v1 | Аддитивный слой: таблица `hosts` (UUID PK, unique slug), `/api/v1/hosts/:slug/settings|slots`; `/api/*` не тронут | [ADR-0009](docs/adr/0009-hosts-and-api-v1.md); основа мульти-хоста без ломающей миграции |
+| Скиллы Matt Pocock | Набор `mattpocock/skills` в `.agents/skills/` + `skills-lock.json`; конфиг трекера/меток/домена в `docs/agents/` | Требование шага курса: GitHub Issues, дефолтные метки, single-context (`CONTEXT.md` + `docs/adr/`) |
 
 ## Окружение
 
