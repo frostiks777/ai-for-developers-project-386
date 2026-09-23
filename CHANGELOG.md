@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.2.0...v1.3.0) (2026-09-23)
+
+
+### Features
+
+* add organizer dashboard with cancellation and availability ([1d0c3f0](https://github.com/frostiks777/ai-for-developers-project-386/commit/1d0c3f04bad5645eabd82e3dca93237b0650d0bc))
+
 ## [1.2.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.1.0...v1.2.0) (2026-09-23)
 
 
