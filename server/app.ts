@@ -4,18 +4,18 @@ import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
 import { eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
-import { defaultAvailabilityRules } from './availability'
 import { db } from './db'
 import { bookings, slots } from './db/schema'
+import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
 import type { BookingWithSlot, TimeSlot } from './types'
-import { createBookingSchema } from './validation'
+import { availabilityRulesSchema, createBookingSchema } from './validation'
 
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
   // В тестах логи Fastify не нужны (vitest выставляет NODE_ENV=test)
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
 
-  const minNoticeMs = defaultAvailabilityRules.minNoticeMin * 60 * 1000
+  const minNoticeMs = () => loadAvailabilityRules().minNoticeMin * 60 * 1000
 
   app.get('/health', () => ({ status: 'ok' }))
 
@@ -30,7 +30,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       })
       .from(slots)
       .leftJoin(bookings, eq(bookings.slotId, slots.id))
-      .where(gte(slots.startAt, new Date(Date.now() + minNoticeMs).toISOString()))
+      .where(gte(slots.startAt, new Date(Date.now() + minNoticeMs()).toISOString()))
       .orderBy(slots.startAt)
       .all()
 
@@ -81,7 +81,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
     }
 
-    if (slot.startAt < new Date(Date.now() + minNoticeMs).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
       return reply.code(400).send({ error: 'Слот уже недоступен' })
     }
 
@@ -100,6 +100,41 @@ export async function buildApp(): Promise<FastifyInstance> {
 
       throw error
     }
+  })
+
+  // Отмена брони организатором — слот снова становится свободным
+  app.delete('/api/bookings/:id', (request, reply) => {
+    const id = Number((request.params as { id: string }).id)
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(400).send({ error: 'Некорректный id брони' })
+    }
+
+    const deleted = db.delete(bookings).where(eq(bookings.id, id)).returning().get()
+
+    if (!deleted) {
+      return reply.code(404).send({ error: 'Бронь не найдена' })
+    }
+
+    return reply.code(204).send()
+  })
+
+  // Текущие правила доступности организатора
+  app.get('/api/availability', () => loadAvailabilityRules())
+
+  // Обновление правил: сохраняем и пересобираем будущие свободные слоты
+  app.put('/api/availability', (request, reply) => {
+    const parsed = availabilityRulesSchema.safeParse(request.body)
+
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидные правила доступности'
+      return reply.code(400).send({ error: message })
+    }
+
+    saveAvailabilityRules(parsed.data)
+    regenerateFutureSlots(parsed.data)
+
+    return loadAvailabilityRules()
   })
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/
