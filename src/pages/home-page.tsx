@@ -2,9 +2,11 @@ import { useState } from 'react'
 
 import { BookingDialog } from '@/components/booking-dialog'
 import { BookingSuccess } from '@/components/booking-success'
+import { MonthCalendar } from '@/components/month-calendar'
 import { Button } from '@/components/ui/button'
 import { useAvailability } from '@/hooks/use-availability'
 import type { Booking, TimeSlot } from '@/types/booking'
+import { toDateKey } from '@/utils/dates'
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
   dateStyle: 'medium',
@@ -20,6 +22,16 @@ export default function HomePage() {
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [bookedBooking, setBookedBooking] = useState<Booking | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  const slotDates = slots.map((slot) => toDateKey(new Date(slot.startAt)))
+  const activeDate =
+    selectedDate !== null && slotDates.includes(selectedDate)
+      ? selectedDate
+      : (slotDates[0] ?? null)
+  const visibleSlots = activeDate
+    ? slots.filter((slot) => toDateKey(new Date(slot.startAt)) === activeDate)
+    : slots
 
   const handleBookingClick = (slot: TimeSlot) => {
     setSelectedSlot(slot)
@@ -56,26 +68,33 @@ export default function HomePage() {
           {!isLoading && !error && slots.length === 0 && <p>Нет доступных слотов</p>}
 
           {!isLoading && !error && slots.length > 0 && (
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {slots.map((slot) => (
-                <li
-                  key={slot.id}
-                  className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm"
-                >
-                  <p className="font-medium">{formatStartAt(slot.startAt)}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Длительность: {slot.durationMin} мин
-                  </p>
-                  <Button
-                    className="mt-4"
-                    disabled={slot.isBooked}
-                    onClick={() => handleBookingClick(slot)}
+            <div className="grid gap-6">
+              <MonthCalendar
+                slots={slots}
+                selectedDate={activeDate ?? ''}
+                onSelectDate={setSelectedDate}
+              />
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {visibleSlots.map((slot) => (
+                  <li
+                    key={slot.id}
+                    className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm"
                   >
-                    {slot.isBooked ? 'Занято' : 'Забронировать'}
-                  </Button>
-                </li>
-              ))}
-            </ul>
+                    <p className="font-medium">{formatStartAt(slot.startAt)}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Длительность: {slot.durationMin} мин
+                    </p>
+                    <Button
+                      className="mt-4"
+                      disabled={slot.isBooked}
+                      onClick={() => handleBookingClick(slot)}
+                    >
+                      {slot.isBooked ? 'Занято' : 'Забронировать'}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </>
       )}

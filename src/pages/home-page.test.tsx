@@ -11,12 +11,12 @@ const slot: TimeSlot = {
   isBooked: false,
 }
 
-function mockFetch() {
+function mockFetch(slots: TimeSlot[] = [slot]) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
 
     if (url === '/api/slots') {
-      return new Response(JSON.stringify([slot]), { status: 200 })
+      return new Response(JSON.stringify(slots), { status: 200 })
     }
 
     if (url === '/api/bookings' && init?.method === 'POST') {
@@ -80,5 +80,27 @@ describe('HomePage: экран успеха', () => {
 
     expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeNull()
+  })
+
+  it('фильтрует слоты по выбранной в календаре дате', async () => {
+    const firstDay = new Date(2099, 8, 24, 10, 0)
+    const secondDay = new Date(2099, 8, 25, 15, 0)
+    const twoSlots: TimeSlot[] = [
+      { id: 1, startAt: firstDay.toISOString(), durationMin: 30, isBooked: false },
+      { id: 2, startAt: secondDay.toISOString(), durationMin: 30, isBooked: false },
+    ]
+    vi.stubGlobal('fetch', mockFetch(twoSlots))
+
+    const user = userEvent.setup()
+    render(<HomePage />)
+
+    expect(await screen.findAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
+    expect(screen.getByText(/10:00/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '2099-09-25' }))
+
+    expect(screen.getAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
+    expect(screen.getByText(/15:00/)).toBeInTheDocument()
+    expect(screen.queryByText(/10:00/)).toBeNull()
   })
 })
