@@ -46,7 +46,10 @@ function validBody(slotId: number) {
 function createFutureSlot() {
   return db
     .insert(slots)
-    .values({ startAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(), durationMin: 30 })
+    .values({
+      startAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+      durationMin: 30,
+    })
     .returning()
     .get()
 }
@@ -70,6 +73,15 @@ describe('GET /api/slots', () => {
 
     expect(allSlots.every((slot) => slot.startAt >= nowIso)).toBe(true)
     expect(allSlots.some((slot) => slot.startAt === pastStartAt)).toBe(false)
+  })
+
+  it('не отдаёт слоты в пределах minNotice', async () => {
+    const soonStartAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    db.insert(slots).values({ startAt: soonStartAt, durationMin: 30 }).run()
+
+    const allSlots = await requestSlots()
+
+    expect(allSlots.some((slot) => slot.startAt === soonStartAt)).toBe(false)
   })
 })
 
@@ -263,6 +275,23 @@ describe('POST /api/bookings', () => {
       method: 'POST',
       url: '/api/bookings',
       payload: validBody(pastSlot.id),
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+
+  it('отвечает 400, если до слота меньше minNotice', async () => {
+    const soonStartAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
+    const soonSlot = db
+      .insert(slots)
+      .values({ startAt: soonStartAt, durationMin: 30 })
+      .returning()
+      .get()
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/bookings',
+      payload: validBody(soonSlot.id),
     })
 
     expect(response.statusCode).toBe(400)

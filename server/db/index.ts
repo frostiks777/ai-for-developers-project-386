@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
 import { gte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { defaultAvailabilityRules, generateSlotStarts } from '../availability'
 import * as schema from './schema'
 
 // ESM: __dirname недоступен, вычисляем пути от import.meta.url
@@ -51,8 +52,8 @@ if (!bookingColumns.some((column) => column.name === 'comment')) {
 
 export const db = drizzle(client, { schema })
 
-// Сидирование: если будущих слотов нет — создаём 8 штук:
-// ближайшие 4 дня (включая сегодня), 10:00 и 15:00, длительность 30 минут
+// Сидирование: если будущих слотов нет — генерируем по правилам доступности
+// (рабочие дни и окно, шаг «длительность + буфер», minNotice, горизонт)
 const hasFutureSlots = db
   .select()
   .from(schema.slots)
@@ -60,21 +61,14 @@ const hasFutureSlots = db
   .get()
 
 if (!hasFutureSlots) {
-  const now = new Date()
-  const seedSlots = [0, 1, 2, 3].flatMap((dayOffset) =>
-    [10, 15].map((hour) => {
-      const startAt = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate() + dayOffset,
-        hour,
-        0,
-        0,
-        0,
-      )
-      return { startAt: startAt.toISOString(), durationMin: 30 }
-    }),
-  )
+  const slotStarts = generateSlotStarts(new Date())
 
-  db.insert(schema.slots).values(seedSlots).run()
+  db.insert(schema.slots)
+    .values(
+      slotStarts.map((startAt) => ({
+        startAt,
+        durationMin: defaultAvailabilityRules.slotDurationMin,
+      })),
+    )
+    .run()
 }

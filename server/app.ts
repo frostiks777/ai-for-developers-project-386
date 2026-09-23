@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
 import { eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
+import { defaultAvailabilityRules } from './availability'
 import { db } from './db'
 import { bookings, slots } from './db/schema'
 import type { BookingWithSlot, TimeSlot } from './types'
@@ -13,6 +14,8 @@ import { createBookingSchema } from './validation'
 export async function buildApp(): Promise<FastifyInstance> {
   // В тестах логи Fastify не нужны (vitest выставляет NODE_ENV=test)
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
+
+  const minNoticeMs = defaultAvailabilityRules.minNoticeMin * 60 * 1000
 
   app.get('/health', () => ({ status: 'ok' }))
 
@@ -27,7 +30,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       })
       .from(slots)
       .leftJoin(bookings, eq(bookings.slotId, slots.id))
-      .where(gte(slots.startAt, new Date().toISOString()))
+      .where(gte(slots.startAt, new Date(Date.now() + minNoticeMs).toISOString()))
       .orderBy(slots.startAt)
       .all()
 
@@ -76,6 +79,10 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     if (slot.startAt < new Date().toISOString()) {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
+    }
+
+    if (slot.startAt < new Date(Date.now() + minNoticeMs).toISOString()) {
+      return reply.code(400).send({ error: 'Слот уже недоступен' })
     }
 
     try {
