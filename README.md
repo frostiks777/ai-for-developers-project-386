@@ -64,7 +64,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 |---|---|---|
 | `GET` | `/health` | проверка живости |
 | `GET` | `/api/slots` | будущие слоты с признаком `isBooked` |
-| `POST` | `/api/bookings` | создать бронь: `slotId`, `name`, `phone`, `email`, `comment?` (до 1000 символов) |
+| `POST` | `/api/bookings` | создать бронь: `slotId`, `name`, `email`, `phone?`, `comment?` (до 1000 символов) |
 | `GET` | `/api/bookings` | брони с данными слота (панель организатора) |
 
 Примеры:

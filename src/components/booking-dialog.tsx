@@ -100,7 +100,10 @@ export function BookingDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="booking-phone">Телефон</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="booking-phone">Телефон</Label>
+              <span className="text-xs text-muted-foreground">необязательно</span>
+            </div>
             <Input
               id="booking-phone"
               type="tel"

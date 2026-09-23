@@ -56,7 +56,7 @@ import type { Slot } from '@/types/slot'
 Пример на двух эндпоинтах:
 
 1. `GET /api/slots` — страница календаря вызывает `fetchSlots()` из `src/api/client.ts` → запрос уходит на `/api/slots` → прокси Vite передаёт его Fastify → маршрут через Drizzle читает таблицу слотов из `server/data/app.db` (прошедшие слоты отфильтровываются и на бэке, и в `useAvailability`) → JSON со слотами возвращается на фронтенд и кладётся в состояние хука.
-2. `POST /api/bookings` — форма бронирования вызывает `createBooking()` из `src/api/client.ts` с данными формы → Fastify валидирует тело zod-схемой (`name`, `phone`, `email`, `slotId`) → Drizzle вставляет запись в таблицу бронирований → клиент получает созданное бронирование и обновляет UI.
+2. `POST /api/bookings` — форма бронирования вызывает `createBooking()` из `src/api/client.ts` с данными формы → Fastify валидирует тело zod-схемой (`name`, `email`, `slotId`, опциональные `phone`, `comment`) → Drizzle вставляет запись в таблицу бронирований → клиент получает созданное бронирование и обновляет UI.
 
 ## Диаграмма потока запроса
 

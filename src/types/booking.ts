@@ -8,7 +8,7 @@ export interface TimeSlot {
 export interface CreateBookingBody {
   slotId: number
   name: string
-  phone: string
+  phone?: string
   email: string
   comment?: string
 }
@@ -17,7 +17,7 @@ export interface Booking {
   id: number
   slotId: number
   name: string
-  phone: string
+  phone: string | null
   email: string
   comment: string | null
   createdAt: string

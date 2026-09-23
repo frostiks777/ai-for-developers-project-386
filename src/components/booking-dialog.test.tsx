@@ -91,6 +91,38 @@ describe('BookingDialog', () => {
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
   })
 
+  it('бронирует слот без телефона (поле необязательное)', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: 1,
+            slotId: 1,
+            name: 'Иван',
+            phone: null,
+            email: 'ivan@example.com',
+            createdAt: '2026-09-22T07:00:00.000Z',
+          }),
+          { status: 201 },
+        ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/bookings',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(onBooked).toHaveBeenCalledTimes(1)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
   it('бронирует слот, показывает уведомление и закрывает диалог', async () => {
     const fetchMock = vi.fn(
       async () =>
