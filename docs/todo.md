@@ -17,13 +17,11 @@
 - [x] Фильтр прошедших слотов: SQL `startAt >= now`, фильтр в `useAvailability`, `400` при попытке брони на прошедший слот
 - [x] Ре-сид слотов, когда будущих слотов не осталось
 - [x] Интеграционные тесты API: `buildApp()` + `app.inject()` на in-memory БД (`server/app.test.ts`)
+- [x] Починен CI: vitest `3.2.7 → 4.1.11` (устранён `Channel closed`, vitest#8201) + матрица Node `[22, 24]` (Node 20 EOL)
+- [x] `GET /api/bookings`: брони с данными слота (`BookingWithSlot`), сортировка по `startAt`, 2 интеграционных теста
+- [x] README: стек, установка, запуск, env, примеры API; добавлен `.env.example` (asciinema — заглушка, запись за автором)
 
 ## Осталось
-
-### High
-
-- [ ] Реализовать `GET /api/bookings` (для будущей панели организатора)
-- [ ] Обновить `README.md`: установка, запуск, примеры, asciinema
 
 ### Medium
 

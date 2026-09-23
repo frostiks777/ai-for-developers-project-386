@@ -38,7 +38,7 @@
     background: linear-gradient(90deg, var(--done), #86efac);
     animation: fill 1.4s ease forwards;
   }
-  @keyframes fill { to { width: 59%; } }
+  @keyframes fill { to { width: 47%; } }
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
   .filters {
@@ -84,22 +84,21 @@
 <body>
 <header>
   <h1>Календарь звонков — схема TODO</h1>
-  <p>Источник: <code>docs/todo.md</code> · Сделано 19 / Всего 32 · High → Medium → Low</p>
+  <p>Источник: <code>docs/todo.md</code> · Сделано 15 / Всего 32 · Medium → Low</p>
   <div class="progress-wrap">
-    <div class="progress-label">Прогресс MVP: 59%</div>
+    <div class="progress-label">Прогресс MVP: 47%</div>
     <div class="progress"><div></div></div>
   </div>
   <div class="filters">
     <button data-filter="all" class="active">Все</button>
     <button data-filter="done">Сделано</button>
-    <button data-filter="high">High</button>
     <button data-filter="medium">Medium</button>
     <button data-filter="low">Low</button>
   </div>
 </header>
 <main>
   <section class="done" data-group="done">
-    <h2>✅ Сделано <span class="badge">19</span></h2>
+    <h2>✅ Сделано <span class="badge">15</span></h2>
     <ul>
       <li class="done-item">Каркас: Fastify :3000 (/health, /api/slots, /api/bookings), Vite, линтер, тесты, CI</li>
       <li class="done-item">SQLite + Drizzle (slots, bookings) и сидирование 8 слотов</li>
@@ -113,17 +112,12 @@
       <li class="done-item">Фильтр прошедших слотов + 400 на прошедший слот</li>
       <li class="done-item">Ре-сид слотов, когда будущих не осталось</li>
       <li class="done-item">Интеграционные тесты API: buildApp() + app.inject(), in-memory БД</li>
+      <li class="done-item">CI: vitest 3.2.7 → 4.1.11 (Channel closed, vitest#8201) + матрица Node [22, 24]</li>
+      <li class="done-item">GET /api/bookings: брони с данными слота (BookingWithSlot), сортировка по startAt</li>
+      <li class="done-item">README: стек, установка, запуск, примеры API + .env.example</li>
     </ul>
   </section>
   <div class="flow"><span>поток работ</span><span class="arrow">⬇</span></div>
-  <section class="high" data-group="high">
-    <h2>🔴 High <span class="badge">2</span></h2>
-    <ul>
-      <li>GET /api/bookings (для будущей панели организатора)</li>
-      <li>Обновить README.md: установка, запуск, примеры, asciinema</li>
-    </ul>
-  </section>
-  <div class="flow"><span class="arrow">⬇</span></div>
   <section class="medium" data-group="medium">
     <h2>🟡 Medium <span class="badge">6</span></h2>
     <ul>
