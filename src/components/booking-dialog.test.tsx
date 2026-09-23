@@ -205,4 +205,13 @@ describe('BookingDialog', () => {
     expect(onBooked).not.toHaveBeenCalled()
     expect(onOpenChange).not.toHaveBeenCalled()
   })
+
+  it('обновляет счётчик комментария при вводе', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Комментарий'), 'abc')
+
+    expect(screen.getByText('3 / 1000')).toBeInTheDocument()
+  })
 })
