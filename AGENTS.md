@@ -112,6 +112,22 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - API-вызовы → отдельный слой (`src/api/`)
 - shadcn/ui компоненты хранить в `src/components/ui/`
 
+## Agent skills
+
+Набор инженерных скиллов [mattpocock/skills](https://github.com/mattpocock/skills) установлен в `.agents/skills/` (`npx skills@latest add mattpocock/skills --agent '*' -y`) и настроен под репозиторий через `setup-matt-pocock-skills`.
+
+### Issue tracker
+
+Задачи и спецификации живут в GitHub Issues этого репозитория (через `gh` CLI). См. `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Используются пять канонических меток по умолчанию (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). См. `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Один контекст (single-context): `CONTEXT.md` + `docs/adr/` в корне репозитория. См. `docs/agents/domain.md`.
+
 ## Skills (OpenCode)
 
 OpenCode-скилы — повторно используемые workflow, которые агент подгружает через `skill` tool по триггер-фразам в `description`.
