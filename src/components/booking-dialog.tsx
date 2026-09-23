@@ -14,13 +14,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useBooking } from '@/hooks/use-booking'
 import { createBookingSchema } from '@/lib/validation'
-import type { TimeSlot } from '@/types/booking'
+import type { Booking, TimeSlot } from '@/types/booking'
 
 interface BookingDialogProps {
   slot: TimeSlot | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  onBooked: () => void
+  onBooked: (booking: Booking) => void
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -61,10 +61,10 @@ export function BookingDialog({ slot, open, onOpenChange, onBooked }: BookingDia
       return
     }
 
-    const isBooked = await bookSlot(parseResult.data)
+    const booking = await bookSlot(parseResult.data)
 
-    if (isBooked) {
-      onBooked()
+    if (booking) {
+      onBooked(booking)
       onOpenChange(false)
     }
   }
