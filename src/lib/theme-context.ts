@@ -11,4 +11,8 @@ export interface ThemeContextValue {
 
 export const THEME_STORAGE_KEY = 'call-calendar-theme'
 
-export const ThemeContext = createContext<ThemeContextValue | null>(null)
+export const ThemeContext = createContext<ThemeContextValue>({
+  theme: 'system',
+  resolvedTheme: 'light',
+  setTheme: () => {},
+})

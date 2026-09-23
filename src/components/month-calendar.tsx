@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -47,43 +48,53 @@ export function MonthCalendar({
     slots.map((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone)),
   )
   const today = startOfDay(new Date())
+  const todayKey = toDateKey(today)
   const days = buildMonthDays(visibleMonth)
+  const monthStartKey = toDateKey(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1))
+  const hasEarlierDates = Array.from(availableDates).some((dateKey) => dateKey < monthStartKey)
 
   const shiftMonth = (offset: number) => {
     setVisibleMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + offset, 1))
   }
 
   return (
-    <section className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
-      <div className="flex items-center justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-label="Предыдущий месяц"
-          onClick={() => shiftMonth(-1)}
-        >
-          ←
-        </Button>
-        <p className="font-medium capitalize">{monthTitleFormatter.format(visibleMonth)}</p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-label="Следующий месяц"
-          onClick={() => shiftMonth(1)}
-        >
-          →
-        </Button>
+    <section className="flex h-full flex-col">
+      <h2 className="text-lg font-semibold">Выберите дату</h2>
+
+      <div className="mt-6 flex items-center justify-between">
+        <p className="font-semibold capitalize">{monthTitleFormatter.format(visibleMonth)}</p>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-11 rounded-full"
+            aria-label="Предыдущий месяц"
+            disabled={!hasEarlierDates}
+            onClick={() => shiftMonth(-1)}
+          >
+            <ChevronLeft className="size-[18px]" strokeWidth={1.8} />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-11 rounded-full"
+            aria-label="Следующий месяц"
+            onClick={() => shiftMonth(1)}
+          >
+            <ChevronRight className="size-[18px]" strokeWidth={1.8} />
+          </Button>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+      <div className="mt-5 grid grid-cols-7 text-center text-xs uppercase tracking-wide text-muted-foreground">
         {weekdays.map((weekday) => (
           <span key={weekday}>{weekday}</span>
         ))}
       </div>
 
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className="mt-2 grid grid-cols-7 justify-items-center gap-y-1">
         {days.map((date, index) => {
           if (!date) {
             return <span key={`empty-${index}`} />
@@ -93,6 +104,7 @@ export function MonthCalendar({
           const isAvailable = availableDates.has(dateKey)
           const isPast = date < today
           const isSelected = dateKey === selectedDate
+          const isToday = dateKey === todayKey
 
           return (
             <button
@@ -103,22 +115,38 @@ export function MonthCalendar({
               disabled={isPast || !isAvailable}
               onClick={() => onSelectDate(dateKey)}
               className={cn(
-                'relative h-9 rounded-md text-sm transition-colors',
-                isSelected && 'bg-primary text-primary-foreground',
-                !isSelected && isAvailable && !isPast && 'hover:bg-accent',
-                (isPast || !isAvailable) && 'text-muted-foreground opacity-50',
+                'relative flex size-[52px] items-center justify-center rounded-full text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                isSelected && 'bg-primary font-semibold text-primary-foreground',
+                !isSelected && isAvailable && !isPast && 'bg-accent font-semibold text-accent-foreground hover:bg-accent/70',
+                (isPast || !isAvailable) && 'text-disabled-foreground',
+                isToday && !isSelected && 'ring-1 ring-border',
               )}
             >
               {date.getDate()}
-              {isAvailable && (
+              {isToday && (
                 <span
-                  className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-current"
+                  className="absolute bottom-[9px] left-1/2 size-1 -translate-x-1/2 rounded-full bg-current"
                   aria-hidden="true"
                 />
               )}
             </button>
           )
         })}
+      </div>
+
+      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 pt-6 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-accent ring-1 ring-inset ring-accent-foreground/30" />
+          Есть свободное время
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-primary" />
+          Выбрано
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full ring-1 ring-border" />
+          Сегодня
+        </span>
       </div>
     </section>
   )
