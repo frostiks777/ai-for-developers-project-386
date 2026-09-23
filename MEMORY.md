@@ -173,12 +173,13 @@
 27. ✅ Генерация слотов (Medium #5): `server/availability.ts` — `defaultAvailabilityRules` (Пн–Пт, 10:00–18:00 UTC, 30 мин, буфер 10, minNotice 120 мин, горизонт 14 дней) и чистая `generateSlotStarts(now, rules)`; сид в `server/db/index.ts` заменён генератором; `GET /api/slots` фильтрует `now + minNotice`; `POST /api/bookings` → 400 «Слот уже недоступен» в пределах minNotice. [ADR-0004](docs/adr/0004-slot-generation-rules.md). 4 unit + 2 API-теста.
 28. ✅ Таймзоны (Medium #6, последний): `src/utils/timezone.ts` (`toDateKeyInZone` через en-CA, `formatDateTimeInZone`, `timeZoneOptionLabel` с GMT-offset), `TimeZoneSelect` (нативный select, browser TZ по умолчанию + 6 популярных), `timeZone` прокинут в MonthCalendar (группировка дней), BookingDialog, BookingSuccess и список слотов; хранение — по-прежнему UTC ISO. 4 unit + 2 RTL-теста.
 29. ✅ Телефон опциональный (по спеке): zod `optional` + `transform` (пустой/`undefined` → не задан) + `refine` (валиден только если задан) в `server/validation.ts` ↔ `src/lib/validation.ts`; колонка `phone` стала nullable в Drizzle-схеме, миграция старых БД через пересборку таблицы (SQLite не умеет снимать `NOT NULL`); контракт `phone?: string` (вход) / `phone: string | null` (выход); в форме пометка «необязательно»; в экране успеха телефон показывается только если указан. 2 API + 1 RTL-тест.
+30. ✅ ESLint полностью чистый: `buttonVariants` перестал экспортироваться из `src/components/ui/button.tsx` (внутренний, потребителей нет) — убран warning `react-refresh/only-export-components`.
+31. ✅ Деплой на Render подтверждён как живой: https://calendar-slots-app.onrender.com (см. `docs/ci_cd_render.md`). Проверено: `/health` 200, `/` 200 (SPA), `/api/slots` 200, `/api/bookings` 200; собранный JS-хеш совпадает с локальным. В README исправлен неверный URL (`ai-for-developers-project-386.onrender.com` → `calendar-slots-app.onrender.com`).
 
 ## Что осталось (следующие шаги)
 
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: `hosts`/`availability_rules` + `/api/v1`, `/dashboard`, 422 vs 400, `.ics`/Google Calendar
-- [ ] Создать Web Service/Blueprint на Render (код готов и запушен; Free — сервис засыпает, SQLite эфемерна)
 
 ## Ключевые решения
 

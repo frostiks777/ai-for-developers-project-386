@@ -13,7 +13,7 @@
 <!-- TODO: записать asciinema и заменить ссылку: asciinema rec demo.cast -->
 [![asciinema](https://asciinema.org/a/placeholder.svg)](https://asciinema.org/a/placeholder)
 
-Живое демо (Render, free-план — сервис засыпает после простоя): https://ai-for-developers-project-386.onrender.com
+Живое демо (Render, free-план — сервис засыпает после простоя): https://calendar-slots-app.onrender.com
 
 ## Стек
 
