@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.3.0...v1.4.0) (2026-09-23)
+
+
+### Features
+
+* add back button to booking success screen ([25d58bd](https://github.com/frostiks777/ai-for-developers-project-386/commit/25d58bd0d65606671b0f0e94e5c362266c7c4186))
+
 ## [1.3.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.2.0...v1.3.0) (2026-09-23)
 
 
