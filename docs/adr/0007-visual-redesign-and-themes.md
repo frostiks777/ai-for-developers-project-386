@@ -5,7 +5,7 @@
 
 ## Status
 
-Proposed — 2026-09-23. (Сменить на **Accepted** с датой мержа.)
+Accepted — 2026-09-23. (Ветка `feat/redesign-a-d-themes` смержена в `main`.)
 
 ## Context
 

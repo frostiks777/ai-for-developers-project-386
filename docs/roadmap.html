@@ -38,7 +38,7 @@
     background: linear-gradient(90deg, var(--done), #86efac);
     animation: fill 1.4s ease forwards;
   }
-  @keyframes fill { to { width: 70%; } }
+  @keyframes fill { to { width: 94%; } }
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
   .filters {
@@ -63,7 +63,10 @@
   section.high { border-color: var(--high); }
   section.medium { border-color: var(--medium); }
   section.low { border-color: var(--low); }
+  section.p0 { border-color: var(--high); }
+  section.p1 { border-color: var(--medium); }
   section h2 { margin: 0 0 10px; font-size: 20px; }
+  section h3 { margin: 14px 0 4px; font-size: 15px; color: var(--muted); }
   .badge {
     display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 999px;
     background: #334155; color: var(--text); margin-left: 8px; vertical-align: middle;
@@ -84,62 +87,113 @@
 <body>
 <header>
   <h1>Календарь звонков — схема TODO</h1>
-  <p>Источник: <code>docs/todo.md</code> · Сделано 21 / Всего 30 · Medium закрыт → Low</p>
+  <p>Источник: <code>docs/todo.md</code> · MVP: 29 / 31 закрыто (94%) · Бэклог из внешней спеки: 27 не сделано</p>
   <div class="progress-wrap">
-    <div class="progress-label">Прогресс MVP: 70%</div>
+    <div class="progress-label">Прогресс MVP: 29/31 — 94% (бэклог Gemini, 27 пунктов, — отдельно, вне MVP)</div>
     <div class="progress"><div></div></div>
   </div>
   <div class="filters">
     <button data-filter="all" class="active">Все</button>
     <button data-filter="done">Сделано</button>
     <button data-filter="low">Low</button>
+    <button data-filter="p0">P0</button>
+    <button data-filter="p1">P1</button>
+    <button data-filter="backlog">Бэклог</button>
   </div>
 </header>
 <main>
   <section class="done" data-group="done">
-    <h2>✅ Сделано <span class="badge">21</span></h2>
+    <h2>✅ Сделано <span class="badge">30 (29 MVP + редизайн)</span></h2>
     <ul>
       <li class="done-item">Каркас: Fastify :3000 (/health, /api/slots, /api/bookings), Vite, линтер, тесты, CI</li>
-      <li class="done-item">SQLite + Drizzle (slots, bookings) и сидирование 8 слотов</li>
+      <li class="done-item">SQLite + Drizzle (slots, bookings), сид 8 слотов</li>
       <li class="done-item">POST /api/bookings: 400/404/409/201; GET /api/slots с isBooked</li>
       <li class="done-item">UI: список слотов (loading/error/empty), «Забронировать»/«Занято»</li>
       <li class="done-item">Диалог брони: имя + телефон, блокировка submit, сброс полей</li>
       <li class="done-item">Тосты sonner, ApiError, хуки use-availability / use-booking</li>
-      <li class="done-item">Типы синхронизированы фронт/бэк, 6 тестов, hexlet-check.yml не тронут</li>
+      <li class="done-item">Типы фронт/бэк синхронизированы, 6 тестов, hexlet-check.yml не тронут</li>
       <li class="done-item">Обязательный email (zod, API 400, БД ALTER). ADR-0002</li>
-      <li class="done-item">Валидация телефона: 10–15 цифр</li>
-      <li class="done-item">Фильтр прошедших слотов + 400 на прошедший слот</li>
+      <li class="done-item">Валидация телефона: только цифры/разделители, 10–15 цифр</li>
+      <li class="done-item">Фильтр прошедших слотов (SQL startAt &gt;= now, 400 на прошедший слот)</li>
       <li class="done-item">Ре-сид слотов, когда будущих не осталось</li>
       <li class="done-item">Интеграционные тесты API: buildApp() + app.inject(), in-memory БД</li>
       <li class="done-item">CI: vitest 3.2.7 → 4.1.11 (Channel closed, vitest#8201) + матрица Node [22, 24]</li>
-      <li class="done-item">GET /api/bookings: брони с данными слота (BookingWithSlot), сортировка по startAt</li>
-      <li class="done-item">README: стек, установка, запуск, примеры API + .env.example</li>
-      <li class="done-item">Race condition: уникальный индекс bookings.slotId + 409 через SQLITE_CONSTRAINT_UNIQUE (ADR-0003)</li>
-      <li class="done-item">Экран успеха: BookingSuccess со сводкой и кнопкой «Выбрать другое время»</li>
-      <li class="done-item">Поле «комментарий»: БД + zod max(1000) + Textarea в форме</li>
-<li class="done-item">Месячная сетка календаря: MonthCalendar + фильтр списка по дню</li>
-<li class="done-item">Генерация слотов по правилам (availability.ts, minNotice, ADR-0004)</li>
-      <li class="done-item">Таймзоны: TimeZoneSelect + форматирование/группировка по дням в выбранном поясе</li>
+      <li class="done-item">GET /api/bookings: брони со слотом (BookingWithSlot), сортировка по startAt</li>
+      <li class="done-item">README: стек, установка, запуск, env, примеры API + .env.example</li>
+      <li class="done-item">Race condition: unique-индекс bookings.slotId + 409 через SQLITE_CONSTRAINT_UNIQUE (ADR-0003)</li>
+      <li class="done-item">Экран успеха BookingSuccess + кнопка «Выбрать другое время»</li>
+      <li class="done-item">Поле «комментарий»: БД (nullable) + zod max(1000) + Textarea в форме</li>
+      <li class="done-item">Месячная сетка MonthCalendar + фильтр списка по дню на клиенте</li>
+      <li class="done-item">Генерация слотов по правилам (availability.ts, окно 10–18 UTC, minNotice, горизонт 14 дней; ADR-0004)</li>
+      <li class="done-item">Таймзоны: TimeZoneSelect + отображение/группировка по дням в выбранном поясе</li>
+      <li class="done-item">Телефон опциональный (nullable, пометка «необязательно» в форме)</li>
+      <li class="done-item">ESLint warning в src/components/ui/button.tsx убран (buttonVariants — внутренний)</li>
+      <li class="done-item">/dashboard: список броней + отмена (DELETE /api/bookings/:id) + настройки доступности (availability_rules; ADR-0005)</li>
+      <li class="done-item">Экспорт в календарь: кнопки «Скачать .ics» и «Google Календарь» на экране успеха</li>
+      <li class="done-item">Отмена по токену-ссылке (cancelToken, POST /api/bookings/cancel, /cancel/:token; ADR-0006)</li>
+      <li class="done-item">Перенос по токену (GET by-token, POST /api/bookings/reschedule, /reschedule/:token; ADR-0008)</li>
+      <li class="done-item">422 вместо 400 на невалидное тело (бизнес-ошибки остались 400)</li>
+      <li class="done-item">Хосты + API v1 аддитивно (таблица hosts, GET /api/v1/hosts/:slug/settings|slots; ADR-0009)</li>
+      <li class="done-item">Редизайн: этапы 1–6 (токены/темы, десктоп, мобильная раскладка, форма, экран успеха, панель организатора); этап 7 (документация) — в работе</li>
     </ul>
   </section>
   <div class="flow"><span>поток работ</span><span class="arrow">⬇</span></div>
   <section class="low" data-group="low">
-    <h2>🔵 Low <span class="badge">5</span></h2>
+    <h2>🔵 Low <span class="badge">2</span></h2>
     <ul>
-      <li>Таблицы hosts, availability_rules и GET /api/v1/hosts/:slug/...</li>
-      <li>/dashboard: список броней, отмена, настройки доступности</li>
-      <li>422 вместо 400 на невалидное тело (по спеке) или зафиксировать отклонение</li>
-      <li>.ics / Google Calendar и ссылка отмены на экране успеха</li>
-      <li>Исправить pre-existing ESLint warning в src/components/ui/button.tsx</li>
+      <li>Полная мульти-хост-модель: host_id в slots/bookings, POST /api/v1/bookings, страница /book/:hostId (текущий v1 — аддитивный, однохостовый)</li>
+      <li>Авторизация /dashboard (сейчас панель публична)</li>
     </ul>
   </section>
-  <section data-group="high medium low">
+  <div class="flow"><span>бэклог из внешней спеки (Gemini)</span><span class="arrow">⬇</span></div>
+  <section class="p0" data-group="p0 backlog">
+    <h2>🔴 P0 — публичный флоу бронирования (§1.1–1.3) <span class="badge">12</span></h2>
+    <ul>
+      <li>Маршрут /book/:slug (§1.1): сейчас единый / под одного хоста; slug знает только v1 API</li>
+      <li>TimezoneSelector: поиск по IANA (§1.1) — частично: селект есть, поиска нет</li>
+      <li>Переключатель 12/24-часового формата (§1.1)</li>
+      <li>Валидация имени min 2 (§1.2) — частично: сейчас min 1</li>
+      <li>Маска телефона (§1.2) — частично: формат «10–15 цифр» есть, маски ввода нет</li>
+      <li>Лимит notes 500 (§1.2) — частично: поле comment есть, но max 1000</li>
+      <li>Поле guests — массив email с добавлением по Enter (§1.2)</li>
+      <li>Чекбокс согласия с правилами/ПДн (§1.2)</li>
+      <li>Заголовок Idempotency-Key (§1.2)</li>
+      <li>Обработка 409 (§1.2) — частично: тост + refetch есть, спец-алерта «слот только что заняли» нет</li>
+      <li>Экран /booking/:uuid/confirmed (§1.3) — частично: BookingSuccess на / есть; нет отдельного роута, аватара/названия встречи, ссылки на конференцию</li>
+      <li>Ссылка «Отменить встречу» на экране успеха (§1.3) — частично: только копируемая ссылка отмены, прямой кнопки нет</li>
+    </ul>
+  </section>
+  <section class="p1" data-group="p1 backlog">
+    <h2>🟠 P1 — self-service и дашборд (§2–3) <span class="badge">15</span></h2>
+    <h3>Self-service (§2.1–2.2) — 5</h3>
+    <ul>
+      <li>Роуты /booking/:uuid/cancel и /booking/:uuid/reschedule (§2.1–2.2): сейчас /cancel/:token, /reschedule/:token</li>
+      <li>Детали встречи на странице отмены (§2.1)</li>
+      <li>Поле cancellation_reason (§2.1)</li>
+      <li>Модалка подтверждения отмены (§2.1) — частично: inline-подтверждение на странице есть</li>
+      <li>POST /api/bookings/:uuid/cancel (§2.1) — частично: есть POST /api/bookings/cancel по токену в теле</li>
+    </ul>
+    <h3>Дашборд организатора (§3.1–3.3) — 10</h3>
+    <ul>
+      <li>Роут /admin/availability (§3.1) — частично: секция «Доступность» на /dashboard есть</li>
+      <li>Несколько интервалов в день (§3.1; сейчас одно окно windowStartHour–windowEndHour)</li>
+      <li>Кнопка «Скопировать понедельник на будни» (§3.1)</li>
+      <li>buffer_before / buffer_after (§3.1) — частично: один bufferMin 0–480</li>
+      <li>Пресеты max_future_days 14/30/60 (§3.1) — частично: свободный ввод horizonDays 1–90</li>
+      <li>/admin/event-types + EventForm (title/slug/description/location_type) (§3.2)</li>
+      <li>Роут /admin/bookings (§3.3) — частично: список на /dashboard есть</li>
+      <li>Табы Upcoming / Past / Canceled (§3.3) — частично: фильтр Все / Неделя / Сегодня</li>
+      <li>Поиск по имени и email (§3.3)</li>
+      <li>BlockTimeModal + форма блокировки времени (§3.3)</li>
+    </ul>
+  </section>
+  <section data-group="divergence low backlog">
     <h2>⚠️ Ключевые расхождения со спекой <span class="badge">4</span></h2>
     <ul>
-      <li>Схема БД: нет hosts / availability_rules, статусов</li>
-      <li>API: нет версионирования /api/v1, хостов, фильтра по дате</li>
-      <li>Форма: нет telegram; телефон пока обязателен</li>
-      <li>Экраны: нет /book/:hostId и /dashboard</li>
+      <li>Схема БД: есть availability_rules (одна строка, один хост), нет host_id в slots/bookings, статусов и диапазонов по дням; правила персистентны (ADR-0005)</li>
+      <li>API: /api/v1 и хосты добавлены аддитивно (ADR-0009) — GET /api/v1/hosts/:slug/settings|slots; полной мульти-хост-модели (host_id, POST /api/v1/bookings) нет; отмена — DELETE /api/bookings/:id + отмена/перенос по токену</li>
+      <li>Форма: email обязателен, телефон опционален с валидацией формата; нет telegram, guests, чекбокса согласия</li>
+      <li>Экраны: /dashboard реализован (список, отмена, настройки, без auth); нет /book/:hostId (и /book/:slug), нет /admin/*</li>
     </ul>
   </section>
 </main>
