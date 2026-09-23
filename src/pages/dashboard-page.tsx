@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { ApiError, cancelBooking, fetchAvailability, fetchBookings, updateAvailability } from '@/api/client'
 import { AvailabilityForm } from '@/components/availability-form'
 import { BookingsTable } from '@/components/bookings-table'
+import { ThemeToggle } from '@/components/theme-toggle'
 import type { AvailabilityRules } from '@/types/availability'
 import type { BookingWithSlot } from '@/types/booking'
 
@@ -77,9 +78,12 @@ export default function DashboardPage() {
             Запланированные встречи и настройки доступности.
           </p>
         </div>
-        <Link to="/" className="text-sm text-primary underline-offset-4 hover:underline">
-          К странице бронирования
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link to="/" className="text-sm text-primary underline-offset-4 hover:underline">
+            К странице бронирования
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
 
       <section className="mb-10">
