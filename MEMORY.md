@@ -1,18 +1,18 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-22 (sync #3: +37 upstream-скилов в `.agents/skills/`)
+> Дата последнего обновления: 2026-09-23 (High #3: vitest 4 + CI матрица [22,24], `GET /api/bookings`, README)
 
 ## Текущее состояние
 
 Проект находится на шаге 2 курса Hexlet "ИИ для разработчиков" — **Каркас приложения**.
 Создан и установлен скелет: бэкенд (Fastify + Drizzle ORM + SQLite), фронтенд (React 18 + TypeScript + Vite + shadcn/ui), документация, конфиги.
-Дополнительно реализованы: обязательный email в брони (zod), фильтр прошедших слотов, интеграционные тесты API на in-memory БД.
+Дополнительно реализованы: обязательный email в брони (zod), фильтр прошедших слотов, интеграционные тесты API на in-memory БД, `GET /api/bookings` (панель организатора), README с примерами; тесты на Vitest 4, CI на Node 22/24.
 
 ### Файловая структура (создана)
 
 ```
 ├── package.json              ✅ зависимости + скрипты
-├── vite.config.ts            ✅ (vitest 3 + vite 6 — типы совместимы)
+├── vite.config.ts            ✅ (vitest 4 + vite 6 — совместимы)
 ├── tsconfig.json             ✅
 ├── tailwind.config.js        ✅ shadcn/ui
 ├── postcss.config.js         ✅
@@ -75,6 +75,7 @@
 | `lint` | `react-refresh/only-export-components` warning в `button.tsx` | Предупреждение (не ошибка) — допустимо для shadcn |
 | `test` | `src/test/setup.ts` падал в node-окружении (`Element is not defined`) | jsdom-полифилы обёрнуты в `typeof Element !== 'undefined'` |
 | `test` | `App.test.tsx` — фикстура слота с прошедшей датой ломалась о новый фильтр | `startAt` генерируется как `now + 1h` |
+| CI | `lint-and-test (20)`: `Channel closed` (`ERR_IPC_CHANNEL_CLOSED`, tinypool) — баг vitest 3.x ([vitest#8201](https://github.com/vitest-dev/vitest/issues/8201)) | vitest `3.2.7 → 4.1.11` (пул переписан без tinypool) + Node 20 (EOL) убран из матрицы: `[22, 24]` |
 | `docs sync` | `opencode/mimo-v2.5-free` удалён из каталога моделей, заменён на `opencode/mimo-v2.6-flash-free` | Обновлено во всех 4 файлах: `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` |
 
 ## Версии зависимостей (финальные)
@@ -83,7 +84,7 @@
 {
   "react": "^18.3.1",
   "vite": "^6.0.7",
-  "vitest": "^3.2.7",
+  "vitest": "^4.1.11",
   "typescript": "~5.7.2",
   "fastify": "^5.2.0",
   "better-sqlite3": "^13.0.3",
@@ -99,10 +100,11 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 1 warning (buttonVariants — допустимо)
-✅ test: 23/23 passed (4 файла: App, booking-dialog, use-availability, server/app)
+✅ test: 25/25 passed (4 файла: App, booking-dialog, use-availability, server/app)
 ✅ build: vite v6.4.3 — 339.08 kB JS (gzip 105.54), 16.17 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
-   /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400
+   /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
+   GET /api/bookings 200 (бронь с startAt/durationMin)
 ```
 
 ## Что сделано (полный список)
@@ -160,12 +162,14 @@
     - **Vitest exclude:** добавлен `.agents/skills/**` в `vite.config.ts` → `test.exclude`, чтобы исключить upstream-ские `.cjs` test-файлы из `npm test`.
     - **Проверки:** `npm run lint` ✓ (0 err, 1 допустимый warn в `button.tsx`), `npm run typecheck` ✓, `npm test` 20/20 ✓, валидация frontmatter 43/43 (все SKILL.md имеют `--- ---`, `name:`, `description:`).
     - **Известные мелочи:** 3 скила имеют description чуть выше рекомендованных 1024 chars (`evolutionary-modular-architecture` ~1069, `not-your-babysitter` ~1066, `tlc-spec-driven` ~1060 — описания upstream-а, не правлены).
+20. ✅ CI зелёный (High): vitest `3.2.7 → 4.1.11` — устранён `ERR_IPC_CHANNEL_CLOSED`/`Channel closed` (баг tinypool, [vitest#8201](https://github.com/vitest-dev/vitest/issues/8201)); матрица CI `node-version: [20, 22] → [22, 24]` (Node 20 EOL). Проверки: 25/25 тестов, typecheck, lint, build — зелёные. Пуш ещё не сделан (проверка CI после пуша).
+21. ✅ `GET /api/bookings` (High): список броней с данными слота (`BookingWithSlot extends Booking` + `startAt`, `durationMin`), `innerJoin(slots)`, сортировка по `startAt`; типы-зеркала в `server/types.ts` и `src/types/booking.ts`; 2 интеграционных теста (TDD: red → green). Фронтовых потребителей пока нет.
+22. ✅ README (High): стек, требования (Node 22/24), установка, запуск dev/prod, таблица env, таблица API + curl-примеры, скрипты, структура, тесты, деплой; добавлен `.env.example` (PORT, DATABASE_PATH). Asciinema — заглушка + TODO.
 
 ## Что осталось (следующие шаги)
 
-- [ ] Реализовать `GET /api/bookings` (для панели организатора)
-- [ ] Обновить `README.md`: установка, запуск, примеры, asciinema
-- [ ] Транзакция / уникальный индекс на `bookings.slotId` — закрыть race condition
+- [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
+- [ ] Транзакция / уникальный индекс на `bookings.slotId` — закрыть race condition ([`docs/archi-scheme.md`](docs/archi-scheme.md) → «делать первым»)
 - [ ] Экран успеха («Встреча запланирована», сводка) вместо только тоста
 - [ ] Поле «комментарий», телефон как опциональный (по спеке)
 - [ ] Месячная сетка календаря, таймзоны, генерация слотов по правилам доступности
@@ -179,7 +183,9 @@
 | ORM | Drizzle ORM | TypeScript-first, SQL-подобный, лёгкий |
 | БД | SQLite (better-sqlite3) | Нулевая конфигурация, in-app файл |
 | UI | shadcn/ui + Tailwind v3.4 | Хорошая поддержка coding-агентами |
-| Тесты | Vitest 3 + React Testing Library | Нативная интеграция с Vite 6 |
+| Тесты | Vitest 4 + React Testing Library | Нативная интеграция с Vite 6; пул без tinypool — фикс `Channel closed` |
+| CI | GitHub Actions: lint + typecheck + test + build на Node 22 и 24 | Node 20 EOL (апрель 2026); vitest 4 требует Node ^20 \|\| ^22 \|\| >=24 |
+| `GET /api/bookings` | Плоский массив `BookingWithSlot`, сортировка по `startAt` | Фундамент панели организатора; потребителей нет, контракт простой |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
