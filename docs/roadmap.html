@@ -38,7 +38,7 @@
     background: linear-gradient(90deg, var(--done), #86efac);
     animation: fill 1.4s ease forwards;
   }
-  @keyframes fill { to { width: 94%; } }
+  @keyframes fill { to { width: 91%; } }
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
   .filters {
@@ -87,9 +87,9 @@
 <body>
 <header>
   <h1>Календарь звонков — схема TODO</h1>
-  <p>Источник: <code>docs/todo.md</code> · MVP: 29 / 31 закрыто (94%) · Бэклог из внешней спеки: 27 не сделано</p>
+  <p>Источник: <code>docs/todo.md</code> · MVP: 29 / 32 закрыто (91%) · Бэклог из внешней спеки: 27 не сделано</p>
   <div class="progress-wrap">
-    <div class="progress-label">Прогресс MVP: 29/31 — 94% (бэклог Gemini, 27 пунктов, — отдельно, вне MVP)</div>
+    <div class="progress-label">Прогресс MVP: 29/32 — 91% (бэклог Gemini, 27 пунктов, — отдельно, вне MVP)</div>
     <div class="progress"><div></div></div>
   </div>
   <div class="filters">
@@ -139,10 +139,11 @@
   </section>
   <div class="flow"><span>поток работ</span><span class="arrow">⬇</span></div>
   <section class="low" data-group="low">
-    <h2>🔵 Low <span class="badge">2</span></h2>
+    <h2>🔵 Low <span class="badge">3</span></h2>
     <ul>
       <li>Полная мульти-хост-модель: host_id в slots/bookings, POST /api/v1/bookings, страница /book/:hostId (текущий v1 — аддитивный, однохостовый)</li>
       <li>Авторизация /dashboard (сейчас панель публична)</li>
+      <li><strong>Баг:</strong> ссылка «Доступность» (#availability) в сайдбаре /dashboard не скроллит к секции — id есть, навигация/скролл не срабатывает</li>
     </ul>
   </section>
   <div class="flow"><span>бэклог из внешней спеки (Gemini)</span><span class="arrow">⬇</span></div>

@@ -42,6 +42,7 @@
 
 - [ ] Полная мульти-хост-модель: `host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, страница `/book/:hostId` (текущий v1 — аддитивный, однохостовый по факту)
 - [ ] Авторизация `/dashboard` (сейчас панель публична)
+- [ ] **Баг:** ссылка «Доступность» (`href="#availability"`) в сайдбаре `/dashboard` не скроллит к секции (`/dashboard#availability`) — элемент `id="availability"` есть (`src/pages/dashboard-page.tsx:138`), но навигация/скролл не срабатывает; починить (напр. `scrollIntoView` по клику)
 
 ## Ключевые расхождения со спекой
 
