@@ -192,7 +192,7 @@ export function EventTypesEditor({ slug }: EventTypesEditorProps) {
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, locationType: event.target.value as LocationType }))
               }
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-9 rounded-md border border-input bg-card px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               {(Object.keys(LOCATION_LABELS) as LocationType[]).map((value) => (
                 <option key={value} value={value}>
