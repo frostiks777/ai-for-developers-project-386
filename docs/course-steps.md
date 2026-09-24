@@ -59,7 +59,15 @@
 - Серверные артефакты генерируются из спецификации.
 - Генерация повторяется одной командой, сгенерированное руками не правится.
 
-Статус: `[ ] не начато`.
+Статус: `[x] выполнено` (2026-09-24):
+- Карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 (все закрыты).
+- Спецификация: `docs/spec.md` (+ продублирована в трекере, #18).
+- TypeSpec-контракт: `api/main.tsp`, `api/tspconfig.yaml` ([#16](https://github.com/frostiks777/ai-for-developers-project-386/issues/16)).
+- Генерация одной командой: `npm run api:generate` (`scripts/api-generate.mjs`) → `docs/openapi/openapi.yaml`, клиентский SDK `src/api/generated/`, серверные типы `server/generated/api-types.ts` ([#17](https://github.com/frostiks777/ai-for-developers-project-386/issues/17)); повторная генерация детерминирована, сгенерированное не правится руками.
+- Решения по домену/данным/тестам: [ADR-0011](adr/0011-event-types-status-and-availability-ranges.md), тикеты #11/#12/#14.
+- Проверки: `lint`/`typecheck`/`test` (109)/`build` — зелёные.
+
+Примечание: серверный эмиттер TypeSpec (`@typespec/http-server-js`) — alpha без Fastify/zod, поэтому серверные **маршруты и zod-валидация** остаются ручными, а «серверный артефакт» — типы из OpenAPI (`openapi-typescript`). Обоснование — тикеты #13/#15/#18.
 
 ---
 
