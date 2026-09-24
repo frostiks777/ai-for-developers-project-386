@@ -67,6 +67,16 @@
   }
 }
 
+@layer utilities {
+  /* Скрывает нативную полосу прокрутки, сохраняя прокрутку (колесо/клавиатура) */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
