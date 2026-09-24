@@ -29,7 +29,7 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
   return (
     <nav
       aria-label="Панель организатора"
-      className="flex min-h-screen w-[248px] shrink-0 flex-col gap-1.5 border-r bg-surface p-4"
+      className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-1.5 self-start border-r bg-surface p-4"
     >
       <div className="flex items-center gap-2.5 px-2 pb-5 pt-2">
         <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
