@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.8.0...v1.9.0) (2026-09-24)
+
+
+### Features
+
+* **api:** add event types CRUD and owner editor ([#21](https://github.com/frostiks777/ai-for-developers-project-386/issues/21)) ([1cf1dd5](https://github.com/frostiks777/ai-for-developers-project-386/commit/1cf1dd51ae90baed56ef1c3b09eae1fb51026cbe))
+* **db:** add event types, booking status and availability ranges schema ([#20](https://github.com/frostiks777/ai-for-developers-project-386/issues/20)) ([899ed88](https://github.com/frostiks777/ai-for-developers-project-386/commit/899ed88901c23260660a2a0295962a84209058c9))
+
 ## [1.8.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.7.0...v1.8.0) (2026-09-24)
 
 
