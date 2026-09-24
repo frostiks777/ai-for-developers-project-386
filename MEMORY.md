@@ -1,10 +1,11 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-24 (Шаг 1 курса: `CONTEXT.md`, ADR-0010, лендинг на `/`, бронь на `/book/:slug`)
+> Дата последнего обновления: 2026-09-24 (Шаг 2 курса: карта решений #10 закрыта — спецификация, TypeSpec-контракт, генерация OpenAPI/SDK/серверных типов)
 
 ## Текущее состояние
 
-Проект находится на шаге 2 курса Hexlet "ИИ для разработчиков" — **Каркас приложения**.
+Проект находится на шаге 3 курса Hexlet "ИИ для разработчиков" — **Реализация тикетов**.
+Шаг 2 (проектирование бронирования) завершён: карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 закрыта, утверждена спецификация `docs/spec.md`, контракт `api/main.tsp`, конвейер `npm run api:generate` (OpenAPI + клиентский SDK + серверные типы).
 Создан и установлен скелет: бэкенд (Fastify + Drizzle ORM + SQLite), фронтенд (React 18 + TypeScript + Vite + shadcn/ui), документация, конфиги.
 Дополнительно реализованы: обязательный email в брони (zod), фильтр прошедших слотов, интеграционные тесты API на in-memory БД, `GET /api/bookings` (панель организатора), README с примерами; тесты на Vitest 4, CI на Node 22/24.
 
@@ -116,7 +117,13 @@
   "drizzle-kit": "^0.31.11",
   "tailwindcss": "^3.4.17",
   "react-router-dom": "^7",
-  "zod": "^4.6.5"
+  "zod": "^4.6.5",
+  "@typespec/compiler": "1.16.0",
+  "@typespec/http": "1.16.0",
+  "@typespec/openapi3": "1.16.0",
+  "@typespec/http-client-js": "0.16.2",
+  "@typespec/ts-http-runtime": "0.2.1",
+  "openapi-typescript": "^7.13.0"
 }
 ```
 
@@ -217,10 +224,17 @@
 47. ✅ Внешний бэклог Gemini: добавлен `docs/gemini-code-1790192589378.md` (спека от внешнего ревью) + раздел «Backlog из внешней спеки» в `docs/todo.md` (только MISSING/PARTIAL, P0/P1); `docs/roadmap.html` перегенерирован. Итог: 105/105 тестов (17 файлов).
 48. ✅ Визуальный редизайн, **Этап 7** (документация, текущий): [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) переведён в **Accepted** (ветка `feat/redesign-a-d-themes` смержена в `main`), индекс `docs/adr/README.md` обновлён; `README.md` упоминает светлую/тёмную тему и десктоп/мобильные раскладки; `MEMORY.md` и `docs/todo.md` отмечают завершение этапов 1–7.
 49. ✅ Шаг 1 курса (главная страница): `CONTEXT.md` — словарь проекта (русские каноны + англ. алиасы); [ADR-0010](docs/adr/0010-landing-and-booking-routes.md); маршруты — `/` = новый `LandingPage` (витрина гостя: hero, «Как это работает», карточка организатора, CTA; данные из `GET /api/v1/hosts/:slug/settings`, фолбэк на `src/config/host.ts`), `/book/:slug` = `HomePage`, `*` = `NotFoundPage`; `host.slug = 'default'`; фронт брони переведён на API v1 (`fetchHostSettings`/`fetchHostSlots`, `useAvailability(slug)`), легаси `/api/*` сохранён; ссылки дашборда/отмены/переноса → `/book/${host.slug}`; фикс бага сайдбара (`scrollIntoView`); 3 теста лендинга + 3 smoke `App` + обновлены `home-page`/`use-availability`. Итог: 109/109 тестов, lint/typecheck/build — зелёные.
+50. ✅ Шаг 2 курса (проектирование бронирования, карта решений): карта [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18, все закрыты. Артефакты:
+    - `docs/spec.md` — утверждённая спецификация v1 (роли, user stories, правила, доменная модель, API, тестирование, соответствие критериям).
+    - `api/main.tsp` + `api/tspconfig.yaml` — TypeSpec-контракт `/api/v1` (типы встреч, слоты, брони, availability, ошибки).
+    - `npm run api:generate` (`scripts/api-generate.mjs`) → `docs/openapi/openapi.yaml`, `src/api/generated/` (клиентский SDK), `server/generated/api-types.ts` (серверные типы через `openapi-typescript`).
+    - [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md) — типы встреч, статусы брони, диапазоны доступности; `CONTEXT.md` дополнен терминами.
+    - Правки: `@service(#{ title })` (TypeSpec 1.16), `src/api/generated` и `server/generated` вне ESLint, `tsp-output/` в `.gitignore`; повторная генерация детерминирована. Проверки: lint/typecheck/test (109)/build — зелёные.
 
 ## Что осталось (следующие шаги)
 
-- [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница через `grill-with-docs` + `CONTEXT.md` + ADR + `implement` — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования через `wayfinder` → `to-spec` → `to-tickets`, Design First: `TypeSpec → OpenAPI → SDK + серверные артефакты`; (3) реализация тикетов через `implement` + Playwright; (4) Docker/деплой — **уже выполнено**. Шаги 2–3 не начаты; подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
+- [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **не начато**; (4) Docker/деплой — **уже выполнено**. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
+- [ ] **Шаг 3 курса**: разложить спецификацию (`docs/spec.md`) на вертикальные тикеты (`/to-tickets`) и реализовать; заменить ручной `src/api/client.ts` на сгенерированный SDK; реализовать новые сущности (`event_types`, `status`, `availability_ranges`, миграции `server/db/migrate.ts`); e2e Playwright.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
@@ -263,6 +277,11 @@
 | Раскладки редизайна | Десктоп A / телефон D выбираются хуком `useMediaQuery('(min-width: 1024px)')`, а не скрытием через CSS | В DOM нет дублей календаря — не ломаются тесты и доступность ([ADR-0007](docs/adr/0007-visual-redesign-and-themes.md)) |
 | Светлая/тёмная тема | `ThemeProvider` + `localStorage` (`call-calendar-theme`, режим `system` по умолчанию) + inline-анти-флеш-скрипт в `index.html`; `sonner` берёт `resolvedTheme` | Токены shadcn (HSL) для обеих тем, без «белых вспышек» при первой загрузке ([ADR-0007](docs/adr/0007-visual-redesign-and-themes.md)) |
 | Маршруты главная/бронь | `/` — лендинг (`LandingPage`), `/book/:slug` — бронь (`HomePage`), `*` — 404; slug из `src/config/host.ts`; бронь на API v1 | Требование Шага 1 + спека `/book/:slug`; Hexlet-автопроверка `/` отвечает 200 ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)) |
+| Контракт API (Шаг 2) | TypeSpec `api/main.tsp` → OpenAPI → клиентский SDK + серверные типы; источник истины — `.tsp`, сгенерированное не правится | Design First (Шаг 2); серверный эмиттер TypeSpec alpha без Fastify/zod → серверные маршруты/валидация ручные ([#13](https://github.com/frostiks777/ai-for-developers-project-386/issues/13), [#15](https://github.com/frostiks777/ai-for-developers-project-386/issues/15)) |
+| Генерация артефактов | `npm run api:generate` → `docs/openapi/openapi.yaml`, `src/api/generated/`, `server/generated/api-types.ts` (`openapi-typescript`); сгенерированное коммитится | Одной командой, детерминированно; CI/hexlet-check не запускают `tsp` ([#17](https://github.com/frostiks777/ai-for-developers-project-386/issues/17)) |
+| Модель данных v1 | Материализованные `slots` остаются; `event_types`; `bookings.eventTypeId` + `status` + `startAt`/`endAt`; `availability_ranges`; partial unique `UNIQUE(slotId) WHERE status != 'cancelled'`; миграции — `server/db/migrate.ts` | Отклонение от ТЗ §5 (нет `slots`) обосновано: SQLite без exclusion constraint ([ADR-0003](docs/adr/0003-unique-slot-booking.md), [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md), [#12](https://github.com/frostiks777/ai-for-developers-project-386/issues/12)) |
+| Отмена брони (Шаг 2) | Смена `status` на `cancelled` вместо удаления строки; занятость считается только для `confirmed` | ТЗ требует `status` и историю ([ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md)); в коде — переход на Шаге 3 |
+| Тестирование v1 | API (`app.inject` + in-memory) + RTL/jsdOM + e2e Playwright (`npm run test:e2e`, отдельный гейт); контракт-тесты — валидация ключевых ответов по OpenAPI; миграции на `:memory:` | Требование курса: сценарий и конфликт покрыты; правила на сервере ([#14](https://github.com/frostiks777/ai-for-developers-project-386/issues/14)) |
 
 ## Окружение
 
