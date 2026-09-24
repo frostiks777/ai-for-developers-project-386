@@ -7,6 +7,7 @@ import { gte } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { defaultAvailabilityRules, generateSlotStarts, rulesFromRow } from '../availability'
 import { defaultHost } from '../hosts'
+import { runMigrations } from './migrate'
 import * as schema from './schema'
 
 // ESM: __dirname недоступен, вычисляем пути от import.meta.url
@@ -21,87 +22,8 @@ if (dbPath !== ':memory:') {
 
 const client = new Database(dbPath)
 
-// Скелет работает без миграций: создаём таблицы при старте, если их ещё нет.
-// Настоящие миграции — через drizzle-kit (npm run db:generate / db:push)
-client.exec(`
-  CREATE TABLE IF NOT EXISTS slots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    startAt TEXT NOT NULL,
-    durationMin INTEGER NOT NULL DEFAULT 30
-  );
-  CREATE TABLE IF NOT EXISTS bookings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slotId INTEGER NOT NULL REFERENCES slots(id),
-    name TEXT NOT NULL,
-    phone TEXT,
-    email TEXT NOT NULL,
-    comment TEXT,
-    cancelToken TEXT,
-    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-  CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
-  CREATE TABLE IF NOT EXISTS availability_rules (
-    id INTEGER PRIMARY KEY,
-    weekdays TEXT NOT NULL,
-    windowStartHour INTEGER NOT NULL,
-    windowEndHour INTEGER NOT NULL,
-    slotDurationMin INTEGER NOT NULL,
-    bufferMin INTEGER NOT NULL,
-    minNoticeMin INTEGER NOT NULL,
-    horizonDays INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS hosts (
-    id TEXT PRIMARY KEY,
-    slug TEXT NOT NULL UNIQUE,
-    name TEXT NOT NULL,
-    timezone TEXT NOT NULL DEFAULT 'UTC',
-    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-`)
-
-// Обратная совместимость: приводим старые БД к актуальной схеме
-type BookingColumn = { name: string; notnull: number }
-const bookingColumns = () => client.pragma('table_info(bookings)') as BookingColumn[]
-
-// email появился позже — добавляем колонку, если её нет
-if (!bookingColumns().some((column) => column.name === 'email')) {
-  client.exec(`ALTER TABLE bookings ADD COLUMN email TEXT NOT NULL DEFAULT ''`)
-}
-
-// comment появился позже — колонка nullable
-if (!bookingColumns().some((column) => column.name === 'comment')) {
-  client.exec(`ALTER TABLE bookings ADD COLUMN comment TEXT`)
-}
-
-// cancelToken появился позже — колонка nullable (у старых броней токена нет)
-if (!bookingColumns().some((column) => column.name === 'cancelToken')) {
-  client.exec(`ALTER TABLE bookings ADD COLUMN cancelToken TEXT`)
-}
-
-client.exec(`CREATE UNIQUE INDEX IF NOT EXISTS bookings_cancelToken_unique ON bookings(cancelToken)`)
-
-// phone стал необязательным: SQLite не умеет снимать NOT NULL, пересобираем таблицу
-if (bookingColumns().find((column) => column.name === 'phone')?.notnull === 1) {
-  client.exec(`
-    ALTER TABLE bookings RENAME TO bookings_old;
-    DROP INDEX IF EXISTS bookings_slotId_unique;
-    CREATE TABLE bookings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      slotId INTEGER NOT NULL REFERENCES slots(id),
-      name TEXT NOT NULL,
-      phone TEXT,
-      email TEXT NOT NULL,
-      comment TEXT,
-      cancelToken TEXT,
-      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    INSERT INTO bookings (id, slotId, name, phone, email, comment, cancelToken, createdAt)
-      SELECT id, slotId, name, phone, email, comment, cancelToken, createdAt FROM bookings_old;
-    DROP TABLE bookings_old;
-    CREATE UNIQUE INDEX IF NOT EXISTS bookings_slotId_unique ON bookings(slotId);
-    CREATE UNIQUE INDEX IF NOT EXISTS bookings_cancelToken_unique ON bookings(cancelToken);
-  `)
-}
+// Схема приводится к актуальной идемпотентными миграциями при каждом старте.
+runMigrations(client)
 
 export const db = drizzle(client, { schema })
 
