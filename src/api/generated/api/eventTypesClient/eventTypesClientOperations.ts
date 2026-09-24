@@ -5,6 +5,7 @@ import type { OperationOptions } from "../../helpers/interfaces.js";
 import {
   jsonApiErrorToApplicationTransform,
   jsonCreateEventTypeRequestToTransportTransform,
+  jsonEventTypeToApplicationTransform,
   jsonUpdateEventTypeRequestToTransportTransform,
 } from "../../models/internal/serializers.js";
 import type {
@@ -44,7 +45,7 @@ export async function createEventType(
   slug: string,
   body: CreateEventTypeRequest,
   options?: CreateEventTypeOptions,
-): Promise<EventType | ApiError> {
+): Promise<ApiError | EventType> {
   const path = parse("/api/v1/hosts/{slug}/event-types").expand({
     slug: slug
   });
@@ -58,7 +59,10 @@ export async function createEventType(
     options?.operationOptions?.onResponse(response);
   }
   if (+response.status === 200 && response.headers["content-type"]?.includes("application/json")) {
-    return response.body!;
+    return jsonApiErrorToApplicationTransform(response.body)!;
+  }
+  if (+response.status === 201 && response.headers["content-type"]?.includes("application/json")) {
+    return jsonEventTypeToApplicationTransform(response.body)!;
   }
   throw createRestError(response);
 }

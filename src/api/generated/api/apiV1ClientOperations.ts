@@ -33,17 +33,17 @@ export async function getHostSettings(
 }
 ;
 export interface ListSlotsOptions extends OperationOptions {
+  date?: string
   eventTypeId?: string
 }
 export async function listSlots(
   client: ApiV1ClientContext,
   slug: string,
-  date: string,
   options?: ListSlotsOptions,
 ): Promise<AvailabilityDay | ApiError> {
   const path = parse("/api/v1/hosts/{slug}/slots{?date,eventTypeId}").expand({
     slug: slug,
-    date: date,
+    ...(options?.date && {date: options.date}),
     ...(options?.eventTypeId && {eventTypeId: options.eventTypeId})
   });
   const httpRequestOptions = {

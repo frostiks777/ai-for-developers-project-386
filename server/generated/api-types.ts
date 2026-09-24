@@ -472,7 +472,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
                 };
             };
         };
@@ -520,7 +529,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventType"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventType"];
                 };
             };
         };
@@ -606,8 +624,8 @@ export interface operations {
     };
     ApiV1_listSlots: {
         parameters: {
-            query: {
-                date: components["schemas"]["LocalDate"];
+            query?: {
+                date?: components["schemas"]["LocalDate"];
                 eventTypeId?: string;
             };
             header?: never;
