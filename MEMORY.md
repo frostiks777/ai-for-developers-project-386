@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-24 (Шаг 3 курса завершён: T1–T9 закрыты — реализация спецификации, SDK на фронте, контракт-тесты + e2e, финальная сверка со спецификацией)
+> Дата последнего обновления: 2026-09-24 (все 4 шага курса закрыты; редизайн A/D влит и ветка удалена; пост-редизайн доработки: название типа встречи в инфо-колонке и в экспорте календаря, фикс UI-бага «Доступность». Дальше — план `docs/todo.md`: Фазы 0–4)
 
 ## Текущее состояние
 
@@ -245,14 +245,22 @@
     - Контракт приведён к реальности: скаляр `LocalDateTime` (`@format date-time-local`) → `UtcDateTime` (`@format date-time`); ошибки описаны конвертом `model ErrorResponse { error: ApiError }`, все операции возвращают `T | ErrorResponse`. Перегенерировано; `src/api/sdk.ts` использует `ErrorResponse`.
     - `docs/spec.md`: §3 (типы встреч: создать/вкл-выкл/удалить), §4 (длительность из типа, сетка по `slotDurationMin`), §5 (фактические колонки camelCase), §6 (UTC ISO + `{error: ApiError}`, `listHostBookings` — все брони), §9 → «Закрытые вопросы Шага 3».
     - `docs/course-steps.md`: Шаг 3 отмечен выполненным; `docs/todo.md`: критерии Шага 3 = ✅. Проверки: lint/typecheck/141 тестов/build + e2e 2/2 — зелёные.
+54. ✅ Пост-редизайн доработки + синхронизация (2026-09-24):
+    - `HostInfo` и мобильный заголовок брони берут название выбранного типа встречи (`selectedType.title`) вместо статичного `host.meetingTitle`; формат — из `locationType` (`Онлайн-звонок`/`Очная встреча`/`Телефонный звонок`). Коммит `b676f72`.
+    - `BookingSuccess` прокидывает название типа встречи в Google Calendar и `.ics` (`eventTypeTitle` ← `HomePage`; `title` в `buildIcs`/`googleCalendarUrl`); тесты `calendar.test.ts` + `home-page.test.tsx`. Коммит `0c10fe2`.
+    - Фикс переполнения колонки «Доступность» (360 px): кнопка «Убрать» → компактная иконка-крестик (`aria-label`), тайм-инпуты `flex-1 min-w-0`; тест `availability-settings-form.test.tsx`.
+    - Ветка `feat/redesign-a-d-themes` удалена (local + remote; была полностью смержена в `main`).
 
 ## Что осталось (следующие шаги)
 
 - [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
 - [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным. CI + hexlet-check на `main` — success (коммит `807d4e0`).
-- [ ] **⏸ ОТЛОЖЕНО — вернуться позже (по просьбе пользователя, 2026-09-24):** Low-бэклог ниже. Ничего не начинать до отдельного запроса.
+- [x] **Фаза 0 — гигиена/синхронизация (2026-09-24):** фикс UI-бага «Доступность», заметки в `docs/todo.md` (несколько интервалов — сделано), это обновление `MEMORY.md`.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
+- [ ] **Фаза 1 — новые формы:** блокировка дат/часов (ТЗ §2.1: `BlockTimeModal` + API/schema), причина отмены (`cancellation_reason`) + модалка подтверждения.
+- [ ] **Фаза 2 — P0 публичный флоу:** имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» / `/booking/:uuid/confirmed`.
+- [ ] **Фаза 3 — P1 self-service/dashboard:** роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
+- [ ] **Фаза 4 — Low/архитектура (нужны ADR):** мульти-хост-модель (`host_id` в `slots`/`bookings`, `/book/:hostId`), авторизация `/dashboard`.
 
 ## Ключевые решения
 
