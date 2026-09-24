@@ -147,6 +147,10 @@ describe('целостность bookings.slotId', () => {
           name: 'Пётр',
           phone: '+79100000001',
           email: 'petr@example.com',
+          startAt: slot.startAt,
+          endAt: new Date(
+            new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+          ).toISOString(),
         })
         .run(),
     ).toThrowError(/UNIQUE/)

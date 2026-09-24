@@ -102,6 +102,10 @@ export async function buildApp(): Promise<FastifyInstance> {
           email,
           comment: comment ?? null,
           cancelToken: randomUUID(),
+          startAt: slot.startAt,
+          endAt: new Date(
+            new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+          ).toISOString(),
         })
         .returning()
         .get()
@@ -204,7 +208,16 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     if (booking.slotId !== slotId) {
       try {
-        db.update(bookings).set({ slotId }).where(eq(bookings.id, booking.id)).run()
+        db.update(bookings)
+          .set({
+            slotId,
+            startAt: slot.startAt,
+            endAt: new Date(
+              new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+            ).toISOString(),
+          })
+          .where(eq(bookings.id, booking.id))
+          .run()
       } catch (error) {
         if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
           return reply.code(409).send({ error: 'Слот уже занят' })
