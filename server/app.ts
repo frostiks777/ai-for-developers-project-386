@@ -6,7 +6,7 @@ import fastifyStatic from '@fastify/static'
 import { and, eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
-import { bookings, hosts, slots } from './db/schema'
+import { bookings, eventTypes, hosts, slots } from './db/schema'
 import {
   cancelBookingV1,
   createBookingV1,
@@ -50,6 +50,8 @@ const bookingWithSlotColumns = {
   comment: bookings.comment,
   status: bookings.status,
   cancelToken: bookings.cancelToken,
+  eventTypeId: bookings.eventTypeId,
+  eventTypeTitle: eventTypes.title,
   createdAt: bookings.createdAt,
   startAt: slots.startAt,
   durationMin: slots.durationMin,
@@ -95,6 +97,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       .select(bookingWithSlotColumns)
       .from(bookings)
       .innerJoin(slots, eq(bookings.slotId, slots.id))
+      .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
       .orderBy(slots.startAt)
       .all()
   })
@@ -197,6 +200,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       .select(bookingWithSlotColumns)
       .from(bookings)
       .innerJoin(slots, eq(bookings.slotId, slots.id))
+      .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
       .where(eq(bookings.cancelToken, token))
       .get()
 
@@ -261,6 +265,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       .select(bookingWithSlotColumns)
       .from(bookings)
       .innerJoin(slots, eq(bookings.slotId, slots.id))
+      .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
       .where(eq(bookings.id, booking.id))
       .get()
   })

@@ -32,6 +32,8 @@ export interface BookingWithSlot extends Booking {
   durationMin: number
   status: string
   cancelToken: string | null
+  eventTypeId: string
+  eventTypeTitle: string | null
 }
 
 // Ответ на создание брони: содержит токен для публичной отмены по ссылке

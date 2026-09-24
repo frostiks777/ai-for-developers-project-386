@@ -23,6 +23,8 @@ const booking: BookingWithSlot = {
   durationMin: 30,
   status: 'confirmed',
   cancelToken: 'token-1',
+  eventTypeId: 'default-consultation',
+  eventTypeTitle: 'Звонок-консультация',
 }
 
 const defaultSettings: AvailabilitySettings = {
