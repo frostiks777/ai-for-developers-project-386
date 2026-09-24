@@ -149,6 +149,7 @@ export default function HomePage() {
     setSelectedDate(null)
   }
 
+  const selectedType = eventTypes.find((type) => type.id === selectedTypeId) ?? null
   const selectedSlot = visibleSlots.find((slot) => slot.id === selectedSlotId) ?? null
   const freeCount = visibleSlots.filter((slot) => !slot.isBooked).length
   const durationMin = slots[0]?.durationMin ?? null
@@ -221,6 +222,7 @@ export default function HomePage() {
             <div className="grid min-h-0 flex-1 overflow-hidden rounded-card border bg-card text-card-foreground shadow-soft lg:grid-cols-[300px_460px_minmax(0,1fr)]">
               <div className="scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 <HostInfo
+                  eventType={selectedType}
                   durationMin={slots[0]?.durationMin ?? null}
                   minNoticeMin={minNoticeMin}
                   timeZone={timeZone}
@@ -310,7 +312,7 @@ export default function HomePage() {
                   <p className="text-sm text-muted-foreground">{host.name}</p>
                 </div>
                 <h2 className="mt-3 font-serif text-[28px] font-semibold leading-tight">
-                  {host.meetingTitle}
+                  {selectedType?.title ?? host.meetingTitle}
                 </h2>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {durationMin !== null && (
