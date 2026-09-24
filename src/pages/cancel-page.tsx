@@ -3,6 +3,15 @@ import { Link, useParams } from 'react-router-dom'
 
 import { ApiError, api, call } from '@/api/sdk'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { host } from '@/config/host'
 
 type Status = 'idle' | 'cancelling' | 'done' | 'error'
@@ -11,6 +20,19 @@ export default function CancelPage() {
   const { token } = useParams<{ token: string }>()
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [reason, setReason] = useState('')
+
+  const openDialog = () => {
+    if (!token) {
+      setStatus('error')
+      setError('Некорректная ссылка отмены')
+      return
+    }
+
+    setError(null)
+    setIsDialogOpen(true)
+  }
 
   const handleCancel = async () => {
     if (!token) {
@@ -22,8 +44,14 @@ export default function CancelPage() {
     setStatus('cancelling')
 
     try {
-      await call(api.bookingsClient.cancelBooking(token))
+      const trimmed = reason.trim()
+      await call(
+        api.bookingsClient.cancelBooking(token, {
+          body: trimmed ? { reason: trimmed } : undefined,
+        }),
+      )
       setStatus('done')
+      setIsDialogOpen(false)
     } catch (caught) {
       setStatus('error')
       setError(
@@ -53,11 +81,13 @@ export default function CancelPage() {
               других.
             </p>
 
-            {status === 'error' && <p className="mt-4 text-sm text-destructive">{error}</p>}
+            {status === 'error' && !isDialogOpen && (
+              <p className="mt-4 text-sm text-destructive">{error}</p>
+            )}
 
             <div className="mt-6 flex gap-3">
-              <Button onClick={handleCancel} disabled={status === 'cancelling'}>
-                {status === 'cancelling' ? 'Отмена…' : 'Отменить встречу'}
+              <Button onClick={openDialog} disabled={status === 'cancelling'}>
+                Отменить встречу
               </Button>
               <Button variant="outline" asChild>
                 <Link to={`/book/${host.slug}`}>Не отменять</Link>
@@ -66,6 +96,41 @@ export default function CancelPage() {
           </>
         )}
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Вы уверены, что хотите отменить бронирование?</DialogTitle>
+            <DialogDescription>
+              Слот снова станет доступен для других гостей. Отменить действие нельзя.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="cancellation-reason">Причина отмены (необязательно)</Label>
+            <Textarea
+              id="cancellation-reason"
+              value={reason}
+              maxLength={500}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Например: не смогу присутствовать"
+            />
+          </div>
+
+          {status === 'error' && error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Не отменять
+            </Button>
+            <Button onClick={handleCancel} disabled={status === 'cancelling'}>
+              {status === 'cancelling' ? 'Отмена…' : 'Да, отменить'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

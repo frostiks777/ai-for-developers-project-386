@@ -173,6 +173,8 @@ model Booking {
   clientPhone?: string | null;
   clientNotes?: string | null;
   status: BookingStatus;
+  @doc("Причина отмены, если бронь отменена.")
+  cancellationReason?: string | null;
   createdAt: string;
 }
 
@@ -189,6 +191,11 @@ model CreateBookingRequest {
 model RescheduleBookingRequest {
   @doc("Новое начало слота (UTC ISO 8601).")
   startAt: UtcDateTime;
+}
+
+model CancelBookingRequest {
+  @doc("Необязательная причина отмены.")
+  reason?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -267,7 +274,10 @@ namespace ApiV1 {
 
     @route("/cancel")
     @post
-    op cancelBooking(@path bookingId: string): Booking | ErrorResponse;
+    op cancelBooking(
+      @path bookingId: string,
+      @body body?: CancelBookingRequest,
+    ): Booking | ErrorResponse;
 
     @route("/reschedule")
     @post

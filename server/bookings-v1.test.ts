@@ -15,7 +15,13 @@ afterAll(async () => {
 })
 
 type Slot = { id: number; startAt: string; durationMin: number; available: boolean }
-type Booking = { id: string; status: string; startAt: string; eventTypeId: string }
+type Booking = {
+  id: string
+  status: string
+  startAt: string
+  eventTypeId: string
+  cancellationReason?: string | null
+}
 
 async function freeSlot(): Promise<Slot> {
   const day = (
@@ -107,6 +113,32 @@ describe('Жизненный цикл брони', () => {
       payload: payload(slot, 'guest6@example.com'),
     })
     expect(again.statusCode).toBe(201)
+  })
+
+  it('сохраняет причину отмены и отдаёт её в брони', async () => {
+    const slot = await freeSlot()
+    const created = (
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/hosts/default/bookings',
+        payload: payload(slot, 'guest-reason@example.com'),
+      })
+    ).json<Booking>()
+
+    const cancel = await app.inject({
+      method: 'POST',
+      url: `/api/v1/bookings/${created.id}/cancel`,
+      payload: { reason: 'Передумал' },
+    })
+
+    expect(cancel.statusCode).toBe(200)
+    expect(cancel.json<Booking>().cancellationReason).toBe('Передумал')
+
+    const fetched = await app.inject({
+      method: 'GET',
+      url: `/api/v1/bookings/${created.id}`,
+    })
+    expect(fetched.json<Booking>().cancellationReason).toBe('Передумал')
   })
 
   it('перенос меняет время брони', async () => {

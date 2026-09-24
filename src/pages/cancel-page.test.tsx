@@ -19,7 +19,7 @@ describe('CancelPage', () => {
     vi.unstubAllGlobals()
   })
 
-  it('отменяет встречу по токену и показывает подтверждение', async () => {
+  it('отменяет встречу по токену после подтверждения в модалке', async () => {
     const fetchMock = vi.fn(
       async () =>
         new Response(
@@ -34,6 +34,7 @@ describe('CancelPage', () => {
             clientEmail: 'ivan@example.com',
             clientPhone: null,
             clientNotes: null,
+            cancellationReason: 'Передумал',
             createdAt: '2099-09-23T07:00:00.000Z',
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
@@ -46,10 +47,19 @@ describe('CancelPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Отменить встречу' }))
 
+    expect(
+      await screen.findByText('Вы уверены, что хотите отменить бронирование?'),
+    ).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Причина отмены (необязательно)'), 'Передумал')
+    await user.click(screen.getByRole('button', { name: 'Да, отменить' }))
+
     expect(await screen.findByRole('heading', { name: 'Встреча отменена' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/bookings/token-123/cancel'),
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('Передумал'),
+      }),
     )
   })
 
@@ -69,6 +79,7 @@ describe('CancelPage', () => {
     renderCancelPage()
 
     await user.click(screen.getByRole('button', { name: 'Отменить встречу' }))
+    await user.click(await screen.findByRole('button', { name: 'Да, отменить' }))
 
     expect(await screen.findByText('Бронь не найдена')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Встреча отменена' })).toBeNull()

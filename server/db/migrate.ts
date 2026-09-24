@@ -39,6 +39,7 @@ const createTables = `
     email TEXT NOT NULL,
     comment TEXT,
     status TEXT NOT NULL DEFAULT 'confirmed',
+    cancellationReason TEXT,
     startAt TEXT NOT NULL,
     endAt TEXT NOT NULL,
     cancelToken TEXT,
@@ -126,6 +127,7 @@ function rebuildBookingsToV1(client: BetterSqlite3.Database): void {
       email TEXT NOT NULL,
       comment TEXT,
       status TEXT NOT NULL DEFAULT 'confirmed',
+      cancellationReason TEXT,
       startAt TEXT NOT NULL,
       endAt TEXT NOT NULL,
       cancelToken TEXT,
@@ -203,6 +205,11 @@ export function runMigrations(client: BetterSqlite3.Database): void {
   // Колонки v1 (status/eventTypeId/startAt/endAt) добавляются пересборкой таблицы
   if (!bookingColumns().some((column) => column.name === 'status')) {
     rebuildBookingsToV1(client)
+  }
+
+  // Причина отмены появилась позже — колонка nullable
+  if (!bookingColumns().some((column) => column.name === 'cancellationReason')) {
+    client.exec(`ALTER TABLE bookings ADD COLUMN cancellationReason TEXT`)
   }
 
   // Уникальность слота — только для активных броней (ADR-0011)

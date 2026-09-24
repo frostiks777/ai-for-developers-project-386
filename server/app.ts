@@ -36,6 +36,7 @@ import {
   createEventTypeSchema,
   rescheduleBookingSchema,
   updateEventTypeSchema,
+  v1CancelBookingSchema,
   v1CreateBookingSchema,
   v1RescheduleBookingSchema,
 } from './validation'
@@ -308,6 +309,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     clientEmail: row.email,
     clientPhone: row.phone,
     clientNotes: row.comment,
+    cancellationReason: row.cancellationReason,
     createdAt: row.createdAt,
   })
 
@@ -555,13 +557,23 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
     }
 
+    const parsed = v1CancelBookingSchema.safeParse(request.body ?? {})
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+      return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
+    }
+
     const host = db.select().from(hosts).get()
 
     if (booking.status === 'cancelled') {
       return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
     }
 
-    return toBooking(cancelBookingV1(booking), host?.slug ?? '', host?.timezone ?? 'UTC')
+    return toBooking(
+      cancelBookingV1(booking, parsed.data.reason),
+      host?.slug ?? '',
+      host?.timezone ?? 'UTC',
+    )
   })
 
   app.post('/api/v1/bookings/:bookingId/reschedule', (request, reply) => {

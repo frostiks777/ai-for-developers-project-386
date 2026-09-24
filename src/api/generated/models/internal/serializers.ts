@@ -4,6 +4,7 @@ import type {
   AvailabilityRange,
   AvailabilitySettings,
   Booking,
+  CancelBookingRequest,
   CreateBookingRequest,
   CreateEventTypeRequest,
   ErrorCode,
@@ -69,6 +70,10 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   }
 
   return new Date(date * 1000);
+}export function cancelBookingPayloadToTransport(
+  payload: CancelBookingRequest,
+) {
+  return jsonCancelBookingRequestToTransportTransform(payload)!;
 }export function rescheduleBookingPayloadToTransport(
   payload: RescheduleBookingRequest,
 ) {
@@ -358,14 +363,14 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,status: input_.status,createdAt: input_.createdAt
+    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,status: input_.status,cancellationReason: input_.cancellationReason,createdAt: input_.createdAt
   }!;
 }export function jsonBookingToApplicationTransform(input_?: any): Booking {
   if(!input_) {
     return input_ as any;
   }
     return {
-    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,status: input_.status,createdAt: input_.createdAt
+    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,status: input_.status,cancellationReason: input_.cancellationReason,createdAt: input_.createdAt
   }!;
 }export function jsonCreateBookingRequestToTransportTransform(
   input_?: CreateBookingRequest | null,
@@ -384,6 +389,24 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   }
     return {
     eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes
+  }!;
+}export function jsonCancelBookingRequestToTransportTransform(
+  input_?: CancelBookingRequest | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    reason: input_.reason
+  }!;
+}export function jsonCancelBookingRequestToApplicationTransform(
+  input_?: any,
+): CancelBookingRequest {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    reason: input_.reason
   }!;
 }export function jsonRescheduleBookingRequestToTransportTransform(
   input_?: RescheduleBookingRequest | null,

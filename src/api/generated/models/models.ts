@@ -127,6 +127,10 @@ export interface Booking {
   clientPhone?: string | null;
   clientNotes?: string | null;
   status: BookingStatus;
+  /**
+   * Причина отмены, если бронь отменена.
+   */
+  cancellationReason?: string | null;
   createdAt: string;
 }
 /**
@@ -147,6 +151,12 @@ export interface CreateBookingRequest {
   clientEmail: string;
   clientPhone?: string;
   clientNotes?: string;
+}
+export interface CancelBookingRequest {
+  /**
+   * Необязательная причина отмены.
+   */
+  reason?: string;
 }
 export interface RescheduleBookingRequest {
   /**
