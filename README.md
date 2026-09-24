@@ -122,6 +122,20 @@ curl http://127.0.0.1:3000/api/bookings
 | `npm test` | тесты (Vitest) |
 | `npm run lint` / `npm run typecheck` | линтер / проверка типов |
 | `npm run db:generate` / `npm run db:push` | миграции Drizzle |
+| `npm run api:generate` | генерация OpenAPI + клиентского SDK из `api/main.tsp` |
+
+## API-контракт (TypeSpec)
+
+Источник контракта — `api/main.tsp`. Одна команда генерирует артефакты:
+
+```bash
+npm run api:generate   # tsp compile api/main.tsp → docs/openapi/openapi.yaml + src/api/generated/
+```
+
+- `docs/openapi/openapi.yaml` — OpenAPI 3 (спека).
+- `src/api/generated/` — клиентский SDK (TypeScript).
+- Сгенерированные файлы коммитятся и **вручную не правятся**: изменения вносим только в `api/main.tsp` и перегенерируем.
+
 
 ## Структура
 
