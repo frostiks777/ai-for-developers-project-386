@@ -7,10 +7,23 @@ import { eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
 import { bookings, hosts, slots } from './db/schema'
+import {
+  createEventType,
+  deleteEventType,
+  listEventTypes,
+  updateEventType,
+} from './event-types'
 import { dateKeyInZone, dateKeyPattern, isValidTimeZone } from './hosts'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
 import type { BookingWithSlot, HostSettings, TimeSlot } from './types'
-import { availabilityRulesSchema, cancelBookingSchema, createBookingSchema, rescheduleBookingSchema } from './validation'
+import {
+  availabilityRulesSchema,
+  cancelBookingSchema,
+  createBookingSchema,
+  createEventTypeSchema,
+  rescheduleBookingSchema,
+  updateEventTypeSchema,
+} from './validation'
 
 // Единый набор колонок для выборок «бронь + данные слота»
 const bookingWithSlotColumns = {
@@ -294,6 +307,80 @@ export async function buildApp(): Promise<FastifyInstance> {
     const result = selectFutureSlots()
 
     return date ? result.filter((slot) => dateKeyInZone(slot.startAt, timeZone) === date) : result
+  })
+
+  // ── API v1: типы встреч ──────────────────────────────────────────────
+  app.get('/api/v1/hosts/:slug/event-types', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    return listEventTypes(host.id)
+  })
+
+  app.post('/api/v1/hosts/:slug/event-types', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    const parsed = createEventTypeSchema.safeParse(request.body)
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+      return reply.code(422).send({ error: message })
+    }
+
+    try {
+      return reply.code(201).send(createEventType(host.id, parsed.data))
+    } catch (error) {
+      if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        return reply.code(409).send({ error: 'Тип с таким slug уже существует' })
+      }
+
+      throw error
+    }
+  })
+
+  app.patch('/api/v1/hosts/:slug/event-types/:eventTypeId', (request, reply) => {
+    const { slug, eventTypeId } = request.params as { slug: string; eventTypeId: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    const parsed = updateEventTypeSchema.safeParse(request.body)
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+      return reply.code(422).send({ error: message })
+    }
+
+    const updated = updateEventType(host.id, eventTypeId, parsed.data)
+    if (!updated) {
+      return reply.code(404).send({ error: 'Тип встречи не найден' })
+    }
+
+    return updated
+  })
+
+  app.delete('/api/v1/hosts/:slug/event-types/:eventTypeId', (request, reply) => {
+    const { slug, eventTypeId } = request.params as { slug: string; eventTypeId: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    if (!deleteEventType(host.id, eventTypeId)) {
+      return reply.code(404).send({ error: 'Тип встречи не найден' })
+    }
+
+    return reply.code(204).send()
   })
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/

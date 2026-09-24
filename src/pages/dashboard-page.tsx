@@ -13,6 +13,7 @@ import { AvailabilityForm } from '@/components/availability-form'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
 import { BookingsList } from '@/components/bookings-list'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
+import { EventTypesEditor } from '@/components/event-types-editor'
 import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { AvailabilityRules } from '@/types/availability'
@@ -59,7 +60,9 @@ export default function DashboardPage() {
   const [rulesError, setRulesError] = useState<string | null>(null)
 
   const [filter, setFilter] = useState<BookingFilterValue>('all')
-  const [mobileTab, setMobileTab] = useState<'bookings' | 'availability'>('bookings')
+  const [mobileTab, setMobileTab] = useState<'bookings' | 'availability' | 'event-types'>(
+    'bookings',
+  )
 
   const loadBookings = useCallback(async () => {
     setIsLoadingBookings(true)
@@ -133,6 +136,16 @@ export default function DashboardPage() {
             {!isLoadingBookings && !bookingsError && (
               <BookingsList bookings={filteredBookings} onCancel={handleCancel} />
             )}
+
+            <section id="event-types" className="rounded-[18px] border bg-card p-6">
+              <div className="mb-5">
+                <h2 className="text-xl font-semibold">Типы встреч</h2>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  Что может выбрать гость при записи
+                </p>
+              </div>
+              <EventTypesEditor slug={host.slug} />
+            </section>
           </div>
 
           <section
@@ -165,7 +178,7 @@ export default function DashboardPage() {
           Панель организатора
         </h2>
 
-        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-secondary p-0.5">
+        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-secondary p-0.5">
           <button
             type="button"
             role="tab"
@@ -183,6 +196,20 @@ export default function DashboardPage() {
           <button
             type="button"
             role="tab"
+            aria-selected={mobileTab === 'event-types'}
+            onClick={() => setMobileTab('event-types')}
+            className={cn(
+              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              mobileTab === 'event-types'
+                ? 'bg-segment-active font-semibold shadow-sm'
+                : 'text-muted-foreground',
+            )}
+          >
+            Типы
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected={mobileTab === 'availability'}
             onClick={() => setMobileTab('availability')}
             className={cn(
@@ -196,7 +223,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {mobileTab === 'bookings' ? (
+        {mobileTab === 'bookings' && (
           <div className="mt-4 flex flex-col gap-4">
             <BookingFilter value={filter} onChange={setFilter} />
             {isLoadingBookings && <p>Загрузка броней…</p>}
@@ -205,7 +232,15 @@ export default function DashboardPage() {
               <BookingsList bookings={filteredBookings} onCancel={handleCancel} />
             )}
           </div>
-        ) : (
+        )}
+
+        {mobileTab === 'event-types' && (
+          <section className="mt-4 rounded-[18px] border bg-card p-5">
+            <EventTypesEditor slug={host.slug} />
+          </section>
+        )}
+
+        {mobileTab === 'availability' && (
           <div className="mt-4 rounded-[18px] border bg-card p-5">
             {rulesError && <p className="text-destructive">{rulesError}</p>}
             {!rulesError && !rules && <p>Загрузка настроек…</p>}
