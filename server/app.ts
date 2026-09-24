@@ -58,18 +58,37 @@ const bookingWithSlotColumns = {
   durationMin: slots.durationMin,
 }
 
+// Код нарушения уникального индекса в PostgreSQL
+const PG_UNIQUE_VIOLATION = '23505'
+
+// Drizzle оборачивает ошибки драйвера в DrizzleQueryError с полем cause,
+// поэтому код ошибки Postgres ищем по цепочке cause.
+function pgErrorCode(error: unknown): string | undefined {
+  let current: unknown = error
+
+  for (let depth = 0; depth < 5 && current; depth += 1) {
+    const code = (current as { code?: string }).code
+    if (code) return code
+    current = (current as { cause?: unknown }).cause
+  }
+
+  return undefined
+}
+
+const isUniqueViolation = (error: unknown) => pgErrorCode(error) === PG_UNIQUE_VIOLATION
+
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
   // В тестах логи Fastify не нужны (vitest выставляет NODE_ENV=test)
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
 
-  const minNoticeMs = () => loadAvailabilityRules().minNoticeMin * 60 * 1000
+  const minNoticeMs = async () => (await loadAvailabilityRules()).minNoticeMin * 60 * 1000
 
   app.get('/health', () => ({ status: 'ok' }))
 
   // Слоты в будущем с признаком занятости, отсортированные по startAt
-  const selectFutureSlots = (): TimeSlot[] => {
-    const rows = db
+  const selectFutureSlots = async (): Promise<TimeSlot[]> => {
+    const rows = await db
       .select({
         id: slots.id,
         startAt: slots.startAt,
@@ -78,9 +97,8 @@ export async function buildApp(): Promise<FastifyInstance> {
       })
       .from(slots)
       .leftJoin(bookings, and(eq(bookings.slotId, slots.id), eq(bookings.status, 'confirmed')))
-      .where(gte(slots.startAt, new Date(Date.now() + minNoticeMs()).toISOString()))
+      .where(gte(slots.startAt, new Date(Date.now() + (await minNoticeMs())).toISOString()))
       .orderBy(slots.startAt)
-      .all()
 
     return rows.map((row) => ({
       id: row.id,
@@ -90,20 +108,19 @@ export async function buildApp(): Promise<FastifyInstance> {
     }))
   }
 
-  app.get('/api/slots', (): TimeSlot[] => selectFutureSlots())
+  app.get('/api/slots', async (): Promise<TimeSlot[]> => selectFutureSlots())
 
   // Список броней с данными слота (для панели организатора), по времени начала
-  app.get('/api/bookings', (): BookingWithSlot[] => {
+  app.get('/api/bookings', async (): Promise<BookingWithSlot[]> => {
     return db
       .select(bookingWithSlotColumns)
       .from(bookings)
       .innerJoin(slots, eq(bookings.slotId, slots.id))
       .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
       .orderBy(slots.startAt)
-      .all()
   })
 
-  app.post('/api/bookings', (request, reply) => {
+  app.post('/api/bookings', async (request, reply) => {
     const parsed = createBookingSchema.safeParse(request.body)
 
     if (!parsed.success) {
@@ -113,7 +130,8 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     const { slotId, name, phone, email, comment } = parsed.data
 
-    const slot = db.select().from(slots).where(eq(slots.id, slotId)).get()
+    const slotRows = await db.select().from(slots).where(eq(slots.id, slotId)).limit(1)
+    const slot = slotRows[0]
     if (!slot) {
       return reply.code(404).send({ error: 'Слот не найден' })
     }
@@ -122,31 +140,32 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
     }
 
-    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
       return reply.code(400).send({ error: 'Слот уже недоступен' })
     }
 
     try {
-      const created = db
-        .insert(bookings)
-        .values({
-          slotId,
-          name,
-          phone: phone ?? null,
-          email,
-          comment: comment ?? null,
-          cancelToken: randomUUID(),
-          startAt: slot.startAt,
-          endAt: new Date(
-            new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
-          ).toISOString(),
-        })
-        .returning()
-        .get()
+      const created = (
+        await db
+          .insert(bookings)
+          .values({
+            slotId,
+            name,
+            phone: phone ?? null,
+            email,
+            comment: comment ?? null,
+            cancelToken: randomUUID(),
+            startAt: slot.startAt,
+            endAt: new Date(
+              new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+            ).toISOString(),
+          })
+          .returning()
+      )[0]
 
       return reply.code(201).send(created)
     } catch (error) {
-      if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (isUniqueViolation(error)) {
         return reply.code(409).send({ error: 'Слот уже занят' })
       }
 
@@ -155,16 +174,16 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Отмена брони организатором — слот снова становится свободным
-  app.delete('/api/bookings/:id', (request, reply) => {
+  app.delete('/api/bookings/:id', async (request, reply) => {
     const id = Number((request.params as { id: string }).id)
 
     if (!Number.isInteger(id) || id <= 0) {
       return reply.code(400).send({ error: 'Некорректный id брони' })
     }
 
-    const deleted = db.delete(bookings).where(eq(bookings.id, id)).returning().get()
+    const deleted = await db.delete(bookings).where(eq(bookings.id, id)).returning()
 
-    if (!deleted) {
+    if (deleted.length === 0) {
       return reply.code(404).send({ error: 'Бронь не найдена' })
     }
 
@@ -172,7 +191,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Публичная отмена брони по токену из ссылки на экране успеха
-  app.post('/api/bookings/cancel', (request, reply) => {
+  app.post('/api/bookings/cancel', async (request, reply) => {
     const parsed = cancelBookingSchema.safeParse(request.body)
 
     if (!parsed.success) {
@@ -180,13 +199,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send({ error: message })
     }
 
-    const deleted = db
+    const deleted = await db
       .delete(bookings)
       .where(eq(bookings.cancelToken, parsed.data.token))
       .returning()
-      .get()
 
-    if (!deleted) {
+    if (deleted.length === 0) {
       return reply.code(404).send({ error: 'Бронь не найдена' })
     }
 
@@ -194,16 +212,18 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Бронь по токену (для страницы переноса): отдаёт текущее время слота
-  app.get('/api/bookings/by-token/:token', (request, reply) => {
+  app.get('/api/bookings/by-token/:token', async (request, reply) => {
     const { token } = request.params as { token: string }
 
-    const booking = db
-      .select(bookingWithSlotColumns)
-      .from(bookings)
-      .innerJoin(slots, eq(bookings.slotId, slots.id))
-      .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
-      .where(eq(bookings.cancelToken, token))
-      .get()
+    const booking = (
+      await db
+        .select(bookingWithSlotColumns)
+        .from(bookings)
+        .innerJoin(slots, eq(bookings.slotId, slots.id))
+        .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
+        .where(eq(bookings.cancelToken, token))
+        .limit(1)
+    )[0]
 
     if (!booking) {
       return reply.code(404).send({ error: 'Бронь не найдена' })
@@ -213,7 +233,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Перенос брони на другой слот по токену; старый слот освобождается
-  app.post('/api/bookings/reschedule', (request, reply) => {
+  app.post('/api/bookings/reschedule', async (request, reply) => {
     const parsed = rescheduleBookingSchema.safeParse(request.body)
 
     if (!parsed.success) {
@@ -223,12 +243,14 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     const { token, slotId } = parsed.data
 
-    const booking = db.select().from(bookings).where(eq(bookings.cancelToken, token)).get()
+    const booking = (
+      await db.select().from(bookings).where(eq(bookings.cancelToken, token)).limit(1)
+    )[0]
     if (!booking) {
       return reply.code(404).send({ error: 'Бронь не найдена' })
     }
 
-    const slot = db.select().from(slots).where(eq(slots.id, slotId)).get()
+    const slot = (await db.select().from(slots).where(eq(slots.id, slotId)).limit(1))[0]
     if (!slot) {
       return reply.code(404).send({ error: 'Слот не найден' })
     }
@@ -237,13 +259,14 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
     }
 
-    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
       return reply.code(400).send({ error: 'Слот уже недоступен' })
     }
 
     if (booking.slotId !== slotId) {
       try {
-        db.update(bookings)
+        await db
+          .update(bookings)
           .set({
             slotId,
             startAt: slot.startAt,
@@ -252,9 +275,8 @@ export async function buildApp(): Promise<FastifyInstance> {
             ).toISOString(),
           })
           .where(eq(bookings.id, booking.id))
-          .run()
       } catch (error) {
-        if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        if (isUniqueViolation(error)) {
           return reply.code(409).send({ error: 'Слот уже занят' })
         }
 
@@ -262,20 +284,22 @@ export async function buildApp(): Promise<FastifyInstance> {
       }
     }
 
-    return db
-      .select(bookingWithSlotColumns)
-      .from(bookings)
-      .innerJoin(slots, eq(bookings.slotId, slots.id))
-      .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
-      .where(eq(bookings.id, booking.id))
-      .get()
+    return (
+      await db
+        .select(bookingWithSlotColumns)
+        .from(bookings)
+        .innerJoin(slots, eq(bookings.slotId, slots.id))
+        .leftJoin(eventTypes, eq(bookings.eventTypeId, eventTypes.id))
+        .where(eq(bookings.id, booking.id))
+        .limit(1)
+    )[0]
   })
 
   // Текущие правила доступности организатора
-  app.get('/api/availability', () => loadAvailabilityRules())
+  app.get('/api/availability', async () => loadAvailabilityRules())
 
   // Обновление правил: сохраняем и пересобираем будущие свободные слоты
-  app.put('/api/availability', (request, reply) => {
+  app.put('/api/availability', async (request, reply) => {
     const parsed = availabilityRulesSchema.safeParse(request.body)
 
     if (!parsed.success) {
@@ -283,15 +307,16 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send({ error: message })
     }
 
-    saveAvailabilityRules(parsed.data)
-    regenerateFutureSlots(parsed.data)
+    await saveAvailabilityRules(parsed.data)
+    await regenerateFutureSlots(parsed.data)
 
     return loadAvailabilityRules()
   })
 
   // ── API v1: мульти-хост ──────────────────────────────────────────────
-  // Читает хост по slug; null, если не найден (роуты отвечают 404)
-  const findHost = (slug: string) => db.select().from(hosts).where(eq(hosts.slug, slug)).get()
+  // Читает хост по slug; undefined, если не найден (роуты отвечают 404)
+  const findHost = async (slug: string) =>
+    (await db.select().from(hosts).where(eq(hosts.slug, slug)).limit(1))[0]
 
   // Формат ошибки контракта v1
   const v1Error = (code: string, message: string) => ({ error: { code, message } })
@@ -313,10 +338,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     createdAt: row.createdAt,
   })
 
+  const defaultHost = async () => (await db.select().from(hosts).limit(1))[0]
+
   // Публичные настройки хоста по контракту HostSettings
-  app.get('/api/v1/hosts/:slug/settings', (request, reply) => {
+  app.get('/api/v1/hosts/:slug/settings', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -326,9 +353,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Слоты хоста; необязательные ?date=YYYY-MM-DD, ?timezone=IANA, ?eventTypeId=
-  app.get('/api/v1/hosts/:slug/slots', (request, reply) => {
+  app.get('/api/v1/hosts/:slug/slots', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -352,7 +379,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     let durationMin = 30
 
     if (eventTypeId) {
-      const eventType = findEventType(host.id, eventTypeId)
+      const eventType = await findEventType(host.id, eventTypeId)
 
       if (!eventType) {
         return reply.code(404).send({ error: 'Тип встречи не найден' })
@@ -361,7 +388,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       durationMin = eventType.durationMin
     }
 
-    const slots = selectFutureSlots()
+    const slots = (await selectFutureSlots())
       .filter((slot) => !date || dateKeyInZone(slot.startAt, timeZone) === date)
       .map((slot) => ({
         id: slot.id,
@@ -374,9 +401,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // ── API v1: диапазоны доступности ────────────────────────────────────
-  app.get('/api/v1/hosts/:slug/availability', (request, reply) => {
+  app.get('/api/v1/hosts/:slug/availability', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -385,9 +412,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     return loadAvailabilitySettings(host.id, host.timezone)
   })
 
-  app.put('/api/v1/hosts/:slug/availability', (request, reply) => {
+  app.put('/api/v1/hosts/:slug/availability', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -399,15 +426,15 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send({ error: message })
     }
 
-    saveAvailabilitySettings(host.id, parsed.data)
+    await saveAvailabilitySettings(host.id, parsed.data)
 
     return loadAvailabilitySettings(host.id, host.timezone)
   })
 
   // ── API v1: типы встреч ──────────────────────────────────────────────
-  app.get('/api/v1/hosts/:slug/event-types', (request, reply) => {
+  app.get('/api/v1/hosts/:slug/event-types', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -416,9 +443,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     return listEventTypes(host.id)
   })
 
-  app.post('/api/v1/hosts/:slug/event-types', (request, reply) => {
+  app.post('/api/v1/hosts/:slug/event-types', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -431,9 +458,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     try {
-      return reply.code(201).send(createEventType(host.id, parsed.data))
+      return reply.code(201).send(await createEventType(host.id, parsed.data))
     } catch (error) {
-      if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (isUniqueViolation(error)) {
         return reply.code(409).send({ error: 'Тип с таким slug уже существует' })
       }
 
@@ -441,9 +468,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
   })
 
-  app.patch('/api/v1/hosts/:slug/event-types/:eventTypeId', (request, reply) => {
+  app.patch('/api/v1/hosts/:slug/event-types/:eventTypeId', async (request, reply) => {
     const { slug, eventTypeId } = request.params as { slug: string; eventTypeId: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
@@ -455,7 +482,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send({ error: message })
     }
 
-    const updated = updateEventType(host.id, eventTypeId, parsed.data)
+    const updated = await updateEventType(host.id, eventTypeId, parsed.data)
     if (!updated) {
       return reply.code(404).send({ error: 'Тип встречи не найден' })
     }
@@ -463,15 +490,15 @@ export async function buildApp(): Promise<FastifyInstance> {
     return updated
   })
 
-  app.delete('/api/v1/hosts/:slug/event-types/:eventTypeId', (request, reply) => {
+  app.delete('/api/v1/hosts/:slug/event-types/:eventTypeId', async (request, reply) => {
     const { slug, eventTypeId } = request.params as { slug: string; eventTypeId: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send({ error: 'Хост не найден' })
     }
 
-    if (!deleteEventType(host.id, eventTypeId)) {
+    if (!(await deleteEventType(host.id, eventTypeId))) {
       return reply.code(404).send({ error: 'Тип встречи не найден' })
     }
 
@@ -479,25 +506,22 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // ── API v1: брони ────────────────────────────────────────────────────
-  app.get('/api/v1/hosts/:slug/bookings', (request, reply) => {
+  app.get('/api/v1/hosts/:slug/bookings', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
     }
 
-    return db
-      .select()
-      .from(bookings)
-      .orderBy(bookings.startAt)
-      .all()
-      .map((row) => toBooking(row, host.slug, host.timezone))
+    const rows = await db.select().from(bookings).orderBy(bookings.startAt)
+
+    return rows.map((row) => toBooking(row, host.slug, host.timezone))
   })
 
-  app.post('/api/v1/hosts/:slug/bookings', (request, reply) => {
+  app.post('/api/v1/hosts/:slug/bookings', async (request, reply) => {
     const { slug } = request.params as { slug: string }
-    const host = findHost(slug)
+    const host = await findHost(slug)
 
     if (!host) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
@@ -509,7 +533,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
     }
 
-    const eventType = findEventType(host.id, parsed.data.eventTypeId)
+    const eventType = await findEventType(host.id, parsed.data.eventTypeId)
     if (!eventType) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Тип встречи не найден'))
     }
@@ -518,40 +542,40 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send(v1Error('VALIDATION_ERROR', 'Неверный формат времени'))
     }
 
-    const slot = findSlotByStartAt(parsed.data.startAt)
+    const slot = await findSlotByStartAt(parsed.data.startAt)
     if (!slot) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
     }
 
-    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
       return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
     }
 
-    if (findActiveBookingForSlot(slot.id)) {
+    if (await findActiveBookingForSlot(slot.id)) {
       return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
     }
 
-    const created = createBookingV1(parsed.data, slot, eventType.durationMin)
+    const created = await createBookingV1(parsed.data, slot, eventType.durationMin)
 
     return reply.code(201).send(toBooking(created, host.slug, host.timezone))
   })
 
-  app.get('/api/v1/bookings/:bookingId', (request, reply) => {
+  app.get('/api/v1/bookings/:bookingId', async (request, reply) => {
     const { bookingId } = request.params as { bookingId: string }
-    const booking = findBookingByPublicId(bookingId)
+    const booking = await findBookingByPublicId(bookingId)
 
     if (!booking) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
     }
 
-    const host = db.select().from(hosts).get()
+    const host = await defaultHost()
 
     return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
 
-  app.post('/api/v1/bookings/:bookingId/cancel', (request, reply) => {
+  app.post('/api/v1/bookings/:bookingId/cancel', async (request, reply) => {
     const { bookingId } = request.params as { bookingId: string }
-    const booking = findBookingByPublicId(bookingId)
+    const booking = await findBookingByPublicId(bookingId)
 
     if (!booking) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
@@ -563,22 +587,22 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
     }
 
-    const host = db.select().from(hosts).get()
+    const host = await defaultHost()
 
     if (booking.status === 'cancelled') {
       return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
     }
 
     return toBooking(
-      cancelBookingV1(booking, parsed.data.reason),
+      await cancelBookingV1(booking, parsed.data.reason),
       host?.slug ?? '',
       host?.timezone ?? 'UTC',
     )
   })
 
-  app.post('/api/v1/bookings/:bookingId/reschedule', (request, reply) => {
+  app.post('/api/v1/bookings/:bookingId/reschedule', async (request, reply) => {
     const { bookingId } = request.params as { bookingId: string }
-    const booking = findBookingByPublicId(bookingId)
+    const booking = await findBookingByPublicId(bookingId)
 
     if (!booking) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
@@ -594,24 +618,24 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send(v1Error('VALIDATION_ERROR', 'Неверный формат времени'))
     }
 
-    const slot = findSlotByStartAt(parsed.data.startAt)
+    const slot = await findSlotByStartAt(parsed.data.startAt)
     if (!slot) {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
     }
 
-    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
       return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
     }
 
-    if (findOtherActiveBooking(slot.id, booking.id)) {
+    if (await findOtherActiveBooking(slot.id, booking.id)) {
       return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
     }
 
-    const eventType = findEventTypeById(booking.eventTypeId)
+    const eventType = await findEventTypeById(booking.eventTypeId)
     const durationMin = eventType?.durationMin ?? 30
 
-    const updated = rescheduleBookingV1(booking, slot, durationMin)
-    const host = db.select().from(hosts).get()
+    const updated = await rescheduleBookingV1(booking, slot, durationMin)
+    const host = await defaultHost()
 
     return toBooking(updated, host?.slug ?? '', host?.timezone ?? 'UTC')
   })

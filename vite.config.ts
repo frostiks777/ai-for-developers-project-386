@@ -28,7 +28,10 @@ export default defineConfig({
       'e2e/**',
     ],
     env: {
-      DATABASE_PATH: ':memory:',
+      // Пусто → server/db использует PGlite (WASM-Postgres) вместо Neon
+      DATABASE_URL: '',
+      // Ускоряет старт: PGlite инициализируется в одном потоке
+      NODE_ENV: 'test',
     },
   },
 })

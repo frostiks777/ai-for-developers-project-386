@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm'
-import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { boolean, integer, pgTable, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
 
 // Слоты материализуются из правил доступности (ADR-0003/0004)
-export const slots = sqliteTable('slots', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const slots = pgTable('slots', {
+  id: serial('id').primaryKey(),
   // Дата-время начала слота в формате ISO 8601 (UTC)
   startAt: text('startAt').notNull(),
   durationMin: integer('durationMin').notNull().default(30),
@@ -13,7 +13,7 @@ export const slots = sqliteTable('slots', {
 export const DEFAULT_EVENT_TYPE_ID = 'default-consultation'
 
 // Типы встреч организатора (ADR-0011)
-export const eventTypes = sqliteTable(
+export const eventTypes = pgTable(
   'event_types',
   {
     id: text('id').primaryKey(),
@@ -25,17 +25,17 @@ export const eventTypes = sqliteTable(
     description: text('description'),
     durationMin: integer('durationMin').notNull().default(30),
     locationType: text('locationType').notNull().default('online'),
-    isActive: integer('isActive', { mode: 'boolean' }).notNull().default(true),
+    isActive: boolean('isActive').notNull().default(true),
     createdAt: text('createdAt')
       .notNull()
-      .default(sql`(datetime('now'))`),
+      .default(sql`(now()::text)`),
   },
   (table) => [uniqueIndex('event_types_host_slug_unique').on(table.hostId, table.slug)],
 )
 
 // Бронирования
-export const bookings = sqliteTable('bookings', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const bookings = pgTable('bookings', {
+  id: serial('id').primaryKey(),
   slotId: integer('slotId')
     .notNull()
     .references(() => slots.id),
@@ -58,11 +58,11 @@ export const bookings = sqliteTable('bookings', {
   cancelToken: text('cancelToken').unique(),
   createdAt: text('createdAt')
     .notNull()
-    .default(sql`(datetime('now'))`),
+    .default(sql`(now()::text)`),
 })
 
 // Правила доступности организатора - одна строка на хоста (MVP: одна строка id=1)
-export const availabilityRules = sqliteTable('availability_rules', {
+export const availabilityRules = pgTable('availability_rules', {
   id: integer('id').primaryKey(),
   hostId: text('hostId').references(() => hosts.id),
   // Дни недели из JS (0 - вс .. 6 - сб), JSON-массив
@@ -76,8 +76,8 @@ export const availabilityRules = sqliteTable('availability_rules', {
 })
 
 // Диапазоны доступности по дням недели: несколько интервалов на день (ADR-0011)
-export const availabilityRanges = sqliteTable('availability_ranges', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const availabilityRanges = pgTable('availability_ranges', {
+  id: serial('id').primaryKey(),
   hostId: text('hostId')
     .notNull()
     .references(() => hosts.id),
@@ -89,12 +89,12 @@ export const availabilityRanges = sqliteTable('availability_ranges', {
 })
 
 // Хосты (мульти-хост). MVP использует дефолтного организатора
-export const hosts = sqliteTable('hosts', {
+export const hosts = pgTable('hosts', {
   id: text('id').primaryKey(),
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   timezone: text('timezone').notNull().default('UTC'),
   createdAt: text('createdAt')
     .notNull()
-    .default(sql`(datetime('now'))`),
+    .default(sql`(now()::text)`),
 })

@@ -1,4 +1,5 @@
 import { buildApp } from './app'
+import { env } from './env'
 
 const app = await buildApp()
 
@@ -12,7 +13,7 @@ process.once('SIGINT', () => void shutdown('SIGINT'))
 process.once('SIGTERM', () => void shutdown('SIGTERM'))
 
 try {
-  const port = Number(process.env.PORT) || 3000
+  const port = env.PORT
   await app.listen({ port, host: '0.0.0.0' })
 } catch (error) {
   app.log.error(error)

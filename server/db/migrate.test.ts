@@ -1,22 +1,29 @@
-import Database from 'better-sqlite3'
+// @vitest-environment node
+import { PGlite } from '@electric-sql/pglite'
+import { sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/pglite'
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { describe, expect, it } from 'vitest'
 import { runMigrations } from './migrate'
+import * as schema from './schema'
 
-const tableNames = (client: Database.Database) =>
-  (
-    client.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as {
-      name: string
-    }[]
-  ).map((row) => row.name)
+// PGlite — WASM-Postgres в процессе: тот же SQL-диалект, что у Neon, без внешней БД.
+function createPgliteDb(): NodePgDatabase<typeof schema> {
+  const client = new PGlite()
+  return drizzle(client, { schema }) as unknown as NodePgDatabase<typeof schema>
+}
 
 describe('runMigrations', () => {
-  it('создаёт таблицы скелета и идемпотентна при повторном запуске', () => {
-    const client = new Database(':memory:')
+  it('создаёт таблицы и идемпотентна при повторном запуске', async () => {
+    const db = createPgliteDb()
 
-    runMigrations(client)
-    runMigrations(client)
+    await runMigrations(db)
+    await runMigrations(db)
 
-    expect(tableNames(client)).toEqual(
+    const tables = await db.execute<{ tablename: string }>(
+      sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`,
+    )
+    expect(tables.rows.map((row) => row.tablename)).toEqual(
       expect.arrayContaining([
         'slots',
         'bookings',
@@ -27,98 +34,39 @@ describe('runMigrations', () => {
       ]),
     )
 
-    const indexes = (
-      client.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as {
-        name: string
-      }[]
-    ).map((row) => row.name)
-    expect(indexes).toContain('bookings_slotId_active_unique')
+    const indexes = await db.execute<{ indexname: string }>(
+      sql`SELECT indexname FROM pg_indexes WHERE schemaname = 'public'`,
+    )
+    expect(indexes.rows.map((row) => row.indexname)).toContain('bookings_slotId_active_unique')
 
-    expect(client.prepare('SELECT slug FROM event_types WHERE id = ?').get('default-consultation')).toBeTruthy()
+    const types = await db.select().from(schema.eventTypes)
+    expect(types.some((type) => type.id === 'default-consultation')).toBe(true)
+  }, 30_000)
 
-    client.close()
-  })
-
-  it('пересобирает старую таблицу броней с бэкфиллом статуса, типа и времени', () => {
-    const client = new Database(':memory:')
-    client.exec(`
-      CREATE TABLE slots (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        startAt TEXT NOT NULL,
-        durationMin INTEGER NOT NULL DEFAULT 30
-      );
-      CREATE TABLE bookings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        slotId INTEGER NOT NULL REFERENCES slots(id),
-        name TEXT NOT NULL,
-        phone TEXT,
-        email TEXT NOT NULL,
-        comment TEXT,
-        cancelToken TEXT,
-        createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-      );
-      CREATE UNIQUE INDEX bookings_slotId_unique ON bookings(slotId);
-    `)
+  it('отменённая бронь не блокирует повторную запись (partial unique index)', async () => {
+    const db = createPgliteDb()
+    await runMigrations(db)
 
     const startAt = '2026-10-01T10:00:00.000Z'
-    client.prepare('INSERT INTO slots (startAt, durationMin) VALUES (?, ?)').run(startAt, 30)
-    client
-      .prepare('INSERT INTO bookings (slotId, name, email, phone) VALUES (?, ?, ?, ?)')
-      .run(1, 'Иван', 'ivan@example.com', null)
+    const endAt = '2026-10-01T10:30:00.000Z'
+    const slot = (await db.insert(schema.slots).values({ startAt, durationMin: 30 }).returning())[0]
 
-    runMigrations(client)
+    const booking = (
+      await db
+        .insert(schema.bookings)
+        .values({ slotId: slot.id, name: 'Иван', email: 'ivan@example.com', startAt, endAt })
+        .returning()
+    )[0]
 
-    const row = client.prepare('SELECT * FROM bookings WHERE id = 1').get() as {
-      status: string
-      eventTypeId: string
-      startAt: string
-      endAt: string
-    }
-    expect(row.status).toBe('confirmed')
-    expect(row.eventTypeId).toBe('default-consultation')
-    expect(row.startAt).toBe(startAt)
-    expect(row.endAt).toBe('2026-10-01T10:30:00.000Z')
+    await db
+      .update(schema.bookings)
+      .set({ status: 'cancelled' })
+      .where(sql`${schema.bookings.id} = ${booking.id}`)
 
-    // Отменённая бронь не блокирует слот (partial unique index)
-    client.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = 1").run()
-    expect(() =>
-      client
-        .prepare(
-          'INSERT INTO bookings (slotId, name, email, startAt, endAt) VALUES (?, ?, ?, ?, ?)',
-        )
-        .run(1, 'Пётр', 'petr@example.com', startAt, '2026-10-01T10:30:00.000Z'),
-    ).not.toThrow()
-
-    client.close()
-  })
-
-  it('досыпает hostId в старую availability_rules', () => {
-    const client = new Database(':memory:')
-    client.exec(`
-      CREATE TABLE availability_rules (
-        id INTEGER PRIMARY KEY,
-        weekdays TEXT NOT NULL,
-        windowStartHour INTEGER NOT NULL,
-        windowEndHour INTEGER NOT NULL,
-        slotDurationMin INTEGER NOT NULL,
-        bufferMin INTEGER NOT NULL,
-        minNoticeMin INTEGER NOT NULL,
-        horizonDays INTEGER NOT NULL
-      );
-    `)
-    client
-      .prepare(
-        'INSERT INTO availability_rules (id, weekdays, windowStartHour, windowEndHour, slotDurationMin, bufferMin, minNoticeMin, horizonDays) VALUES (1, ?, 10, 18, 30, 10, 120, 14)',
-      )
-      .run('[1,2,3,4,5]')
-
-    runMigrations(client)
-
-    const row = client.prepare('SELECT hostId FROM availability_rules WHERE id = 1').get() as {
-      hostId: string | null
-    }
-    expect(row.hostId).toBeTruthy()
-
-    client.close()
-  })
+    await expect(
+      db
+        .insert(schema.bookings)
+        .values({ slotId: slot.id, name: 'Пётр', email: 'petr@example.com', startAt, endAt }),
+    ).resolves.toBeDefined()
+  }, 30_000)
 })

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // E2E гоняется против собранного приложения: Fastify отдаёт dist/ и /api на одном origin.
-// БД — in-memory, поэтому каждый прогон начинается с чистого состояния.
+// Без DATABASE_URL поднимается PGlite (in-memory), поэтому каждый прогон — с чистого состояния.
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -19,7 +19,7 @@ export default defineConfig({
     url: 'http://127.0.0.1:3100/health',
     env: {
       PORT: '3100',
-      DATABASE_PATH: ':memory:',
+      DATABASE_URL: '',
       NODE_ENV: 'test',
     },
     reuseExistingServer: false,

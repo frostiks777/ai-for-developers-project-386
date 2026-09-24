@@ -16,31 +16,37 @@ export type CreateBookingInput = {
   clientNotes?: string
 }
 
-export function findSlotByStartAt(startAt: string): SlotRow | undefined {
-  return db.select().from(slots).where(eq(slots.startAt, startAt)).get()
+export async function findSlotByStartAt(startAt: string): Promise<SlotRow | undefined> {
+  const rows = await db.select().from(slots).where(eq(slots.startAt, startAt)).limit(1)
+
+  return rows[0]
 }
 
-export function findActiveBookingForSlot(slotId: number): BookingRow | undefined {
-  return db
+export async function findActiveBookingForSlot(slotId: number): Promise<BookingRow | undefined> {
+  const rows = await db
     .select()
     .from(bookings)
     .where(and(eq(bookings.slotId, slotId), eq(bookings.status, 'confirmed')))
-    .get()
+    .limit(1)
+
+  return rows[0]
 }
 
-export function findBookingByPublicId(id: string): BookingRow | undefined {
-  return db.select().from(bookings).where(eq(bookings.cancelToken, id)).get()
+export async function findBookingByPublicId(id: string): Promise<BookingRow | undefined> {
+  const rows = await db.select().from(bookings).where(eq(bookings.cancelToken, id)).limit(1)
+
+  return rows[0]
 }
 
-export function createBookingV1(
+export async function createBookingV1(
   input: CreateBookingInput,
   slot: SlotRow,
   durationMin: number,
-): BookingRow {
+): Promise<BookingRow> {
   const startAt = slot.startAt
   const endAt = new Date(new Date(startAt).getTime() + durationMin * 60_000).toISOString()
 
-  return db
+  const rows = await db
     .insert(bookings)
     .values({
       slotId: slot.id,
@@ -55,38 +61,42 @@ export function createBookingV1(
       cancelToken: randomUUID(),
     })
     .returning()
-    .get()
+
+  return rows[0]
 }
 
-export function cancelBookingV1(booking: BookingRow, reason?: string): BookingRow {
-  return db
+export async function cancelBookingV1(booking: BookingRow, reason?: string): Promise<BookingRow> {
+  const rows = await db
     .update(bookings)
     .set({ status: 'cancelled', cancellationReason: reason ?? null })
     .where(eq(bookings.id, booking.id))
     .returning()
-    .get()
+
+  return rows[0]
 }
 
-export function rescheduleBookingV1(
+export async function rescheduleBookingV1(
   booking: BookingRow,
   slot: SlotRow,
   durationMin: number,
-): BookingRow {
-  const endAt = new Date(
-    new Date(slot.startAt).getTime() + durationMin * 60_000,
-  ).toISOString()
+): Promise<BookingRow> {
+  const endAt = new Date(new Date(slot.startAt).getTime() + durationMin * 60_000).toISOString()
 
-  return db
+  const rows = await db
     .update(bookings)
     .set({ slotId: slot.id, startAt: slot.startAt, endAt, status: 'confirmed' })
     .where(eq(bookings.id, booking.id))
     .returning()
-    .get()
+
+  return rows[0]
 }
 
 // Активная бронь на слоте, кроме указанной (для переноса)
-export function findOtherActiveBooking(slotId: number, exceptBookingId: number): BookingRow | undefined {
-  return db
+export async function findOtherActiveBooking(
+  slotId: number,
+  exceptBookingId: number,
+): Promise<BookingRow | undefined> {
+  const rows = await db
     .select()
     .from(bookings)
     .where(
@@ -96,5 +106,7 @@ export function findOtherActiveBooking(slotId: number, exceptBookingId: number):
         ne(bookings.id, exceptBookingId),
       ),
     )
-    .get()
+    .limit(1)
+
+  return rows[0]
 }
