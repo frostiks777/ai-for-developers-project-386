@@ -7,6 +7,7 @@ import type {
   CreateBookingRequest,
   CreateEventTypeRequest,
   ErrorCode,
+  ErrorResponse,
   EventType,
   HostSettings,
   RescheduleBookingRequest,
@@ -131,6 +132,24 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   }
     return {
     id: input_.id,slug: input_.slug,title: input_.title,description: input_.description,durationMin: input_.durationMin,locationType: input_.locationType,isActive: input_.isActive
+  }!;
+}export function jsonErrorResponseToTransportTransform(
+  input_?: ErrorResponse | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    error: jsonApiErrorToTransportTransform(input_.error)
+  }!;
+}export function jsonErrorResponseToApplicationTransform(
+  input_?: any,
+): ErrorResponse {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    error: jsonApiErrorToApplicationTransform(input_.error)
   }!;
 }export function jsonApiErrorToTransportTransform(
   input_?: ApiError | null,

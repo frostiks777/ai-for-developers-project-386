@@ -3,14 +3,14 @@ import type { EventTypesClientContext } from "./eventTypesClientContext.js";
 import { createRestError } from "../../helpers/error.js";
 import type { OperationOptions } from "../../helpers/interfaces.js";
 import {
-  jsonApiErrorToApplicationTransform,
   jsonCreateEventTypeRequestToTransportTransform,
+  jsonErrorResponseToApplicationTransform,
   jsonEventTypeToApplicationTransform,
   jsonUpdateEventTypeRequestToTransportTransform,
 } from "../../models/internal/serializers.js";
 import type {
-  ApiError,
   CreateEventTypeRequest,
+  ErrorResponse,
   EventType,
   UpdateEventTypeRequest,
 } from "../../models/models.js";
@@ -20,7 +20,7 @@ export async function listEventTypes(
   client: EventTypesClientContext,
   slug: string,
   options?: ListEventTypesOptions,
-): Promise<Array<EventType> | ApiError> {
+): Promise<Array<EventType> | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/event-types").expand({
     slug: slug
   });
@@ -45,7 +45,7 @@ export async function createEventType(
   slug: string,
   body: CreateEventTypeRequest,
   options?: CreateEventTypeOptions,
-): Promise<ApiError | EventType> {
+): Promise<ErrorResponse | EventType> {
   const path = parse("/api/v1/hosts/{slug}/event-types").expand({
     slug: slug
   });
@@ -59,7 +59,7 @@ export async function createEventType(
     options?.operationOptions?.onResponse(response);
   }
   if (+response.status === 200 && response.headers["content-type"]?.includes("application/json")) {
-    return jsonApiErrorToApplicationTransform(response.body)!;
+    return jsonErrorResponseToApplicationTransform(response.body)!;
   }
   if (+response.status === 201 && response.headers["content-type"]?.includes("application/json")) {
     return jsonEventTypeToApplicationTransform(response.body)!;
@@ -74,7 +74,7 @@ export async function updateEventType(
   eventTypeId: string,
   body: UpdateEventTypeRequest,
   options?: UpdateEventTypeOptions,
-): Promise<EventType | ApiError> {
+): Promise<EventType | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/event-types/{eventTypeId}").expand({
     slug: slug,
     eventTypeId: eventTypeId
@@ -100,7 +100,7 @@ export async function deleteEventType(
   slug: string,
   eventTypeId: string,
   options?: DeleteEventTypeOptions,
-): Promise<ApiError | void> {
+): Promise<ErrorResponse | void> {
   const path = parse("/api/v1/hosts/{slug}/event-types/{eventTypeId}").expand({
     slug: slug,
     eventTypeId: eventTypeId
@@ -115,7 +115,7 @@ export async function deleteEventType(
     options?.operationOptions?.onResponse(response);
   }
   if (+response.status === 200 && response.headers["content-type"]?.includes("application/json")) {
-    return jsonApiErrorToApplicationTransform(response.body)!;
+    return jsonErrorResponseToApplicationTransform(response.body)!;
   }
   if (+response.status === 204 && !response.body) {
     return;

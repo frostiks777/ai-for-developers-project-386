@@ -3,8 +3,8 @@ import type { ApiV1ClientContext } from "./apiV1ClientContext.js";
 import { createRestError } from "../helpers/error.js";
 import type { OperationOptions } from "../helpers/interfaces.js";
 import type {
-  ApiError,
   AvailabilityDay,
+  ErrorResponse,
   HostSettings,
 } from "../models/models.js";
 
@@ -13,7 +13,7 @@ export async function getHostSettings(
   client: ApiV1ClientContext,
   slug: string,
   options?: GetHostSettingsOptions,
-): Promise<HostSettings | ApiError> {
+): Promise<HostSettings | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/settings").expand({
     slug: slug
   });
@@ -40,7 +40,7 @@ export async function listSlots(
   client: ApiV1ClientContext,
   slug: string,
   options?: ListSlotsOptions,
-): Promise<AvailabilityDay | ApiError> {
+): Promise<AvailabilityDay | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/slots{?date,eventTypeId}").expand({
     slug: slug,
     ...(options?.date && {date: options.date}),

@@ -88,7 +88,12 @@
 - Фронтенд ходит в API через сгенерированный SDK.
 - Тесты покрывают основной сценарий и конфликт слотов; CI зелёный.
 
-Статус: `[ ] не начато`.
+Статус: `[x] выполнено` (2026-09-24):
+- Тикеты T1–T9 (#19–#27) закрыты: миграции (`server/db/migrate.ts`), `event_types`/`status`/`availability_ranges`, слоты по типу и дате, жизненный цикл брони, отмена/перенос по публичному UUID, страница владельца.
+- Фронт ходит в API через сгенерированный SDK: `src/api/sdk.ts` + `src/api/mappers.ts`, ручной `src/api/client.ts` удалён ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25)).
+- Тесты: API-интеграционные (`app.inject`) + RTL + контрактные (`server/contract.test.ts`, ajv по OpenAPI) + e2e Playwright (`e2e/`, гейт `npm run test:e2e`) ([#26](https://github.com/frostiks777/ai-for-developers-project-386/issues/26), [ADR-0012](adr/0012-contract-tests-and-e2e.md)).
+- Реализация сверена с контрактом: `UtcDateTime`, `Booking.timeZone`, конверт ошибок `{ error: ApiError }` ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)).
+- Проверки: `lint`/`typecheck`/`test` (141)/`build` + `test:e2e` (2) — зелёные.
 
 ---
 

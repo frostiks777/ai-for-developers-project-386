@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-24 (Шаг 2 курса: карта решений #10 закрыта — спецификация, TypeSpec-контракт, генерация OpenAPI/SDK/серверных типов)
+> Дата последнего обновления: 2026-09-24 (Шаг 3 курса завершён: T1–T9 закрыты — реализация спецификации, SDK на фронте, контракт-тесты + e2e, финальная сверка со спецификацией)
 
 ## Текущее состояние
 
@@ -241,11 +241,15 @@
     - `server/contract.test.ts`: все маршруты `/api/v1/*` из `docs/openapi/openapi.yaml` зарегистрированы (`app.hasRoute`); ключевые ответы (HostSettings, AvailabilityDay, Booking, EventType[]) валидируются `ajv` + `ajv-formats`; `nullable: true` нормализуется в JSON Schema `anyOf`.
     - `playwright.config.ts` + `e2e/guest-booking.spec.ts`: `webServer` = `npm run build && npm start`, `PORT=3100`, `DATABASE_PATH=:memory:`; сценарии — сквозной путь гостя и конфликт слотов (`409 SLOT_TAKEN`, в т.ч. другим типом). Скрипт `npm run test:e2e` (вне `npm test` и CI); `e2e/**` исключён из vitest.
     - devDeps: `ajv`, `ajv-formats`, `yaml`, `@playwright/test` (Chromium 153). README дополнен разделом про e2e. Проверки: lint 0, typecheck чисто, **141/141 тестов**, e2e 2/2, build ✓.
+53. ⏳ **Шаг 3 курса, T9** ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)): финальная сверка со спецификацией и контрактом.
+    - Контракт приведён к реальности: скаляр `LocalDateTime` (`@format date-time-local`) → `UtcDateTime` (`@format date-time`); ошибки описаны конвертом `model ErrorResponse { error: ApiError }`, все операции возвращают `T | ErrorResponse`. Перегенерировано; `src/api/sdk.ts` использует `ErrorResponse`.
+    - `docs/spec.md`: §3 (типы встреч: создать/вкл-выкл/удалить), §4 (длительность из типа, сетка по `slotDurationMin`), §5 (фактические колонки camelCase), §6 (UTC ISO + `{error: ApiError}`, `listHostBookings` — все брони), §9 → «Закрытые вопросы Шага 3».
+    - `docs/course-steps.md`: Шаг 3 отмечен выполненным; `docs/todo.md`: критерии Шага 3 = ✅. Проверки: lint/typecheck/141 тестов/build + e2e 2/2 — зелёные.
 
 ## Что осталось (следующие шаги)
 
 - [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **не начато**; (4) Docker/деплой — **уже выполнено**. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
-- [ ] **Шаг 3 курса**: тикеты T1–T8 закрыты (см. #19–#26); фронт на SDK, контракт-тесты + e2e Playwright готовы. Осталось: **T9 (#27)** — финальная сверка со спецификацией.
+- [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
@@ -294,6 +298,7 @@
 | Отмена брони (Шаг 2) | Смена `status` на `cancelled` вместо удаления строки; занятость считается только для `confirmed` | ТЗ требует `status` и историю ([ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md)); в коде — переход на Шаге 3 |
 | Тестирование v1 | API (`app.inject` + in-memory) + RTL/jsdOM + e2e Playwright (`npm run test:e2e`, отдельный гейт); контракт-тесты — валидация ключевых ответов по OpenAPI; миграции на `:memory:` | Требование курса: сценарий и конфликт покрыты; правила на сервере ([#14](https://github.com/frostiks777/ai-for-developers-project-386/issues/14)) |
 | Контракт-тесты и e2e | `server/contract.test.ts` (`ajv` по `docs/openapi/openapi.yaml`); Playwright против собранного приложения (`PORT=3100`, `DATABASE_PATH=:memory:`), `npm run test:e2e` вне `npm test`/CI | [ADR-0012](docs/adr/0012-contract-tests-and-e2e.md); Design First — сервер приведён к контракту (Booking.timeZone, HostSettings, nullable) |
+| Модель времени и ошибок (T9) | Время — UTC ISO (`UtcDateTime`, `@format date-time`); ошибки — конверт `{ error: ApiError }`; `timeZone` — только для отображения UI | Сверка со спецификацией ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)); контракт приведён к фактическим ответам вместо переписывания сервера под local-time |
 
 ## Окружение
 

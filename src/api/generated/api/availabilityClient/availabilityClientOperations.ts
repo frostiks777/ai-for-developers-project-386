@@ -6,8 +6,8 @@ import {
   jsonUpdateAvailabilityRequestToTransportTransform,
 } from "../../models/internal/serializers.js";
 import type {
-  ApiError,
   AvailabilitySettings,
+  ErrorResponse,
   UpdateAvailabilityRequest,
 } from "../../models/models.js";
 
@@ -16,7 +16,7 @@ export async function getAvailability(
   client: AvailabilityClientContext,
   slug: string,
   options?: GetAvailabilityOptions,
-): Promise<AvailabilitySettings | ApiError> {
+): Promise<AvailabilitySettings | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/availability").expand({
     slug: slug
   });
@@ -41,7 +41,7 @@ export async function updateAvailability(
   slug: string,
   body: UpdateAvailabilityRequest,
   options?: UpdateAvailabilityOptions,
-): Promise<AvailabilitySettings | ApiError> {
+): Promise<AvailabilitySettings | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/availability").expand({
     slug: slug
   });
