@@ -3,6 +3,42 @@
 Аудит соответствия `docs/code_artifact.md` (спека Hexlet) и текущего MVP.
 Репозиторий реализует упрощённый вариант на стеке из `AGENTS.md` (Vite + Fastify + SQLite + Drizzle); отклонение от спеки зафиксировано в `docs/architecture.md`.
 
+## Критерии приёмки проекта — статус (проверяет наставник + hexlet-check)
+
+Легенда: ✅ done · 🟡 partial · ❌ missing. Источник — `docs/course-steps.md`.
+
+### Функциональность
+
+- 🟡 Сквозной сценарий: тип встречи → календарь → слот → запись → подтверждение <нет «типа встречи» как сущности; экран успеха есть на `/`, отдельного `/booking/:uuid/confirmed` нет>
+- 🟡 Занятый слот не бронируется повторно + понятное сообщение о конфликте <`UNIQUE(slotId)` + `409` и тост есть; типов встреч нет, сообщение не выделено как спец-алерт>
+- ✅ Правила бронирования выполняются на сервере (`minNotice`, генерация, проверка в `POST /api/bookings`)
+- 🟡 Страница владельца со встречами всех типов в одном списке <`/dashboard` есть, но типов нет>
+- ❌ API по контракту: OpenAPI из TypeSpec → клиентский SDK + серверные артефакты <нет TypeSpec/OpenAPI/SDK; ручной `src/api/client.ts`>
+- ✅ Окно записи 14 дней, слоты по 30 минут (`ADR-0004`)
+- ✅ Docker-образ, авто-старт, порт из `PORT`, ссылка в `README.md` (`render.yaml`, `calendar-slots-app.onrender.com`)
+
+### Проверяемость
+
+- ✅ Тесты + линтер в GitHub Actions, `main` зелёный (`ci.yml`)
+- ✅ Тесты покрывают сценарий бронирования и конфликт слотов (интеграционные + `409`)
+- ✅ Conventional Commits, release-please создаёт release-PR (`release-please.yml`)
+- ✅ Секретов в репозитории нет (`.env` в `.gitignore`, `.env.example`)
+
+### Настройка агентной разработки
+
+- ✅ `AGENTS.md` с командами запуска/тестов/линтера и правилом про коммиты
+- ✅ `docs/agents/` с конфигурацией трекера (`issue-tracker.md`, `triage-labels.md`, `domain.md`)
+- ✅ Конфигурация MCP-серверов в репозитории (`opencode.jsonc` → `mcp`, `docs/mcp.md`)
+
+### Следы работы по скиллам
+
+- ❌ В Issues есть карта решений с закрытыми задачами и ответами <Issues пусты — не начат шаг 2 (`wayfinder`)>
+- ❌ В Issues есть спецификация приложения и тикеты с зависимостями <не начат (`to-spec` → `to-tickets`)>
+- 🟡 `CONTEXT.md` со словарём проекта <отсутствует; записи `docs/adr/` есть (ADR-0001…0009)>
+- ❌ Тикеты ссылаются на спецификацию, коммиты — на тикеты <тикетов нет>
+
+**Итог:** критичные пробелы приёмки — TypeSpec→OpenAPI→SDK (Функциональность), `CONTEXT.md` и весь трекер (Следы работы по скиллам). Это шаги курса 1–3, а не хвосты MVP.
+
 ## Сделано
 
 - [x] Каркас: Fastify `:3000` (`/health`, `/api/slots`, `/api/bookings`), Vite, линтер, тесты, CI
@@ -38,11 +74,18 @@
 
 ## Осталось
 
+### Blocker приёмки (шаги курса, [docs/course-steps.md](course-steps.md))
+
+1. **Шаг 1** — `CONTEXT.md` + интервью по главной (`grill-with-docs`) + ADR + `/implement`
+2. **Шаг 2** — карта решений (`wayfinder`) → `to-spec` → `to-tickets`; **Design First: TypeSpec → OpenAPI → SDK + серверные артефакты**
+3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий
+4. Ввести сущность «тип встречи» (event-types) — общий корень для контракта Шага 2 и страницы владельца
+
 ### Low
 
 - [ ] Полная мульти-хост-модель: `host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, страница `/book/:hostId` (текущий v1 — аддитивный, однохостовый по факту)
 - [ ] Авторизация `/dashboard` (сейчас панель публична)
-- [ ] **Баг:** ссылка «Доступность» (`href="#availability"`) в сайдбаре `/dashboard` не скроллит к секции (`/dashboard#availability`) — элемент `id="availability"` есть (`src/pages/dashboard-page.tsx:138`), но навигация/скролл не срабатывает; починить (напр. `scrollIntoView` по клику)
+- [x] **Баг:** ссылка «Доступность» в сайдбаре `/dashboard` не скроллила к секции — исправлено: `onClick` + `scrollIntoView({behavior:'smooth'})` + `history.replaceState('#availability')` в `src/components/dashboard-sidebar.tsx`; тест `src/components/dashboard-sidebar.test.tsx`
 
 ## Ключевые расхождения со спекой
 
