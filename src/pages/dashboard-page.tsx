@@ -122,7 +122,7 @@ export default function DashboardPage() {
   if (isDesktop) {
     return (
       <div className="flex min-h-screen bg-background">
-        <DashboardSidebar bookingCount={bookings.length} />
+        <DashboardSidebar bookingCount={activeBookings.length} />
         <main className="flex min-w-0 flex-1 gap-8 p-10">
           <div className="flex min-w-0 flex-1 flex-col gap-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                 : 'text-muted-foreground',
             )}
           >
-            Встречи · {bookings.length}
+            Встречи · {activeBookings.length}
           </button>
           <button
             type="button"
