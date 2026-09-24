@@ -1,13 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
 
-  // Плагин obra/superpowers (методология разработки через AI-агентов).
-  // ВНИМАНИЕ: ключ "plugins" (V2) понимает OpenCode >= 2.0.4, но установлен
-  // 1.18.32 — там этот ключ игнорируется (`opencode debug config` → plugin: []).
-  // Чтобы суперсилы заработали на 1.18.32, перенесите строку в "plugin" ниже.
-  // Документация: https://github.com/obra/superpowers/blob/main/docs/README.opencode.md
-  "plugins": ["superpowers@git+https://github.com/obra/superpowers.git"],
-
   // Плагины в формате текущей версии opencode (1.18.32): ключ "plugin".
   // opencode-notify — нативные уведомления ОС (Windows Toast / macOS
   // Notification Center / Linux notify-send) с кнопками Accept/Reject, когда
