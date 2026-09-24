@@ -2,27 +2,39 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
-import type { BookingWithSlot, TimeSlot } from '@/types/booking'
+import type { V1Booking } from '@/types/booking'
 import ReschedulePage from './reschedule-page'
 
 const currentStart = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
 const newStart = new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString()
 
-const booking: BookingWithSlot = {
-  id: 1,
-  slotId: 1,
-  name: 'Иван',
-  phone: null,
-  email: 'ivan@example.com',
-  comment: null,
-  createdAt: '2099-09-23T07:00:00.000Z',
+const booking: V1Booking = {
+  id: 'token-123',
+  hostSlug: 'default',
+  eventTypeId: 'type-1',
   startAt: currentStart,
-  durationMin: 30,
+  endAt: new Date(new Date(currentStart).getTime() + 30 * 60 * 1000).toISOString(),
+  status: 'confirmed',
+  clientName: 'Иван',
+  clientEmail: 'ivan@example.com',
+  clientPhone: null,
+  clientNotes: null,
+  createdAt: '2099-09-23T07:00:00.000Z',
 }
 
-const slots: TimeSlot[] = [
-  { id: 1, startAt: currentStart, durationMin: 30, isBooked: true },
-  { id: 2, startAt: newStart, durationMin: 30, isBooked: false },
+const slotRows = [
+  {
+    id: 1,
+    startAt: currentStart,
+    durationMin: 30,
+    available: false,
+  },
+  {
+    id: 2,
+    startAt: newStart,
+    durationMin: 30,
+    available: true,
+  },
 ]
 
 function mockFetch() {
@@ -30,21 +42,23 @@ function mockFetch() {
     const url = String(input)
     const method = init?.method ?? 'GET'
 
-    if (url.startsWith('/api/bookings/by-token/') && method === 'GET') {
+    if (url === '/api/v1/bookings/token-123' && method === 'GET') {
       return new Response(JSON.stringify(booking), { status: 200 })
     }
 
-    if (url === '/api/slots' && method === 'GET') {
-      return new Response(JSON.stringify(slots), { status: 200 })
-    }
-
-    if (url === '/api/bookings/reschedule' && method === 'POST') {
-      return new Response(JSON.stringify({ ...booking, slotId: 2, startAt: newStart }), {
+    if (url.startsWith('/api/v1/hosts/default/slots') && method === 'GET') {
+      return new Response(JSON.stringify({ timeZone: 'UTC', date: null, slots: slotRows }), {
         status: 200,
       })
     }
 
-    return new Response(JSON.stringify({ error: 'Не найдено' }), { status: 404 })
+    if (url === '/api/v1/bookings/token-123/reschedule' && method === 'POST') {
+      return new Response(JSON.stringify({ ...booking, startAt: newStart }), { status: 200 })
+    }
+
+    return new Response(JSON.stringify({ error: { code: 'NOT_FOUND', message: 'Не найдено' } }), {
+      status: 404,
+    })
   })
 }
 
@@ -76,7 +90,7 @@ describe('ReschedulePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Встреча перенесена' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/bookings/reschedule',
+      '/api/v1/bookings/token-123/reschedule',
       expect.objectContaining({ method: 'POST' }),
     )
   })
@@ -84,7 +98,13 @@ describe('ReschedulePage', () => {
   it('показывает ошибку для недействительной ссылки', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ error: 'Бронь не найдена' }), { status: 404 })),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({ error: { code: 'NOT_FOUND', message: 'Бронь не найдена' } }),
+            { status: 404 },
+          ),
+      ),
     )
 
     renderPage('broken')

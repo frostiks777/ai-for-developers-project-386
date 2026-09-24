@@ -141,26 +141,12 @@ export function cancelBookingV1(id: string): Promise<V1Booking> {
   })
 }
 
-export async function rescheduleBookingV1(id: string, startAt: string): Promise<CreatedBooking> {
-  const row = await request<V1Booking>(
-    `/api/v1/bookings/${encodeURIComponent(id)}/reschedule`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startAt }),
-    },
-  )
-
-  return {
-    id: 0,
-    slotId: 0,
-    name: row.clientName,
-    phone: row.clientPhone,
-    email: row.clientEmail,
-    comment: row.clientNotes,
-    createdAt: row.createdAt,
-    cancelToken: row.id,
-  }
+export function rescheduleBookingV1(id: string, startAt: string): Promise<V1Booking> {
+  return request<V1Booking>(`/api/v1/bookings/${encodeURIComponent(id)}/reschedule`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ startAt }),
+  })
 }
 
 export function fetchBookings(): Promise<BookingWithSlot[]> {

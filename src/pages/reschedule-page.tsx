@@ -4,16 +4,31 @@ import { toast } from 'sonner'
 
 import {
   ApiError,
-  fetchBookingByToken,
-  fetchSlots,
-  rescheduleBookingByToken,
+  fetchBookingV1,
+  fetchHostSlots,
+  rescheduleBookingV1,
 } from '@/api/client'
 import { MonthCalendar } from '@/components/month-calendar'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
-import type { BookingWithSlot, TimeSlot } from '@/types/booking'
+import type { BookingWithSlot, TimeSlot, V1Booking } from '@/types/booking'
 import { defaultTimeZone, formatDateTimeInZone, toDateKeyInZone } from '@/utils/timezone'
+
+const durationMinutes = (startAt: string, endAt: string): number =>
+  Math.max(1, Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60_000))
+
+const toBookingWithSlot = (booking: V1Booking): BookingWithSlot => ({
+  id: 0,
+  slotId: 0,
+  name: booking.clientName,
+  phone: booking.clientPhone,
+  email: booking.clientEmail,
+  comment: booking.clientNotes,
+  createdAt: booking.createdAt,
+  startAt: booking.startAt,
+  durationMin: durationMinutes(booking.startAt, booking.endAt),
+})
 
 export default function ReschedulePage() {
   const { token } = useParams<{ token: string }>()
@@ -38,12 +53,10 @@ export default function ReschedulePage() {
     setIsLoading(true)
 
     try {
-      const [currentBooking, allSlots] = await Promise.all([
-        fetchBookingByToken(token),
-        fetchSlots(),
-      ])
+      const current = await fetchBookingV1(token)
+      const allSlots = await fetchHostSlots(current.hostSlug, current.eventTypeId)
 
-      setBooking(currentBooking)
+      setBooking(toBookingWithSlot(current))
       setSlots(allSlots)
       setLoadError(null)
     } catch {
@@ -67,7 +80,7 @@ export default function ReschedulePage() {
     ? freeSlots.filter((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone) === activeDate)
     : freeSlots
 
-  const handleReschedule = async (slotId: number) => {
+  const handleReschedule = async (slotId: number, startAt: string) => {
     if (!token) {
       return
     }
@@ -75,8 +88,8 @@ export default function ReschedulePage() {
     setReschedulingId(slotId)
 
     try {
-      const updated = await rescheduleBookingByToken(token, slotId)
-      setResult(updated)
+      const updated = await rescheduleBookingV1(token, startAt)
+      setResult(toBookingWithSlot(updated))
       toast.success('Встреча перенесена')
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : 'Не удалось перенести встречу')
@@ -147,7 +160,7 @@ export default function ReschedulePage() {
                     <Button
                       className="mt-4"
                       disabled={reschedulingId !== null}
-                      onClick={() => handleReschedule(slot.id)}
+                      onClick={() => handleReschedule(slot.id, slot.startAt)}
                     >
                       {reschedulingId === slot.id ? 'Перенос…' : 'Перенести сюда'}
                     </Button>
