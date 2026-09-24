@@ -200,7 +200,7 @@ export default function HomePage() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <AppHeader
         linkTo="/dashboard"
         linkLabel={isDesktop ? 'Панель организатора' : 'Организатору'}
@@ -208,7 +208,7 @@ export default function HomePage() {
       />
 
       {isDesktop ? (
-        <main className="mx-auto w-full max-w-[1140px] px-4 py-6 lg:px-6 lg:py-8">
+        <main className="mx-auto flex w-full max-w-[1140px] flex-1 min-h-0 flex-col px-4 py-6 lg:px-6 lg:py-8">
           {!bookedBooking && typePicker}
           {bookedBooking && bookedSlot ? (
             <BookingSuccess
@@ -218,8 +218,8 @@ export default function HomePage() {
               onReset={handleReset}
             />
           ) : (
-            <div className="grid overflow-hidden rounded-card border bg-card text-card-foreground shadow-soft lg:grid-cols-[300px_460px_minmax(0,1fr)]">
-              <div className="border-b border-border p-6 lg:border-b-0 lg:border-r">
+            <div className="grid min-h-0 flex-1 overflow-hidden rounded-card border bg-card text-card-foreground shadow-soft lg:grid-cols-[300px_460px_minmax(0,1fr)]">
+              <div className="min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 <HostInfo
                   durationMin={slots[0]?.durationMin ?? null}
                   minNoticeMin={minNoticeMin}
@@ -228,7 +228,7 @@ export default function HomePage() {
                 />
               </div>
 
-              <div className="border-b border-border p-6 lg:border-b-0 lg:border-r">
+              <div className="min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 {isLoading ? (
                   <CalendarSkeleton />
                 ) : (
@@ -243,7 +243,7 @@ export default function HomePage() {
                 )}
               </div>
 
-              <div className="flex flex-col p-6">
+              <div className="flex min-h-0 flex-col p-6">
                 {isLoading && <SlotsSkeleton />}
 
                 <span className="sr-only" aria-live="polite">

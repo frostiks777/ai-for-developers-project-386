@@ -83,7 +83,14 @@ export function BookingsList({ bookings, onCancel }: BookingsListProps) {
                     </div>
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <div className="text-base font-semibold">{booking.name}</div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-semibold">{booking.name}</span>
+                      {booking.eventTypeTitle && (
+                        <span className="inline-flex h-6 items-center rounded-full bg-accent px-2.5 text-xs font-medium text-accent-foreground">
+                          {booking.eventTypeTitle}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-muted-foreground">
                       <span className="flex items-center gap-1.5">
                         <Mail className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
@@ -131,6 +138,11 @@ export function BookingsList({ bookings, onCancel }: BookingsListProps) {
                     </span>
                   </div>
                   <div className="text-[15px] font-semibold">{booking.name}</div>
+                  {booking.eventTypeTitle && (
+                    <div className="text-[13px] text-muted-foreground">
+                      {booking.eventTypeTitle}
+                    </div>
+                  )}
                   <div className="text-[13px] text-muted-foreground">{booking.email}</div>
                   {booking.phone && (
                     <div className="text-[13px] text-muted-foreground">{booking.phone}</div>
