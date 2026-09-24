@@ -19,7 +19,7 @@
 
 **Организатор:**
 1. Настроить доступность (рабочие дни, диапазоны времени, длительность слота, буфер, минимальный запас, горизонт).
-2. Создавать и редактировать типы встреч.
+2. Создавать типы встреч, включать/выключать и удалять их.
 3. Видеть предстоящие встречи всех типов одним списком.
 4. Отменять встречу.
 
@@ -33,7 +33,7 @@
 
 ## 4. Функциональные правила
 
-- **Тип встречи** задаёт `durationMin` (в MVP — 30 мин), `locationType`, признак активности. Типы с длительностью ≠ 30 в MVP скрыты.
+- **Тип встречи** задаёт `durationMin`, `locationType`, признак активности. Гость выбирает активный тип; его `durationMin` определяет длительность встречи, а шаг сетки слотов — `slotDurationMin` (в MVP 30 мин). Отдельная сетка под 15/45/60 мин — бэклог.
 - **Слоты** генерируются из правил доступности: диапазоны по дням недели, шаг `slotDurationMin`, с учётом `bufferMin`, `minNoticeMin`, `horizonDays`.
 - **Окно записи** — по умолчанию 14 дней; слоты по 30 минут.
 - **Конфликт:** на одно время — не более одной активной брони, **в том числе для разных типов**. Занятый слот не предлагается как свободный; повторная запись отклоняется с понятным сообщением.
@@ -45,12 +45,12 @@
 
 | Таблица | Ключевые поля | Примечание |
 |---|---|---|
-| `hosts` | `id`, `slug` (unique), `name`, `timezone`, `createdAt` | MVP — один организатор |
-| `availability_rules` | `host_id`, `slotDurationMin`, `bufferMin`, `minNoticeMin`, `horizonDays` | параметры генерации слотов |
-| `availability_ranges` | `host_id`, `weekday` (1–7), `start_minute`, `end_minute` | несколько интервалов на день |
-| `event_types` | `id`, `host_id`, `slug`, `title`, `description`, `duration_min`, `location_type`, `is_active` | сеется дефолтный тип |
+| `hosts` | `id`, `slug` (unique), `name`, `timezone`, `createdAt` | MVP — один организатор (`slug=default`) |
+| `availability_rules` | `hostId`, `weekdays` (JSON), `windowStartHour`, `windowEndHour`, `slotDurationMin`, `bufferMin`, `minNoticeMin`, `horizonDays` | параметры генерации слотов (одна строка `id=1`) |
+| `availability_ranges` | `hostId`, `weekday` (1–7), `startMinute`, `endMinute` | несколько интервалов на день (ADR-0011) |
+| `event_types` | `id`, `hostId`, `slug`, `title`, `description`, `durationMin`, `locationType`, `isActive`, `createdAt` | unique `(hostId, slug)`; сеется дефолтный тип |
 | `slots` | `id`, `startAt` (UTC ISO), `durationMin` | материализованные слоты (ADR-0003/0004) |
-| `bookings` | `id`, `slotId`, `eventTypeId`, `startAt`, `endAt`, `status`, контакты, `cancelToken`, `createdAt` | `startAt`/`endAt` — снимок времени |
+| `bookings` | `id`, `slotId`, `eventTypeId`, `name`, `email`, `phone`, `comment`, `status`, `startAt`, `endAt`, `cancelToken`, `createdAt` | `startAt`/`endAt` — снимок времени |
 
 - `bookings.status` — `confirmed` \| `cancelled`; уникальность: partial unique index `UNIQUE(slotId) WHERE status != 'cancelled'` (вместо прежнего `UNIQUE(slotId)`).
 - Миграции — идемпотентный модуль `server/db/migrate.ts`, выполняется при старте; тесты на `DATABASE_PATH=:memory:`.
@@ -76,15 +76,15 @@ npm run api:generate
 | `GET /hosts/{slug}/availability` | правила доступности |
 | `PUT /hosts/{slug}/availability` | обновить правила |
 | `GET /hosts/{slug}/slots?date=&eventTypeId=` | слоты на дату → `{ date, timeZone, slots[] }` |
-| `GET /hosts/{slug}/bookings` | предстоящие встречи (владелец) |
+| `GET /hosts/{slug}/bookings` | все брони хоста (владелец); UI фильтрует активные/предстоящие |
 | `POST /hosts/{slug}/bookings` | создать бронь (гость) |
 | `GET /bookings/{bookingId}` | бронь по UUID |
 | `POST /bookings/{bookingId}/cancel` | отменить |
 | `POST /bookings/{bookingId}/reschedule` | перенести |
 
 - **Идентификаторы:** `bookingId` — публичный UUID (он же в ссылках отмены/переноса).
-- **Ошибки:** `ApiError { code, message, details? }`, коды `VALIDATION_ERROR`, `NOT_FOUND`, `SLOT_TAKEN`, `CONFLICT`.
-- **Время:** локальное время организатора (`LocalDateTime`, `YYYY-MM-DDTHH:mm`) + поле `timeZone` (IANA); даты — `LocalDate`.
+- **Ошибки:** конверт `{ error: ApiError }`, где `ApiError { code, message, details? }`; коды `VALIDATION_ERROR`, `NOT_FOUND`, `SLOT_TAKEN`, `CONFLICT`.
+- **Время:** хранится и передаётся как **UTC ISO 8601** (`...Z`, скаляр `UtcDateTime`); поле `timeZone` (IANA) — для отображения; даты — `LocalDate`.
 - Сгенерированные файлы коммитятся и **вручную не правятся**.
 
 ## 7. Тестирование
@@ -112,15 +112,15 @@ npm run api:generate
 | Тесты и линтер в CI зелёные | `npm run lint/typecheck/test/build` |
 | Тесты сценария и конфликта | API + RTL + Playwright |
 | Conventional Commits, release-please | коммиты `feat/fix/docs/chore` |
-| Карта, спецификация, тикеты в Issues | #10 + #11–#18 + эта спека |
+| Карта, спецификация, тикеты в Issues | #10 + #11–#18 (проектирование) + #19–#27 (реализация) + эта спека |
 
-## 9. Открытые вопросы (на Шаг 3)
+## 9. Закрытые вопросы (Шаг 3)
 
-- Пересборка сетки слотов под длительность типа (15/45/60 мин).
-- Как отмена/перенос и дашборд отражают `status` в UI.
-- Миграция `src/api/client.ts` на сгенерированный SDK.
-- Совместимость легаси `/api/*` с новыми `status`/`eventTypeId`.
-- Состав e2e-сценариев Playwright.
+- **Сетка слотов под длительность типа.** Слоты генерируются с шагом `slotDurationMin` (MVP 30 мин); длительность встречи берётся из выбранного типа. Отдельная сетка под 15/45/60 мин — бэклог.
+- **`status` в UI.** Дашборд показывает только `confirmed`; отменённые скрыты. Отмена/перенос — через `/api/v1` ([ADR-0011](adr/0011-event-types-status-and-availability-ranges.md)).
+- **Миграция на SDK.** Выполнена ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25), [ADR-0012](adr/0012-contract-tests-and-e2e.md)): ручной `src/api/client.ts` удалён.
+- **Совместимость легаси `/api/*`.** Легаси-маршруты сохранены как есть; v1 — источник истины. Старые БД приводятся миграцией (`server/db/migrate.ts`, backfill `eventTypeId`/`status`).
+- **Состав e2e.** Сквозной сценарий гостя + конфликт слотов (в т.ч. другой тип) — `e2e/guest-booking.spec.ts`.
 
 ## 10. Ссылки
 

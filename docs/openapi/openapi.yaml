@@ -21,7 +21,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/Booking'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
   /api/v1/bookings/{bookingId}/cancel:
     post:
       operationId: Bookings_cancelBooking
@@ -39,7 +39,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/Booking'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
   /api/v1/bookings/{bookingId}/reschedule:
     post:
       operationId: Bookings_rescheduleBooking
@@ -57,7 +57,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/Booking'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
       requestBody:
         required: true
         content:
@@ -81,7 +81,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/AvailabilitySettings'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
     put:
       operationId: Availability_updateAvailability
       parameters:
@@ -98,7 +98,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/AvailabilitySettings'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
       requestBody:
         required: true
         content:
@@ -124,7 +124,7 @@ paths:
                   - type: array
                     items:
                       $ref: '#/components/schemas/Booking'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
     post:
       operationId: HostBookings_createBooking
       parameters:
@@ -139,7 +139,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ErrorResponse'
         '201':
           description: The request has succeeded and a new resource has been created as a result.
           content:
@@ -171,7 +171,7 @@ paths:
                   - type: array
                     items:
                       $ref: '#/components/schemas/EventType'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
     post:
       operationId: EventTypes_createEventType
       parameters:
@@ -186,7 +186,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ErrorResponse'
         '201':
           description: The request has succeeded and a new resource has been created as a result.
           content:
@@ -221,7 +221,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/EventType'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
       requestBody:
         required: true
         content:
@@ -247,7 +247,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ErrorResponse'
         '204':
           description: 'There is no content to send for this request, but the headers may be useful. '
   /api/v1/hosts/{slug}/settings:
@@ -267,7 +267,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/HostSettings'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
   /api/v1/hosts/{slug}/slots:
     get:
       operationId: ApiV1_listSlots
@@ -297,7 +297,7 @@ paths:
               schema:
                 anyOf:
                   - $ref: '#/components/schemas/AvailabilityDay'
-                  - $ref: '#/components/schemas/ApiError'
+                  - $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
     ApiError:
@@ -412,10 +412,10 @@ components:
           type: string
         startAt:
           allOf:
-            - $ref: '#/components/schemas/LocalDateTime'
-          description: Начало встречи в локальном времени хоста.
+            - $ref: '#/components/schemas/UtcDateTime'
+          description: Начало встречи (UTC ISO 8601).
         endAt:
-          $ref: '#/components/schemas/LocalDateTime'
+          $ref: '#/components/schemas/UtcDateTime'
         timeZone:
           type: string
         clientName:
@@ -449,8 +449,8 @@ components:
           type: string
         startAt:
           allOf:
-            - $ref: '#/components/schemas/LocalDateTime'
-          description: Желаемое начало слота в локальном времени хоста.
+            - $ref: '#/components/schemas/UtcDateTime'
+          description: Желаемое начало слота (UTC ISO 8601).
         clientName:
           type: string
         clientEmail:
@@ -487,6 +487,14 @@ components:
         - NOT_FOUND
         - SLOT_TAKEN
         - CONFLICT
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: '#/components/schemas/ApiError'
+      description: 'Тело ответа с ошибкой: конверт `{ error: ApiError }`.'
     EventType:
       type: object
       required:
@@ -534,10 +542,6 @@ components:
       type: string
       format: date
       description: Локальная дата (YYYY-MM-DD) в поясе хоста.
-    LocalDateTime:
-      type: string
-      format: date-time-local
-      description: Локальное время хоста без смещения (YYYY-MM-DDTHH:mm), всегда с полем timeZone (IANA).
     LocationType:
       type: string
       enum:
@@ -551,8 +555,8 @@ components:
       properties:
         startAt:
           allOf:
-            - $ref: '#/components/schemas/LocalDateTime'
-          description: Новое начало слота в локальном времени хоста.
+            - $ref: '#/components/schemas/UtcDateTime'
+          description: Новое начало слота (UTC ISO 8601).
     Slot:
       type: object
       required:
@@ -567,8 +571,8 @@ components:
           description: Идентификатор слота (используется до перехода брони на startAt).
         startAt:
           allOf:
-            - $ref: '#/components/schemas/LocalDateTime'
-          description: Начало слота в локальном времени хоста.
+            - $ref: '#/components/schemas/UtcDateTime'
+          description: Начало слота (UTC ISO 8601).
         durationMin:
           type: integer
           format: int32
@@ -610,6 +614,10 @@ components:
           $ref: '#/components/schemas/LocationType'
         isActive:
           type: boolean
+    UtcDateTime:
+      type: string
+      format: date-time
+      description: Момент времени в UTC, ISO 8601 с миллисекундами и суффиксом `Z`; для отображения — поле timeZone (IANA).
 servers:
   - url: http://localhost:3000
     description: Local development

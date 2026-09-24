@@ -199,9 +199,9 @@ export interface components {
             id: string;
             hostSlug: string;
             eventTypeId: string;
-            /** @description Начало встречи в локальном времени хоста. */
-            startAt: components["schemas"]["LocalDateTime"];
-            endAt: components["schemas"]["LocalDateTime"];
+            /** @description Начало встречи (UTC ISO 8601). */
+            startAt: components["schemas"]["UtcDateTime"];
+            endAt: components["schemas"]["UtcDateTime"];
             timeZone: string;
             clientName: string;
             clientEmail: string;
@@ -214,8 +214,8 @@ export interface components {
         BookingStatus: "confirmed" | "cancelled";
         CreateBookingRequest: {
             eventTypeId: string;
-            /** @description Желаемое начало слота в локальном времени хоста. */
-            startAt: components["schemas"]["LocalDateTime"];
+            /** @description Желаемое начало слота (UTC ISO 8601). */
+            startAt: components["schemas"]["UtcDateTime"];
             clientName: string;
             clientEmail: string;
             clientPhone?: string;
@@ -232,6 +232,10 @@ export interface components {
         };
         /** @enum {string} */
         ErrorCode: "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT";
+        /** @description Тело ответа с ошибкой: конверт `{ error: ApiError }`. */
+        ErrorResponse: {
+            error: components["schemas"]["ApiError"];
+        };
         EventType: {
             id: string;
             slug: string;
@@ -258,16 +262,11 @@ export interface components {
          * @description Локальная дата (YYYY-MM-DD) в поясе хоста.
          */
         LocalDate: string;
-        /**
-         * Format: date-time-local
-         * @description Локальное время хоста без смещения (YYYY-MM-DDTHH:mm), всегда с полем timeZone (IANA).
-         */
-        LocalDateTime: string;
         /** @enum {string} */
         LocationType: "online" | "offline" | "phone";
         RescheduleBookingRequest: {
-            /** @description Новое начало слота в локальном времени хоста. */
-            startAt: components["schemas"]["LocalDateTime"];
+            /** @description Новое начало слота (UTC ISO 8601). */
+            startAt: components["schemas"]["UtcDateTime"];
         };
         Slot: {
             /**
@@ -275,8 +274,8 @@ export interface components {
              * @description Идентификатор слота (используется до перехода брони на startAt).
              */
             id: number;
-            /** @description Начало слота в локальном времени хоста. */
-            startAt: components["schemas"]["LocalDateTime"];
+            /** @description Начало слота (UTC ISO 8601). */
+            startAt: components["schemas"]["UtcDateTime"];
             /** Format: int32 */
             durationMin: number;
             /** @description Свободен ли слот для записи активной бронью. */
@@ -302,6 +301,11 @@ export interface components {
             locationType?: components["schemas"]["LocationType"];
             isActive?: boolean;
         };
+        /**
+         * Format: date-time
+         * @description Момент времени в UTC, ISO 8601 с миллисекундами и суффиксом `Z`; для отображения — поле timeZone (IANA).
+         */
+        UtcDateTime: string;
     };
     responses: never;
     parameters: never;
@@ -328,7 +332,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -350,7 +354,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -376,7 +380,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["Booking"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -398,7 +402,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AvailabilitySettings"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["AvailabilitySettings"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -424,7 +428,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AvailabilitySettings"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["AvailabilitySettings"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -446,7 +450,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Booking"][] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["Booking"][] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -472,7 +476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description The request has succeeded and a new resource has been created as a result. */
@@ -503,7 +507,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventType"][] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["EventType"][] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -529,7 +533,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description The request has succeeded and a new resource has been created as a result. */
@@ -561,7 +565,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description There is no content to send for this request, but the headers may be useful. */
@@ -595,7 +599,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventType"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["EventType"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -617,7 +621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HostSettings"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["HostSettings"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -642,7 +646,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AvailabilityDay"] | components["schemas"]["ApiError"];
+                    "application/json": components["schemas"]["AvailabilityDay"] | components["schemas"]["ErrorResponse"];
                 };
             };
         };

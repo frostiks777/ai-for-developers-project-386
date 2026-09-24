@@ -44,6 +44,12 @@ export enum LocationType {
  */
 export type Boolean = boolean;
 /**
+ * Тело ответа с ошибкой: конверт `{ error: ApiError }`.
+ */
+export interface ErrorResponse {
+  error: ApiError;
+}
+/**
  * Единая модель ошибки для всех не-2xx ответов.
  */
 export interface ApiError {
@@ -111,7 +117,7 @@ export interface Booking {
   hostSlug: string;
   eventTypeId: string;
   /**
-   * Начало встречи в локальном времени хоста.
+   * Начало встречи (UTC ISO 8601).
    */
   startAt: string;
   endAt: string;
@@ -124,9 +130,9 @@ export interface Booking {
   createdAt: string;
 }
 /**
- * Локальное время хоста без смещения (YYYY-MM-DDTHH:mm), всегда с полем timeZone (IANA).
+ * Момент времени в UTC, ISO 8601 с миллисекундами и суффиксом `Z`; для отображения — поле timeZone (IANA).
  */
-export type LocalDateTime = string;
+export type UtcDateTime = string;
 export enum BookingStatus {
   Confirmed = "confirmed",
   Cancelled = "cancelled"
@@ -134,7 +140,7 @@ export enum BookingStatus {
 export interface CreateBookingRequest {
   eventTypeId: string;
   /**
-   * Желаемое начало слота в локальном времени хоста.
+   * Желаемое начало слота (UTC ISO 8601).
    */
   startAt: string;
   clientName: string;
@@ -144,7 +150,7 @@ export interface CreateBookingRequest {
 }
 export interface RescheduleBookingRequest {
   /**
-   * Новое начало слота в локальном времени хоста.
+   * Новое начало слота (UTC ISO 8601).
    */
   startAt: string;
 }
@@ -180,7 +186,7 @@ export interface Slot {
    */
   id: number;
   /**
-   * Начало слота в локальном времени хоста.
+   * Начало слота (UTC ISO 8601).
    */
   startAt: string;
   durationMin: number;

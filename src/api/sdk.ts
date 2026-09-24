@@ -2,7 +2,7 @@ import { createHttpHeaders } from '@typespec/ts-http-runtime'
 import type { HttpClient, PipelineRequest, PipelineResponse } from '@typespec/ts-http-runtime'
 
 import { ApiV1Client } from '@/api/generated'
-import type { ApiError as ApiErrorBody } from '@/api/generated'
+import type { ErrorResponse } from '@/api/generated'
 import { RestError } from '@/api/generated/helpers/error.js'
 
 // Транспорт поверх глобального fetch: одинаково работает в браузере и тестах,
@@ -86,7 +86,7 @@ function messageFromBody(body: unknown): string | null {
 
 // Разворачивает результат SDK-операции: на успех возвращает модель,
 // на ошибку — ApiError с сообщением из ответа.
-export async function call<T>(promise: Promise<T | ApiErrorBody>): Promise<T> {
+export async function call<T>(promise: Promise<T | ErrorResponse>): Promise<T> {
   try {
     return (await promise) as T
   } catch (error) {

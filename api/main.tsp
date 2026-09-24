@@ -13,9 +13,9 @@ namespace CallCalendar;
 // Скаляры и общие модели
 // ---------------------------------------------------------------------------
 
-/** Локальное время хоста без смещения (YYYY-MM-DDTHH:mm), всегда с полем timeZone (IANA). */
-@format("date-time-local")
-scalar LocalDateTime extends string;
+/** Момент времени в UTC, ISO 8601 с миллисекундами и суффиксом `Z`; для отображения — поле timeZone (IANA). */
+@format("date-time")
+scalar UtcDateTime extends string;
 
 /** Локальная дата (YYYY-MM-DD) в поясе хоста. */
 @format("date")
@@ -42,6 +42,11 @@ model ApiError {
   message: string;
   @doc("Дополнительные детали (например, ошибки полей).")
   details?: Record<unknown>;
+}
+
+/** Тело ответа с ошибкой: конверт `{ error: ApiError }`. */
+model ErrorResponse {
+  error: ApiError;
 }
 
 union ErrorCode {
@@ -135,8 +140,8 @@ model UpdateAvailabilityRequest {
 model Slot {
   @doc("Идентификатор слота (используется до перехода брони на startAt).")
   id: int32;
-  @doc("Начало слота в локальном времени хоста.")
-  startAt: LocalDateTime;
+  @doc("Начало слота (UTC ISO 8601).")
+  startAt: UtcDateTime;
   durationMin: int32;
   @doc("Свободен ли слот для записи активной бронью.")
   available: boolean;
@@ -159,9 +164,9 @@ model Booking {
   id: string;
   hostSlug: HostSlug;
   eventTypeId: string;
-  @doc("Начало встречи в локальном времени хоста.")
-  startAt: LocalDateTime;
-  endAt: LocalDateTime;
+  @doc("Начало встречи (UTC ISO 8601).")
+  startAt: UtcDateTime;
+  endAt: UtcDateTime;
   timeZone: string;
   clientName: string;
   clientEmail: string;
@@ -173,8 +178,8 @@ model Booking {
 
 model CreateBookingRequest {
   eventTypeId: string;
-  @doc("Желаемое начало слота в локальном времени хоста.")
-  startAt: LocalDateTime;
+  @doc("Желаемое начало слота (UTC ISO 8601).")
+  startAt: UtcDateTime;
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
@@ -182,8 +187,8 @@ model CreateBookingRequest {
 }
 
 model RescheduleBookingRequest {
-  @doc("Новое начало слота в локальном времени хоста.")
-  startAt: LocalDateTime;
+  @doc("Новое начало слота (UTC ISO 8601).")
+  startAt: UtcDateTime;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,18 +199,18 @@ model RescheduleBookingRequest {
 namespace ApiV1 {
   @route("/hosts/{slug}/settings")
   @get
-  op getHostSettings(@path slug: HostSlug): HostSettings | ApiError;
+  op getHostSettings(@path slug: HostSlug): HostSettings | ErrorResponse;
 
   @route("/hosts/{slug}/event-types")
   namespace EventTypes {
     @get
-    op listEventTypes(@path slug: HostSlug): EventType[] | ApiError;
+    op listEventTypes(@path slug: HostSlug): EventType[] | ErrorResponse;
 
     @post
     op createEventType(
       @path slug: HostSlug,
       @body body: CreateEventTypeRequest,
-    ): { @statusCode statusCode: 201; @body body: EventType } | ApiError;
+    ): { @statusCode statusCode: 201; @body body: EventType } | ErrorResponse;
 
     @route("/{eventTypeId}")
     @patch
@@ -213,26 +218,26 @@ namespace ApiV1 {
       @path slug: HostSlug,
       @path eventTypeId: string,
       @body body: UpdateEventTypeRequest,
-    ): EventType | ApiError;
+    ): EventType | ErrorResponse;
 
     @route("/{eventTypeId}")
     @delete
     op deleteEventType(
       @path slug: HostSlug,
       @path eventTypeId: string,
-    ): { @statusCode statusCode: 204 } | ApiError;
+    ): { @statusCode statusCode: 204 } | ErrorResponse;
   }
 
   @route("/hosts/{slug}/availability")
   namespace Availability {
     @get
-    op getAvailability(@path slug: HostSlug): AvailabilitySettings | ApiError;
+    op getAvailability(@path slug: HostSlug): AvailabilitySettings | ErrorResponse;
 
     @put
     op updateAvailability(
       @path slug: HostSlug,
       @body body: UpdateAvailabilityRequest,
-    ): AvailabilitySettings | ApiError;
+    ): AvailabilitySettings | ErrorResponse;
   }
 
   @route("/hosts/{slug}/slots")
@@ -241,34 +246,34 @@ namespace ApiV1 {
     @path slug: HostSlug,
     @query date?: LocalDate,
     @query eventTypeId?: string,
-  ): AvailabilityDay | ApiError;
+  ): AvailabilityDay | ErrorResponse;
 
   @route("/hosts/{slug}/bookings")
   namespace HostBookings {
     @get
-    op listHostBookings(@path slug: HostSlug): Booking[] | ApiError;
+    op listHostBookings(@path slug: HostSlug): Booking[] | ErrorResponse;
 
     @post
     op createBooking(
       @path slug: HostSlug,
       @body body: CreateBookingRequest,
-    ): { @statusCode statusCode: 201; @body body: Booking } | ApiError;
+    ): { @statusCode statusCode: 201; @body body: Booking } | ErrorResponse;
   }
 
   @route("/bookings/{bookingId}")
   namespace Bookings {
     @get
-    op getBooking(@path bookingId: string): Booking | ApiError;
+    op getBooking(@path bookingId: string): Booking | ErrorResponse;
 
     @route("/cancel")
     @post
-    op cancelBooking(@path bookingId: string): Booking | ApiError;
+    op cancelBooking(@path bookingId: string): Booking | ErrorResponse;
 
     @route("/reschedule")
     @post
     op rescheduleBooking(
       @path bookingId: string,
       @body body: RescheduleBookingRequest,
-    ): Booking | ApiError;
+    ): Booking | ErrorResponse;
   }
 }

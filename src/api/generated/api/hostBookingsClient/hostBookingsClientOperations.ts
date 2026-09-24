@@ -3,14 +3,14 @@ import type { HostBookingsClientContext } from "./hostBookingsClientContext.js";
 import { createRestError } from "../../helpers/error.js";
 import type { OperationOptions } from "../../helpers/interfaces.js";
 import {
-  jsonApiErrorToApplicationTransform,
   jsonBookingToApplicationTransform,
   jsonCreateBookingRequestToTransportTransform,
+  jsonErrorResponseToApplicationTransform,
 } from "../../models/internal/serializers.js";
 import type {
-  ApiError,
   Booking,
   CreateBookingRequest,
+  ErrorResponse,
 } from "../../models/models.js";
 
 export interface ListHostBookingsOptions extends OperationOptions {}
@@ -18,7 +18,7 @@ export async function listHostBookings(
   client: HostBookingsClientContext,
   slug: string,
   options?: ListHostBookingsOptions,
-): Promise<Array<Booking> | ApiError> {
+): Promise<Array<Booking> | ErrorResponse> {
   const path = parse("/api/v1/hosts/{slug}/bookings").expand({
     slug: slug
   });
@@ -43,7 +43,7 @@ export async function createBooking(
   slug: string,
   body: CreateBookingRequest,
   options?: CreateBookingOptions,
-): Promise<ApiError | Booking> {
+): Promise<ErrorResponse | Booking> {
   const path = parse("/api/v1/hosts/{slug}/bookings").expand({
     slug: slug
   });
@@ -57,7 +57,7 @@ export async function createBooking(
     options?.operationOptions?.onResponse(response);
   }
   if (+response.status === 200 && response.headers["content-type"]?.includes("application/json")) {
-    return jsonApiErrorToApplicationTransform(response.body)!;
+    return jsonErrorResponseToApplicationTransform(response.body)!;
   }
   if (+response.status === 201 && response.headers["content-type"]?.includes("application/json")) {
     return jsonBookingToApplicationTransform(response.body)!;

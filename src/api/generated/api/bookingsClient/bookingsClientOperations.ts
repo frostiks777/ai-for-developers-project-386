@@ -6,8 +6,8 @@ import {
   jsonRescheduleBookingRequestToTransportTransform,
 } from "../../models/internal/serializers.js";
 import type {
-  ApiError,
   Booking,
+  ErrorResponse,
   RescheduleBookingRequest,
 } from "../../models/models.js";
 
@@ -16,7 +16,7 @@ export async function getBooking(
   client: BookingsClientContext,
   bookingId: string,
   options?: GetBookingOptions,
-): Promise<Booking | ApiError> {
+): Promise<Booking | ErrorResponse> {
   const path = parse("/api/v1/bookings/{bookingId}").expand({
     bookingId: bookingId
   });
@@ -40,7 +40,7 @@ export async function cancelBooking(
   client: BookingsClientContext,
   bookingId: string,
   options?: CancelBookingOptions,
-): Promise<Booking | ApiError> {
+): Promise<Booking | ErrorResponse> {
   const path = parse("/api/v1/bookings/{bookingId}/cancel").expand({
     bookingId: bookingId
   });
@@ -65,7 +65,7 @@ export async function rescheduleBooking(
   bookingId: string,
   body: RescheduleBookingRequest,
   options?: RescheduleBookingOptions,
-): Promise<Booking | ApiError> {
+): Promise<Booking | ErrorResponse> {
   const path = parse("/api/v1/bookings/{bookingId}/reschedule").expand({
     bookingId: bookingId
   });
