@@ -39,6 +39,10 @@ export function findEventType(hostId: string, id: string): EventType | undefined
     .get()
 }
 
+export function findEventTypeById(id: string): EventType | undefined {
+  return db.select().from(eventTypes).where(eq(eventTypes.id, id)).get()
+}
+
 export function createEventType(hostId: string, input: CreateEventTypeInput): EventType {
   return db
     .insert(eventTypes)

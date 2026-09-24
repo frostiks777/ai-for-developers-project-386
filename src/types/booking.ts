@@ -33,3 +33,28 @@ export interface BookingWithSlot extends Booking {
 export interface CreatedBooking extends Booking {
   cancelToken: string
 }
+
+// Бронирование v1: тип встречи + время начала
+export interface CreateBookingV1Body {
+  eventTypeId: string
+  startAt: string
+  clientName: string
+  clientEmail: string
+  clientPhone?: string
+  clientNotes?: string
+}
+
+// Бронь v1: публичный id (UUID), статус, тип встречи
+export interface V1Booking {
+  id: string
+  hostSlug: string
+  eventTypeId: string
+  startAt: string
+  endAt: string
+  status: string
+  clientName: string
+  clientEmail: string
+  clientPhone: string | null
+  clientNotes: string | null
+  createdAt: string
+}

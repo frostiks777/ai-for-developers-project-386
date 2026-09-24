@@ -23,11 +23,23 @@ const slot: TimeSlot = {
   isBooked: false,
 }
 
+const eventType = {
+  id: 'type-1',
+  hostId: 'host-1',
+  slug: 'consultation',
+  title: 'Консультация',
+  description: null,
+  durationMin: 30,
+  locationType: 'online' as const,
+  isActive: true,
+  createdAt: '2026-09-24 10:00:00',
+}
+
 function mockFetch(slots: TimeSlot[] = [slot]) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
 
-    if (url === '/api/v1/hosts/default/slots') {
+    if (url.startsWith('/api/v1/hosts/default/slots')) {
       return new Response(
         JSON.stringify({
           timeZone: 'UTC',
@@ -44,18 +56,22 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
     }
 
     if (url === '/api/v1/hosts/default/event-types') {
-      return new Response(JSON.stringify([]), { status: 200 })
+      return new Response(JSON.stringify([eventType]), { status: 200 })
     }
 
-    if (url === '/api/bookings' && init?.method === 'POST') {
+    if (url === '/api/v1/hosts/default/bookings' && init?.method === 'POST') {
       return new Response(
         JSON.stringify({
-          id: 1,
-          slotId: slot.id,
-          name: 'Иван',
-          phone: '+79000000000',
-          email: 'ivan@example.com',
-          cancelToken: 'test-token',
+          id: 'booking-token',
+          hostSlug: 'default',
+          eventTypeId: 'type-1',
+          startAt: slot.startAt,
+          endAt: slot.startAt,
+          status: 'confirmed',
+          clientName: 'Иван',
+          clientEmail: 'ivan@example.com',
+          clientPhone: '+79000000000',
+          clientNotes: null,
           createdAt: '2099-09-23T07:00:00.000Z',
         }),
         { status: 201 },
@@ -107,7 +123,7 @@ describe('HomePage: экран успеха', () => {
     await bookSlot(user)
 
     const cancelLink = await screen.findByLabelText('Ссылка для отмены')
-    expect((cancelLink as HTMLInputElement).value).toContain('/cancel/test-token')
+    expect((cancelLink as HTMLInputElement).value).toContain('/cancel/booking-token')
   })
 
   it('на экране успеха есть экспорт в календарь', async () => {

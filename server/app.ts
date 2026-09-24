@@ -7,11 +7,21 @@ import { and, eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
 import { bookings, hosts, slots } from './db/schema'
+import {
+  cancelBookingV1,
+  createBookingV1,
+  findActiveBookingForSlot,
+  findBookingByPublicId,
+  findOtherActiveBooking,
+  findSlotByStartAt,
+  rescheduleBookingV1,
+} from './bookings-v1'
 import { loadAvailabilitySettings, saveAvailabilitySettings } from './availability-settings'
 import {
   createEventType,
   deleteEventType,
   findEventType,
+  findEventTypeById,
   listEventTypes,
   updateEventType,
 } from './event-types'
@@ -26,6 +36,8 @@ import {
   createEventTypeSchema,
   rescheduleBookingSchema,
   updateEventTypeSchema,
+  v1CreateBookingSchema,
+  v1RescheduleBookingSchema,
 } from './validation'
 
 // Единый набор колонок для выборок «бронь + данные слота»
@@ -273,6 +285,24 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Читает хост по slug; null, если не найден (роуты отвечают 404)
   const findHost = (slug: string) => db.select().from(hosts).where(eq(hosts.slug, slug)).get()
 
+  // Формат ошибки контракта v1
+  const v1Error = (code: string, message: string) => ({ error: { code, message } })
+
+  // Публичное представление брони (id = cancelToken — UUID для ссылок отмены/переноса)
+  const toBooking = (row: typeof bookings.$inferSelect, slug: string) => ({
+    id: row.cancelToken ?? '',
+    hostSlug: slug,
+    eventTypeId: row.eventTypeId,
+    startAt: row.startAt,
+    endAt: row.endAt,
+    status: row.status,
+    clientName: row.name,
+    clientEmail: row.email,
+    clientPhone: row.phone,
+    clientNotes: row.comment,
+    createdAt: row.createdAt,
+  })
+
   // Настройки хоста и его правила доступности
   app.get('/api/v1/hosts/:slug/settings', (request, reply) => {
     const { slug } = request.params as { slug: string }
@@ -438,6 +468,134 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     return reply.code(204).send()
+  })
+
+  // ── API v1: брони ────────────────────────────────────────────────────
+  app.get('/api/v1/hosts/:slug/bookings', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
+    }
+
+    return db
+      .select()
+      .from(bookings)
+      .orderBy(bookings.startAt)
+      .all()
+      .map((row) => toBooking(row, host.slug))
+  })
+
+  app.post('/api/v1/hosts/:slug/bookings', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
+    }
+
+    const parsed = v1CreateBookingSchema.safeParse(request.body)
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+      return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
+    }
+
+    const eventType = findEventType(host.id, parsed.data.eventTypeId)
+    if (!eventType) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Тип встречи не найден'))
+    }
+
+    if (Number.isNaN(Date.parse(parsed.data.startAt))) {
+      return reply.code(422).send(v1Error('VALIDATION_ERROR', 'Неверный формат времени'))
+    }
+
+    const slot = findSlotByStartAt(parsed.data.startAt)
+    if (!slot) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
+    }
+
+    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+      return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
+    }
+
+    if (findActiveBookingForSlot(slot.id)) {
+      return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
+    }
+
+    const created = createBookingV1(parsed.data, slot, eventType.durationMin)
+
+    return reply.code(201).send(toBooking(created, host.slug))
+  })
+
+  app.get('/api/v1/bookings/:bookingId', (request, reply) => {
+    const { bookingId } = request.params as { bookingId: string }
+    const booking = findBookingByPublicId(bookingId)
+
+    if (!booking) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
+    }
+
+    const host = db.select().from(hosts).get()
+
+    return toBooking(booking, host?.slug ?? '')
+  })
+
+  app.post('/api/v1/bookings/:bookingId/cancel', (request, reply) => {
+    const { bookingId } = request.params as { bookingId: string }
+    const booking = findBookingByPublicId(bookingId)
+
+    if (!booking) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
+    }
+
+    const host = db.select().from(hosts).get()
+
+    if (booking.status === 'cancelled') {
+      return toBooking(booking, host?.slug ?? '')
+    }
+
+    return toBooking(cancelBookingV1(booking), host?.slug ?? '')
+  })
+
+  app.post('/api/v1/bookings/:bookingId/reschedule', (request, reply) => {
+    const { bookingId } = request.params as { bookingId: string }
+    const booking = findBookingByPublicId(bookingId)
+
+    if (!booking) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Бронь не найдена'))
+    }
+
+    const parsed = v1RescheduleBookingSchema.safeParse(request.body)
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидный запрос переноса'
+      return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
+    }
+
+    if (Number.isNaN(Date.parse(parsed.data.startAt))) {
+      return reply.code(422).send(v1Error('VALIDATION_ERROR', 'Неверный формат времени'))
+    }
+
+    const slot = findSlotByStartAt(parsed.data.startAt)
+    if (!slot) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
+    }
+
+    if (slot.startAt < new Date(Date.now() + minNoticeMs()).toISOString()) {
+      return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
+    }
+
+    if (findOtherActiveBooking(slot.id, booking.id)) {
+      return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
+    }
+
+    const eventType = findEventTypeById(booking.eventTypeId)
+    const durationMin = eventType?.durationMin ?? 30
+
+    const updated = rescheduleBookingV1(booking, slot, durationMin)
+    const host = db.select().from(hosts).get()
+
+    return toBooking(updated, host?.slug ?? '')
   })
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/

@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { ApiError, createBooking } from '@/api/client'
-import type { CreateBookingBody, CreatedBooking } from '@/types/booking'
+import { ApiError, createBookingV1 } from '@/api/client'
+import type { CreateBookingV1Body, CreatedBooking } from '@/types/booking'
 
 export function useBooking() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const bookSlot = async (body: CreateBookingBody): Promise<CreatedBooking | null> => {
+  const bookSlot = async (
+    hostSlug: string,
+    body: CreateBookingV1Body,
+  ): Promise<CreatedBooking | null> => {
     setIsSubmitting(true)
 
     try {
-      const booking = await createBooking(body)
+      const booking = await createBookingV1(hostSlug, body)
       toast.success('Звонок забронирован')
       return booking
     } catch (error) {
