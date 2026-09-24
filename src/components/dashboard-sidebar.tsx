@@ -1,4 +1,4 @@
-import { Calendar, ExternalLink, List, SlidersHorizontal } from 'lucide-react'
+import { Calendar, ExternalLink, List, ListChecks, SlidersHorizontal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -10,19 +10,21 @@ interface DashboardSidebarProps {
 }
 
 const AVAILABILITY_SECTION_ID = 'availability'
+const EVENT_TYPES_SECTION_ID = 'event-types'
+
+function scrollToSection(event: React.MouseEvent<HTMLAnchorElement>, id: string) {
+  const section = document.getElementById(id)
+
+  if (!section) {
+    return
+  }
+
+  event.preventDefault()
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  window.history.replaceState(null, '', `#${id}`)
+}
 
 export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
-  const handleAvailabilityClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    const section = document.getElementById(AVAILABILITY_SECTION_ID)
-
-    if (!section) {
-      return
-    }
-
-    event.preventDefault()
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    window.history.replaceState(null, '', `#${AVAILABILITY_SECTION_ID}`)
-  }
 
   return (
     <nav
@@ -47,8 +49,16 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
         </span>
       </span>
       <a
+        href={`#${EVENT_TYPES_SECTION_ID}`}
+        onClick={(event) => scrollToSection(event, EVENT_TYPES_SECTION_ID)}
+        className="flex h-11 items-center gap-2.5 rounded-lg px-3 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <ListChecks className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
+        Типы встреч
+      </a>
+      <a
         href={`#${AVAILABILITY_SECTION_ID}`}
-        onClick={handleAvailabilityClick}
+        onClick={(event) => scrollToSection(event, AVAILABILITY_SECTION_ID)}
         className="flex h-11 items-center gap-2.5 rounded-lg px-3 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <SlidersHorizontal className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />

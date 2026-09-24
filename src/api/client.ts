@@ -6,6 +6,11 @@ import type {
   CreatedBooking,
   TimeSlot,
 } from '@/types/booking'
+import type {
+  CreateEventTypeBody,
+  EventType,
+  UpdateEventTypeBody,
+} from '@/types/event-type'
 
 export class ApiError extends Error {
   readonly status: number
@@ -117,4 +122,42 @@ export function updateAvailability(rules: AvailabilityRules): Promise<Availabili
     },
     body: JSON.stringify(rules),
   })
+}
+
+export function fetchEventTypes(slug: string): Promise<EventType[]> {
+  return request<EventType[]>(`/api/v1/hosts/${encodeURIComponent(slug)}/event-types`)
+}
+
+export function createEventType(slug: string, body: CreateEventTypeBody): Promise<EventType> {
+  return request<EventType>(`/api/v1/hosts/${encodeURIComponent(slug)}/event-types`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+}
+
+export function updateEventType(
+  slug: string,
+  id: string,
+  body: UpdateEventTypeBody,
+): Promise<EventType> {
+  return request<EventType>(
+    `/api/v1/hosts/${encodeURIComponent(slug)}/event-types/${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    },
+  )
+}
+
+export function deleteEventType(slug: string, id: string): Promise<void> {
+  return requestVoid(
+    `/api/v1/hosts/${encodeURIComponent(slug)}/event-types/${encodeURIComponent(id)}`,
+    { method: 'DELETE' },
+  )
 }

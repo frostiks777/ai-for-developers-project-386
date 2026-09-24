@@ -53,3 +53,40 @@ export const rescheduleBookingSchema = z.object({
   token: z.string().trim().min(1, 'Укажите токен брони'),
   slotId: z.int().positive('Некорректный слот'),
 })
+
+// Типы встреч организатора (ADR-0011)
+export const locationTypeSchema = z.enum(['online', 'offline', 'phone'])
+
+const eventTypeSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+export const createEventTypeSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(1, 'Укажите slug')
+    .max(50, 'Slug слишком длинный')
+    .regex(eventTypeSlugPattern, 'Slug: строчные латинские буквы, цифры и дефис'),
+  title: z.string().trim().min(1, 'Укажите название').max(120, 'Название слишком длинное'),
+  description: z
+    .string()
+    .trim()
+    .max(500, 'Описание слишком длинное')
+    .optional()
+    .transform((value) => value || undefined),
+  durationMin: z.int().min(15, 'Не короче 15 минут').max(480, 'Не длиннее 8 часов'),
+  locationType: locationTypeSchema,
+  isActive: z.boolean().optional(),
+})
+
+export const updateEventTypeSchema = z.object({
+  title: z.string().trim().min(1, 'Укажите название').max(120, 'Название слишком длинное').optional(),
+  description: z
+    .string()
+    .trim()
+    .max(500, 'Описание слишком длинное')
+    .optional()
+    .transform((value) => (value === undefined ? undefined : value || null)),
+  durationMin: z.int().min(15, 'Не короче 15 минут').max(480, 'Не длиннее 8 часов').optional(),
+  locationType: locationTypeSchema.optional(),
+  isActive: z.boolean().optional(),
+})
