@@ -61,14 +61,14 @@ export function MonthCalendar({
     <section className="flex h-full flex-col">
       <h2 className="text-lg font-semibold">Выберите дату</h2>
 
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-[clamp(0.75rem,2.9vh,1.5rem)] flex items-center justify-between">
         <p className="font-semibold capitalize">{monthTitleFormatter.format(visibleMonth)}</p>
         <div className="flex gap-2">
           <Button
             type="button"
             variant="outline"
             size="icon"
-            className="size-11 rounded-full"
+            className="size-[clamp(2.25rem,5.4vh,2.75rem)] rounded-full"
             aria-label="Предыдущий месяц"
             disabled={!hasEarlierDates}
             onClick={() => shiftMonth(-1)}
@@ -79,7 +79,7 @@ export function MonthCalendar({
             type="button"
             variant="outline"
             size="icon"
-            className="size-11 rounded-full"
+            className="size-[clamp(2.25rem,5.4vh,2.75rem)] rounded-full"
             aria-label="Следующий месяц"
             onClick={() => shiftMonth(1)}
           >
@@ -88,13 +88,13 @@ export function MonthCalendar({
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-7 text-center text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="mt-[clamp(0.5rem,2.4vh,1.25rem)] grid grid-cols-7 text-center text-xs uppercase tracking-wide text-muted-foreground">
         {weekdays.map((weekday) => (
           <span key={weekday}>{weekday}</span>
         ))}
       </div>
 
-      <div className="mt-2 grid grid-cols-7 justify-items-center gap-y-1">
+      <div className="mt-[clamp(0.25rem,1vh,0.5rem)] grid grid-cols-7 justify-items-center gap-y-[clamp(0.125rem,0.5vh,0.25rem)]">
         {days.map((date, index) => {
           if (!date) {
             return <span key={`empty-${index}`} />
@@ -115,7 +115,7 @@ export function MonthCalendar({
               disabled={isPast || !isAvailable}
               onClick={() => onSelectDate(dateKey)}
               className={cn(
-                'relative flex size-[52px] items-center justify-center rounded-full text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                'relative flex size-[clamp(2.25rem,6.4vh,3.25rem)] items-center justify-center rounded-full text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 isSelected && 'bg-primary font-semibold text-primary-foreground',
                 !isSelected && isAvailable && !isPast && 'bg-accent font-semibold text-accent-foreground hover:bg-accent/70',
                 (isPast || !isAvailable) && 'text-disabled-foreground',
@@ -134,7 +134,7 @@ export function MonthCalendar({
         })}
       </div>
 
-      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 pt-6 text-xs text-muted-foreground">
+      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2 pt-[clamp(0.75rem,2.9vh,1.5rem)] text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <span className="size-2.5 rounded-full bg-accent ring-1 ring-inset ring-accent-foreground/30" />
           Есть свободное время
