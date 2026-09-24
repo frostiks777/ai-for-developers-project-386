@@ -67,8 +67,21 @@ export function fetchHostSettings(slug: string): Promise<HostSettings> {
   return request<HostSettings>(`/api/v1/hosts/${encodeURIComponent(slug)}/settings`)
 }
 
-export function fetchHostSlots(slug: string): Promise<TimeSlot[]> {
-  return request<TimeSlot[]>(`/api/v1/hosts/${encodeURIComponent(slug)}/slots`)
+export function fetchHostSlots(slug: string, eventTypeId?: string): Promise<TimeSlot[]> {
+  const query = eventTypeId ? `?eventTypeId=${encodeURIComponent(eventTypeId)}` : ''
+
+  return request<{
+    timeZone: string
+    date: string | null
+    slots: { id: number; startAt: string; durationMin: number; available: boolean }[]
+  }>(`/api/v1/hosts/${encodeURIComponent(slug)}/slots${query}`).then((data) =>
+    data.slots.map((slot) => ({
+      id: slot.id,
+      startAt: slot.startAt,
+      durationMin: slot.durationMin,
+      isBooked: !slot.available,
+    })),
+  )
 }
 
 export function createBooking(body: CreateBookingBody): Promise<CreatedBooking> {

@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify'
 
 import { buildApp } from './app'
 import { dateKeyInZone } from './hosts'
-import type { HostSettings, TimeSlot } from './types'
+import type { HostSettings } from './types'
 
 let app: FastifyInstance
 
@@ -36,27 +36,34 @@ describe('GET /api/v1/hosts/:slug/settings', () => {
   })
 })
 
+type AvailabilityDay = {
+  timeZone: string
+  date: string | null
+  slots: { id: number; startAt: string; durationMin: number; available: boolean }[]
+}
+
 describe('GET /api/v1/hosts/:slug/slots', () => {
   it('отдаёт список будущих слотов хоста', async () => {
     const response = await app.inject({ method: 'GET', url: '/api/v1/hosts/default/slots' })
 
     expect(response.statusCode).toBe(200)
-    const slots = response.json<TimeSlot[]>()
-    expect(slots.length).toBeGreaterThan(0)
-    expect(slots[0]).toEqual(
+    const day = response.json<AvailabilityDay>()
+    expect(day.slots.length).toBeGreaterThan(0)
+    expect(day.slots[0]).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
         startAt: expect.any(String),
         durationMin: expect.any(Number),
-        isBooked: expect.any(Boolean),
+        available: expect.any(Boolean),
       }),
     )
   })
 
   it('фильтрует слоты по дате в заданном поясе', async () => {
-    const all = (await app.inject({ method: 'GET', url: '/api/v1/hosts/default/slots' }))
-      .json<TimeSlot[]>()
-    const date = dateKeyInZone(all[0].startAt, 'UTC')
+    const all = (
+      await app.inject({ method: 'GET', url: '/api/v1/hosts/default/slots' })
+    ).json<AvailabilityDay>()
+    const date = dateKeyInZone(all.slots[0].startAt, 'UTC')
 
     const response = await app.inject({
       method: 'GET',
@@ -64,9 +71,19 @@ describe('GET /api/v1/hosts/:slug/slots', () => {
     })
 
     expect(response.statusCode).toBe(200)
-    const filtered = response.json<TimeSlot[]>()
-    expect(filtered.length).toBeGreaterThan(0)
-    expect(filtered.every((slot) => dateKeyInZone(slot.startAt, 'UTC') === date)).toBe(true)
+    const filtered = response.json<AvailabilityDay>()
+    expect(filtered.date).toBe(date)
+    expect(filtered.slots.length).toBeGreaterThan(0)
+    expect(filtered.slots.every((slot) => dateKeyInZone(slot.startAt, 'UTC') === date)).toBe(true)
+  })
+
+  it('отвечает 404 на неизвестный тип встречи', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/hosts/default/slots?eventTypeId=missing',
+    })
+
+    expect(response.statusCode).toBe(404)
   })
 
   it('отвечает 400 на некорректную дату', async () => {

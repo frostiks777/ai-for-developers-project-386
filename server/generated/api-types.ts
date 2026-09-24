@@ -164,7 +164,8 @@ export interface components {
             };
         };
         AvailabilityDay: {
-            date: components["schemas"]["LocalDate"];
+            /** @description Дата фильтра, если была запрошена. */
+            date?: components["schemas"]["LocalDate"];
             /** @description IANA-пояс, к которому относятся startAt слотов. */
             timeZone: string;
             slots: components["schemas"]["Slot"][];
@@ -269,11 +270,16 @@ export interface components {
             startAt: components["schemas"]["LocalDateTime"];
         };
         Slot: {
+            /**
+             * Format: int32
+             * @description Идентификатор слота (используется до перехода брони на startAt).
+             */
+            id: number;
             /** @description Начало слота в локальном времени хоста. */
             startAt: components["schemas"]["LocalDateTime"];
             /** Format: int32 */
             durationMin: number;
-            /** @description Свободен ли слот для записи. */
+            /** @description Свободен ли слот для записи активной бронью. */
             available: boolean;
         };
         UpdateAvailabilityRequest: {

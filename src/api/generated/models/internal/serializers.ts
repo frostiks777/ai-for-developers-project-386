@@ -453,13 +453,13 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    startAt: input_.startAt,durationMin: input_.durationMin,available: input_.available
+    id: input_.id,startAt: input_.startAt,durationMin: input_.durationMin,available: input_.available
   }!;
 }export function jsonSlotToApplicationTransform(input_?: any): Slot {
   if(!input_) {
     return input_ as any;
   }
     return {
-    startAt: input_.startAt,durationMin: input_.durationMin,available: input_.available
+    id: input_.id,startAt: input_.startAt,durationMin: input_.durationMin,available: input_.available
   }!;
 }

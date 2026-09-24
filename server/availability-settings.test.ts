@@ -79,7 +79,7 @@ describe('PUT /api/v1/hosts/:slug/availability', () => {
 
     const slots = (
       await app.inject({ method: 'GET', url: '/api/v1/hosts/default/slots' })
-    ).json<{ startAt: string }[]>()
+    ).json<{ slots: { startAt: string }[] }>().slots
     expect(slots.length).toBeGreaterThan(0)
 
     for (const slot of slots) {
