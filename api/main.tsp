@@ -133,15 +133,18 @@ model UpdateAvailabilityRequest {
 // ---------------------------------------------------------------------------
 
 model Slot {
+  @doc("Идентификатор слота (используется до перехода брони на startAt).")
+  id: int32;
   @doc("Начало слота в локальном времени хоста.")
   startAt: LocalDateTime;
   durationMin: int32;
-  @doc("Свободен ли слот для записи.")
+  @doc("Свободен ли слот для записи активной бронью.")
   available: boolean;
 }
 
 model AvailabilityDay {
-  date: LocalDate;
+  @doc("Дата фильтра, если была запрошена.")
+  date?: LocalDate;
   @doc("IANA-пояс, к которому относятся startAt слотов.")
   timeZone: string;
   slots: Slot[];

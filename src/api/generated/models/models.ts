@@ -164,7 +164,10 @@ export interface HostSettings {
  */
 export type LocalDate = string;
 export interface AvailabilityDay {
-  date: string;
+  /**
+   * Дата фильтра, если была запрошена.
+   */
+  date?: string;
   /**
    * IANA-пояс, к которому относятся startAt слотов.
    */
@@ -173,12 +176,16 @@ export interface AvailabilityDay {
 }
 export interface Slot {
   /**
+   * Идентификатор слота (используется до перехода брони на startAt).
+   */
+  id: number;
+  /**
    * Начало слота в локальном времени хоста.
    */
   startAt: string;
   durationMin: number;
   /**
-   * Свободен ли слот для записи.
+   * Свободен ли слот для записи активной бронью.
    */
   available: boolean;
 }

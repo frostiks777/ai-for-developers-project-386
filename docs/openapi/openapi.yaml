@@ -313,12 +313,13 @@ components:
     AvailabilityDay:
       type: object
       required:
-        - date
         - timeZone
         - slots
       properties:
         date:
-          $ref: '#/components/schemas/LocalDate'
+          allOf:
+            - $ref: '#/components/schemas/LocalDate'
+          description: Дата фильтра, если была запрошена.
         timeZone:
           type: string
           description: IANA-пояс, к которому относятся startAt слотов.
@@ -542,10 +543,15 @@ components:
     Slot:
       type: object
       required:
+        - id
         - startAt
         - durationMin
         - available
       properties:
+        id:
+          type: integer
+          format: int32
+          description: Идентификатор слота (используется до перехода брони на startAt).
         startAt:
           allOf:
             - $ref: '#/components/schemas/LocalDateTime'
@@ -555,7 +561,7 @@ components:
           format: int32
         available:
           type: boolean
-          description: Свободен ли слот для записи.
+          description: Свободен ли слот для записи активной бронью.
     UpdateAvailabilityRequest:
       type: object
       properties:

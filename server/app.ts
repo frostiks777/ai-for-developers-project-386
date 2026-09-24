@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
-import { eq, gte } from 'drizzle-orm'
+import { and, eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
 import { bookings, hosts, slots } from './db/schema'
@@ -11,6 +11,7 @@ import { loadAvailabilitySettings, saveAvailabilitySettings } from './availabili
 import {
   createEventType,
   deleteEventType,
+  findEventType,
   listEventTypes,
   updateEventType,
 } from './event-types'
@@ -59,7 +60,7 @@ export async function buildApp(): Promise<FastifyInstance> {
         bookingId: bookings.id,
       })
       .from(slots)
-      .leftJoin(bookings, eq(bookings.slotId, slots.id))
+      .leftJoin(bookings, and(eq(bookings.slotId, slots.id), eq(bookings.status, 'confirmed')))
       .where(gte(slots.startAt, new Date(Date.now() + minNoticeMs()).toISOString()))
       .orderBy(slots.startAt)
       .all()
@@ -286,7 +287,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     return settings
   })
 
-  // Слоты хоста; необязательные ?date=YYYY-MM-DD и ?timezone=IANA
+  // Слоты хоста; необязательные ?date=YYYY-MM-DD, ?timezone=IANA, ?eventTypeId=
   app.get('/api/v1/hosts/:slug/slots', (request, reply) => {
     const { slug } = request.params as { slug: string }
     const host = findHost(slug)
@@ -295,7 +296,11 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(404).send({ error: 'Хост не найден' })
     }
 
-    const { date, timezone } = request.query as { date?: string; timezone?: string }
+    const { date, timezone, eventTypeId } = request.query as {
+      date?: string
+      timezone?: string
+      eventTypeId?: string
+    }
     const timeZone = timezone ?? host.timezone
 
     if (!isValidTimeZone(timeZone)) {
@@ -306,9 +311,28 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Неверный формат даты, ожидается YYYY-MM-DD' })
     }
 
-    const result = selectFutureSlots()
+    let durationMin = 30
 
-    return date ? result.filter((slot) => dateKeyInZone(slot.startAt, timeZone) === date) : result
+    if (eventTypeId) {
+      const eventType = findEventType(host.id, eventTypeId)
+
+      if (!eventType) {
+        return reply.code(404).send({ error: 'Тип встречи не найден' })
+      }
+
+      durationMin = eventType.durationMin
+    }
+
+    const slots = selectFutureSlots()
+      .filter((slot) => !date || dateKeyInZone(slot.startAt, timeZone) === date)
+      .map((slot) => ({
+        id: slot.id,
+        startAt: slot.startAt,
+        durationMin,
+        available: !slot.isBooked,
+      }))
+
+    return { timeZone, date: date ?? null, slots }
   })
 
   // ── API v1: диапазоны доступности ────────────────────────────────────

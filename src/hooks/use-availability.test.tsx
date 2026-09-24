@@ -17,11 +17,19 @@ const futureSlot: TimeSlot = {
   isBooked: false,
 }
 
-function stubSlotsResponse(body: unknown, status = 200) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response(JSON.stringify(body), { status })),
-  )
+function stubSlotsResponse(slots: TimeSlot[], status = 200) {
+  const body = {
+    timeZone: 'UTC',
+    date: null,
+    slots: slots.map((item) => ({
+      id: item.id,
+      startAt: item.startAt,
+      durationMin: item.durationMin,
+      available: !item.isBooked,
+    })),
+  }
+
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status })))
 }
 
 describe('useAvailability', () => {
@@ -40,7 +48,10 @@ describe('useAvailability', () => {
   })
 
   it('показывает ошибку при неудачном запросе', async () => {
-    stubSlotsResponse({ error: 'Внутренняя ошибка' }, 500)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ error: 'Внутренняя ошибка' }), { status: 500 })),
+    )
 
     const { result } = renderHook(() => useAvailability('default'))
 

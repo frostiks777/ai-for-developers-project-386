@@ -37,7 +37,21 @@ function mockFetch() {
     }
 
     if (url === '/api/v1/hosts/default/slots') {
-      return new Response(JSON.stringify([slot]), { status: 200 })
+      return new Response(
+        JSON.stringify({
+          timeZone: 'UTC',
+          date: null,
+          slots: [
+            {
+              id: slot.id,
+              startAt: slot.startAt,
+              durationMin: slot.durationMin,
+              available: true,
+            },
+          ],
+        }),
+        { status: 200 },
+      )
     }
 
     return new Response(JSON.stringify([]), { status: 200 })

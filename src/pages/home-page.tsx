@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Clock, Globe, Video } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
-import { fetchAvailability } from '@/api/client'
+import { fetchAvailability, fetchEventTypes } from '@/api/client'
 import { AppHeader } from '@/components/app-header'
 import { BookingBar } from '@/components/booking-bar'
 import { BookingDialog } from '@/components/booking-dialog'
@@ -17,6 +17,7 @@ import { host } from '@/config/host'
 import { useAvailability } from '@/hooks/use-availability'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
+import type { EventType } from '@/types/event-type'
 import { parseDateKey } from '@/utils/dates'
 import { pluralRu } from '@/utils/plural'
 import {
@@ -64,7 +65,12 @@ function SlotsSkeleton() {
 
 export default function HomePage() {
   const { slug } = useParams<{ slug: string }>()
-  const { slots, isLoading, error, refetch } = useAvailability(slug ?? '')
+  const [eventTypes, setEventTypes] = useState<EventType[]>([])
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
+  const { slots, isLoading, error, refetch } = useAvailability(
+    slug ?? '',
+    selectedTypeId ?? undefined,
+  )
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [bookedBooking, setBookedBooking] = useState<CreatedBooking | null>(null)
@@ -114,6 +120,35 @@ export default function HomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let isActive = true
+
+    fetchEventTypes(slug ?? '')
+      .then((types) => {
+        if (!isActive) {
+          return
+        }
+
+        setEventTypes(types)
+        setSelectedTypeId((current) => current ?? types.find((type) => type.isActive)?.id ?? null)
+      })
+      .catch(() => {
+        if (isActive) {
+          setEventTypes([])
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [slug])
+
+  const handleSelectType = (type: EventType) => {
+    setSelectedTypeId(type.id)
+    setSelectedSlotId(null)
+    setSelectedDate(null)
+  }
+
   const selectedSlot = visibleSlots.find((slot) => slot.id === selectedSlotId) ?? null
   const freeCount = visibleSlots.filter((slot) => !slot.isBooked).length
   const durationMin = slots[0]?.durationMin ?? null
@@ -140,6 +175,30 @@ export default function HomePage() {
     refetch()
   }
 
+  const activeTypes = eventTypes.filter((type) => type.isActive)
+
+  const typePicker = activeTypes.length > 0 && (
+    <div role="radiogroup" aria-label="Тип встречи" className="mb-4 flex flex-wrap gap-2">
+      {activeTypes.map((type) => (
+        <button
+          key={type.id}
+          type="button"
+          role="radio"
+          aria-checked={selectedTypeId === type.id}
+          onClick={() => handleSelectType(type)}
+          className={cn(
+            'h-11 rounded-lg border px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            selectedTypeId === type.id
+              ? 'border-primary bg-accent font-semibold text-accent-foreground'
+              : 'border-input bg-card text-muted-foreground hover:bg-accent/60',
+          )}
+        >
+          {type.title} · {type.durationMin} мин
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader
@@ -150,6 +209,7 @@ export default function HomePage() {
 
       {isDesktop ? (
         <main className="mx-auto w-full max-w-[1140px] px-4 py-6 lg:px-6 lg:py-8">
+          {!bookedBooking && typePicker}
           {bookedBooking && bookedSlot ? (
             <BookingSuccess
               booking={bookedBooking}
@@ -232,6 +292,7 @@ export default function HomePage() {
         </main>
       ) : (
         <main className="mx-auto w-full max-w-md px-4 py-4 pb-32">
+          {!bookedBooking && typePicker}
           {bookedBooking && bookedSlot ? (
             <BookingSuccess
               booking={bookedBooking}

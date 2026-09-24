@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
@@ -28,7 +28,23 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
     const url = String(input)
 
     if (url === '/api/v1/hosts/default/slots') {
-      return new Response(JSON.stringify(slots), { status: 200 })
+      return new Response(
+        JSON.stringify({
+          timeZone: 'UTC',
+          date: null,
+          slots: slots.map((item) => ({
+            id: item.id,
+            startAt: item.startAt,
+            durationMin: item.durationMin,
+            available: !item.isBooked,
+          })),
+        }),
+        { status: 200 },
+      )
+    }
+
+    if (url === '/api/v1/hosts/default/event-types') {
+      return new Response(JSON.stringify([]), { status: 200 })
     }
 
     if (url === '/api/bookings' && init?.method === 'POST') {
@@ -240,6 +256,86 @@ describe('HomePage: мобильная раскладка', () => {
 
     expect(screen.getByRole('button', { name: 'Следующий месяц' })).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
+  })
+})
+
+describe('HomePage: выбор типа встречи', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('показывает типы и перезапрашивает слоты с выбранным типом', async () => {
+    const types = [
+      {
+        id: 'type-1',
+        hostId: 'host-1',
+        slug: 'consultation',
+        title: 'Консультация',
+        description: null,
+        durationMin: 30,
+        locationType: 'online',
+        isActive: true,
+        createdAt: '2026-09-24 10:00:00',
+      },
+      {
+        id: 'type-2',
+        hostId: 'host-1',
+        slug: 'deep-dive',
+        title: 'Глубокая сессия',
+        description: null,
+        durationMin: 60,
+        locationType: 'online',
+        isActive: true,
+        createdAt: '2026-09-24 10:00:00',
+      },
+    ]
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url === '/api/v1/hosts/default/event-types') {
+        return new Response(JSON.stringify(types), { status: 200 })
+      }
+
+      if (url.startsWith('/api/v1/hosts/default/slots')) {
+        return new Response(
+          JSON.stringify({
+            timeZone: 'UTC',
+            date: null,
+            slots: [
+              {
+                id: 1,
+                startAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+                durationMin: 30,
+                available: true,
+              },
+            ],
+          }),
+          { status: 200 },
+        )
+      }
+
+      return new Response(JSON.stringify({ error: 'Не найдено' }), { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    const radios = await screen.findAllByRole('radio')
+    expect(radios).toHaveLength(2)
+    expect(screen.getByRole('radio', { name: /Консультация/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+
+    await user.click(screen.getByRole('radio', { name: /Глубокая сессия/ }))
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([url]) => String(url).includes('eventTypeId=type-2')),
+      ).toBe(true),
+    )
   })
 })
 
