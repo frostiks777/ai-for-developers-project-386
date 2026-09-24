@@ -257,7 +257,9 @@
 - [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным. CI + hexlet-check на `main` — success (коммит `807d4e0`).
 - [x] **Фаза 0 — гигиена/синхронизация (2026-09-24):** фикс UI-бага «Доступность», заметки в `docs/todo.md` (несколько интервалов — сделано), это обновление `MEMORY.md`.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
-- [ ] **Фаза 1 — новые формы:** блокировка дат/часов (ТЗ §2.1: `BlockTimeModal` + API/schema), причина отмены (`cancellation_reason`) + модалка подтверждения.
+- [x] **Фаза 1 — новые формы (2026-09-24):** причина отмены (`cancellation_reason` + модалка подтверждения, `bcd7f15`) и блокировка дат/часов (`time_blocks` + `BlocksEditor`/`BlockTimeModal`, [ADR-0014](docs/adr/0014-time-blocks.md)).
+- [x] **Миграция на PostgreSQL/Neon (2026-09-24):** Drizzle `pg-core` + `pg` по `DATABASE_URL`, PGlite в тестах, async-сервер, zod-валидация env, Playwright в CI. [ADR-0013](docs/adr/0013-postgres-migration.md). Прод: Render + Neon (Environment Group `DB`).
+- [x] **Фикс (2026-09-24):** счётчик «Встречи · N» в панели считал все брони, включая отменённые — теперь только активные (`075cad2`).
 - [ ] **Фаза 2 — P0 публичный флоу:** имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`.
 - [ ] **Фаза 3 — P1 self-service/dashboard:** роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
 - [ ] **Фаза 4 — Low/архитектура (нужны ADR):** мульти-хост-модель (`host_id` в `slots`/`bookings`, `/book/:hostId`), авторизация `/dashboard`.
@@ -286,6 +288,9 @@
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
 | Порт фронтенда | 5173 (default Vite) | — |
 | Долгосрочная память решений | ADR в [`docs/adr/`](docs/adr/README.md) ([ADR-0001](docs/adr/0001-record-architecture-decisions.md)) | Nygard-шаблон; решения переживают `/compact` и смены сессий |
+| БД | PostgreSQL (Neon) через `pg`, тесты — PGlite | [ADR-0013](docs/adr/0013-postgres-migration.md); товарная БД в облаке, тот же диалект в тестах |
+| Блокировка времени | `time_blocks` (интервалы UTC), фильтрация слотов на чтении | [ADR-0014](docs/adr/0014-time-blocks.md); слоты не удаляются, блокировку можно снять |
+| Причина отмены | `bookings.cancellationReason` + модалка на `/cancel/:token` | ТЗ §2.1; `POST /api/v1/bookings/:id/cancel` принимает `{reason}` |
 | Процессные скиллы (локальные) | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
 | Процессные скиллы (плагин) | [obra/superpowers](https://github.com/obra/superpowers) через `opencode.jsonc` → `plugins` (V2 git-spec) | Дополнительные 14 скилов: `brainstorming`, `systematic-debugging`, `test-driven-development`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `using-git-worktrees`, `verification-before-completion`, `using-superpowers`, `diagnosing-superpowers`. Приоритет V2: проектные → персональные → superpowers (локальные `ponytail` и др. не страдают). |
 | MCP для UI | [`@shadcn/ui/mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Доступ к каталогу компонентов через `components.json` |

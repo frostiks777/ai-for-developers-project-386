@@ -53,6 +53,7 @@ const validators = {
   AvailabilityDay: validator('AvailabilityDay'),
   Booking: validator('Booking'),
   EventType: validator('EventType', { type: 'array' }),
+  TimeBlock: validator('TimeBlock', { type: 'array' }),
 }
 
 function validate(name: keyof typeof validators, data: unknown): boolean {
@@ -115,6 +116,16 @@ describe('Контракт: ключевые ответы валидны по Op
 
     expect(response.statusCode).toBe(200)
     expect(validate('EventType', response.json())).toBe(true)
+  })
+
+  it('список блокировок соответствует TimeBlock[]', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/hosts/default/blocks',
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(validate('TimeBlock', response.json())).toBe(true)
   })
 
   it('слоты и бронь соответствуют AvailabilityDay и Booking', async () => {

@@ -42,3 +42,17 @@ export const availabilityRulesSchema = z
     message: 'Конец окна должен быть позже начала',
     path: ['windowEndHour'],
   })
+
+// Блокировка времени (зеркало server/validation.ts): интервал + причина
+export const timeBlockFormSchema = z
+  .object({
+    startAt: z.string().trim().min(1, 'Укажите начало'),
+    endAt: z.string().trim().min(1, 'Укажите конец'),
+    reason: z.string().trim().max(500, 'Причина слишком длинная'),
+  })
+  .refine((block) => Date.parse(block.endAt) > Date.parse(block.startAt), {
+    message: 'Конец должен быть позже начала',
+    path: ['endAt'],
+  })
+
+export type TimeBlockFormValue = z.infer<typeof timeBlockFormSchema>

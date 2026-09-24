@@ -152,6 +152,30 @@ export interface CreateBookingRequest {
   clientPhone?: string;
   clientNotes?: string;
 }
+/**
+ * Интервал, в который организатор не принимает записи.
+ */
+export interface TimeBlock {
+  id: string;
+  /**
+   * Начало блокировки (UTC ISO 8601).
+   */
+  startAt: string;
+  /**
+   * Конец блокировки (UTC ISO 8601).
+   */
+  endAt: string;
+  /**
+   * Необязательная причина блокировки.
+   */
+  reason?: string | null;
+  createdAt: string;
+}
+export interface CreateTimeBlockRequest {
+  startAt: string;
+  endAt: string;
+  reason?: string;
+}
 export interface CancelBookingRequest {
   /**
    * Необязательная причина отмены.

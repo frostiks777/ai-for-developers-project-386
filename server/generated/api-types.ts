@@ -68,6 +68,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/hosts/{slug}/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TimeBlocks_listTimeBlocks"];
+        put?: never;
+        post: operations["TimeBlocks_createTimeBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hosts/{slug}/blocks/{blockId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["TimeBlocks_deleteTimeBlock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/hosts/{slug}/bookings": {
         parameters: {
             query?: never;
@@ -236,6 +268,11 @@ export interface components {
             locationType: components["schemas"]["LocationType"];
             isActive?: boolean;
         };
+        CreateTimeBlockRequest: {
+            startAt: components["schemas"]["UtcDateTime"];
+            endAt: components["schemas"]["UtcDateTime"];
+            reason?: string;
+        };
         /** @enum {string} */
         ErrorCode: "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT";
         /** @description Тело ответа с ошибкой: конверт `{ error: ApiError }`. */
@@ -286,6 +323,17 @@ export interface components {
             durationMin: number;
             /** @description Свободен ли слот для записи активной бронью. */
             available: boolean;
+        };
+        /** @description Интервал, в который организатор не принимает записи. */
+        TimeBlock: {
+            id: string;
+            /** @description Начало блокировки (UTC ISO 8601). */
+            startAt: components["schemas"]["UtcDateTime"];
+            /** @description Конец блокировки (UTC ISO 8601). */
+            endAt: components["schemas"]["UtcDateTime"];
+            /** @description Необязательная причина блокировки. */
+            reason?: string | null;
+            createdAt: string;
         };
         UpdateAvailabilityRequest: {
             timeZone?: string;
@@ -440,6 +488,93 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AvailabilitySettings"] | components["schemas"]["ErrorResponse"];
                 };
+            };
+        };
+    };
+    TimeBlocks_listTimeBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeBlock"][] | components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    TimeBlocks_createTimeBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTimeBlockRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimeBlock"];
+                };
+            };
+        };
+    };
+    TimeBlocks_deleteTimeBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                blockId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description There is no content to send for this request, but the headers may be useful. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

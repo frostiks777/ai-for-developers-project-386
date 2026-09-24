@@ -59,9 +59,23 @@ import {
   listHostBookings,
   type ListHostBookingsOptions,
 } from "./api/hostBookingsClient/hostBookingsClientOperations.js";
+import {
+  createTimeBlocksClientContext,
+  type TimeBlocksClientContext,
+  type TimeBlocksClientOptions,
+} from "./api/timeBlocksClient/timeBlocksClientContext.js";
+import {
+  createTimeBlock,
+  type CreateTimeBlockOptions,
+  deleteTimeBlock,
+  type DeleteTimeBlockOptions,
+  listTimeBlocks,
+  type ListTimeBlocksOptions,
+} from "./api/timeBlocksClient/timeBlocksClientOperations.js";
 import type {
   CreateBookingRequest,
   CreateEventTypeRequest,
+  CreateTimeBlockRequest,
   RescheduleBookingRequest,
   UpdateAvailabilityRequest,
   UpdateEventTypeRequest,
@@ -72,12 +86,14 @@ export class ApiV1Client {
   eventTypesClient: EventTypesClient;
   availabilityClient: AvailabilityClient;
   hostBookingsClient: HostBookingsClient;
+  timeBlocksClient: TimeBlocksClient;
   bookingsClient: BookingsClient
   constructor(options?: ApiV1ClientOptions) {
     this.#context = createApiV1ClientContext(options);
     this.eventTypesClient = new EventTypesClient(options);;this
       .availabilityClient = new AvailabilityClient(options);;this
       .hostBookingsClient = new HostBookingsClient(options);;this
+      .timeBlocksClient = new TimeBlocksClient(options);;this
       .bookingsClient = new BookingsClient(options);
   }
   async getHostSettings(slug: string, options?: GetHostSettingsOptions) {
@@ -105,6 +121,30 @@ export class BookingsClient {
     options?: RescheduleBookingOptions,
   ) {
     return rescheduleBooking(this.#context, bookingId, body, options);
+  }
+}
+export class TimeBlocksClient {
+  #context: TimeBlocksClientContext
+  constructor(options?: TimeBlocksClientOptions) {
+    this.#context = createTimeBlocksClientContext(options);
+
+  }
+  async listTimeBlocks(slug: string, options?: ListTimeBlocksOptions) {
+    return listTimeBlocks(this.#context, slug, options);
+  };
+  async createTimeBlock(
+    slug: string,
+    body: CreateTimeBlockRequest,
+    options?: CreateTimeBlockOptions,
+  ) {
+    return createTimeBlock(this.#context, slug, body, options);
+  };
+  async deleteTimeBlock(
+    slug: string,
+    blockId: string,
+    options?: DeleteTimeBlockOptions,
+  ) {
+    return deleteTimeBlock(this.#context, slug, blockId, options);
   }
 }
 export class HostBookingsClient {

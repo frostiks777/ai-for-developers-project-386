@@ -111,6 +111,76 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateAvailabilityRequest'
+  /api/v1/hosts/{slug}/blocks:
+    get:
+      operationId: TimeBlocks_listTimeBlocks
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/TimeBlock'
+                  - $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: TimeBlocks_createTimeBlock
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeBlock'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTimeBlockRequest'
+  /api/v1/hosts/{slug}/blocks/{blockId}:
+    delete:
+      operationId: TimeBlocks_deleteTimeBlock
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: blockId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
   /api/v1/hosts/{slug}/bookings:
     get:
       operationId: HostBookings_listHostBookings
@@ -496,6 +566,18 @@ components:
           $ref: '#/components/schemas/LocationType'
         isActive:
           type: boolean
+    CreateTimeBlockRequest:
+      type: object
+      required:
+        - startAt
+        - endAt
+      properties:
+        startAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        endAt:
+          $ref: '#/components/schemas/UtcDateTime'
+        reason:
+          type: string
     ErrorCode:
       type: string
       enum:
@@ -595,6 +677,31 @@ components:
         available:
           type: boolean
           description: Свободен ли слот для записи активной бронью.
+    TimeBlock:
+      type: object
+      required:
+        - id
+        - startAt
+        - endAt
+        - createdAt
+      properties:
+        id:
+          type: string
+        startAt:
+          allOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+          description: Начало блокировки (UTC ISO 8601).
+        endAt:
+          allOf:
+            - $ref: '#/components/schemas/UtcDateTime'
+          description: Конец блокировки (UTC ISO 8601).
+        reason:
+          type: string
+          nullable: true
+          description: Необязательная причина блокировки.
+        createdAt:
+          type: string
+      description: Интервал, в который организатор не принимает записи.
     UpdateAvailabilityRequest:
       type: object
       properties:

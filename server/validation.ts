@@ -144,3 +144,28 @@ export const v1CancelBookingSchema = z.object({
     .optional()
     .transform((value) => value || undefined),
 })
+
+// Блокировка времени v1: интервал + необязательная причина
+export const createTimeBlockSchema = z
+  .object({
+    startAt: z.string().trim().min(1, 'Укажите начало'),
+    endAt: z.string().trim().min(1, 'Укажите конец'),
+    reason: z
+      .string()
+      .trim()
+      .max(500, 'Причина слишком длинная')
+      .optional()
+      .transform((value) => value || undefined),
+  })
+  .refine((block) => !Number.isNaN(Date.parse(block.startAt)), {
+    message: 'Неверный формат начала',
+    path: ['startAt'],
+  })
+  .refine((block) => !Number.isNaN(Date.parse(block.endAt)), {
+    message: 'Неверный формат конца',
+    path: ['endAt'],
+  })
+  .refine((block) => Date.parse(block.endAt) > Date.parse(block.startAt), {
+    message: 'Конец должен быть позже начала',
+    path: ['endAt'],
+  })

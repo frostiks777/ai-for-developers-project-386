@@ -27,6 +27,13 @@ import {
 } from './event-types'
 import { dateKeyInZone, dateKeyPattern, isValidTimeZone } from './hosts'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
+import {
+  createTimeBlock,
+  deleteTimeBlock,
+  isBlocked,
+  listBlockIntervals,
+  listTimeBlocks,
+} from './time-blocks'
 import type { BookingWithSlot, TimeSlot } from './types'
 import {
   availabilityRulesSchema,
@@ -34,6 +41,7 @@ import {
   cancelBookingSchema,
   createBookingSchema,
   createEventTypeSchema,
+  createTimeBlockSchema,
   rescheduleBookingSchema,
   updateEventTypeSchema,
   v1CancelBookingSchema,
@@ -84,10 +92,21 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   const minNoticeMs = async () => (await loadAvailabilityRules()).minNoticeMin * 60 * 1000
 
+  // Читает хост по slug; undefined, если не найден (роуты отвечают 404)
+  const findHost = async (slug: string) =>
+    (await db.select().from(hosts).where(eq(hosts.slug, slug)).limit(1))[0]
+
+  // MVP: единственный хост (дефолтный организатор)
+  const defaultHost = async () => (await db.select().from(hosts).limit(1))[0]
+
   app.get('/health', () => ({ status: 'ok' }))
 
-  // Слоты в будущем с признаком занятости, отсортированные по startAt
+  // Слоты в будущем с признаком занятости, отсортированные по startAt.
+  // Слоты, пересекающиеся с ручными блокировками, не выдаются.
   const selectFutureSlots = async (): Promise<TimeSlot[]> => {
+    const host = await defaultHost()
+    const blocks = host ? await listBlockIntervals(host.id) : []
+
     const rows = await db
       .select({
         id: slots.id,
@@ -100,12 +119,25 @@ export async function buildApp(): Promise<FastifyInstance> {
       .where(gte(slots.startAt, new Date(Date.now() + (await minNoticeMs())).toISOString()))
       .orderBy(slots.startAt)
 
-    return rows.map((row) => ({
-      id: row.id,
-      startAt: row.startAt,
-      durationMin: row.durationMin,
-      isBooked: row.bookingId !== null,
-    }))
+    return rows
+      .map((row) => ({
+        id: row.id,
+        startAt: row.startAt,
+        durationMin: row.durationMin,
+        isBooked: row.bookingId !== null,
+      }))
+      .filter(
+        (slot) =>
+          !isBlocked(
+            {
+              startAt: slot.startAt,
+              endAt: new Date(
+                new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+              ).toISOString(),
+            },
+            blocks,
+          ),
+      )
   }
 
   app.get('/api/slots', async (): Promise<TimeSlot[]> => selectFutureSlots())
@@ -314,10 +346,6 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // ── API v1: мульти-хост ──────────────────────────────────────────────
-  // Читает хост по slug; undefined, если не найден (роуты отвечают 404)
-  const findHost = async (slug: string) =>
-    (await db.select().from(hosts).where(eq(hosts.slug, slug)).limit(1))[0]
-
   // Формат ошибки контракта v1
   const v1Error = (code: string, message: string) => ({ error: { code, message } })
 
@@ -337,8 +365,6 @@ export async function buildApp(): Promise<FastifyInstance> {
     cancellationReason: row.cancellationReason,
     createdAt: row.createdAt,
   })
-
-  const defaultHost = async () => (await db.select().from(hosts).limit(1))[0]
 
   // Публичные настройки хоста по контракту HostSettings
   app.get('/api/v1/hosts/:slug/settings', async (request, reply) => {
@@ -555,9 +581,75 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
     }
 
+    const slotInterval = {
+      startAt: slot.startAt,
+      endAt: new Date(
+        new Date(slot.startAt).getTime() + eventType.durationMin * 60_000,
+      ).toISOString(),
+    }
+
+    if (isBlocked(slotInterval, await listBlockIntervals(host.id))) {
+      return reply.code(409).send(v1Error('CONFLICT', 'Время заблокировано организатором'))
+    }
+
     const created = await createBookingV1(parsed.data, slot, eventType.durationMin)
 
     return reply.code(201).send(toBooking(created, host.slug, host.timezone))
+  })
+
+  // ── API v1: блокировки времени ───────────────────────────────────────
+  app.get('/api/v1/hosts/:slug/blocks', async (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = await findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
+    }
+
+    return listTimeBlocks(host.id)
+  })
+
+  app.post('/api/v1/hosts/:slug/blocks', async (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = await findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
+    }
+
+    const parsed = createTimeBlockSchema.safeParse(request.body)
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+      return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
+    }
+
+    const created = await createTimeBlock(host.id, {
+      startAt: new Date(parsed.data.startAt).toISOString(),
+      endAt: new Date(parsed.data.endAt).toISOString(),
+      reason: parsed.data.reason,
+    })
+
+    return reply.code(201).send(created)
+  })
+
+  app.delete('/api/v1/hosts/:slug/blocks/:blockId', async (request, reply) => {
+    const { slug, blockId } = request.params as { slug: string; blockId: string }
+    const host = await findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
+    }
+
+    const id = Number(blockId)
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(400).send(v1Error('VALIDATION_ERROR', 'Некорректный id блокировки'))
+    }
+
+    if (!(await deleteTimeBlock(host.id, id))) {
+      return reply.code(404).send(v1Error('NOT_FOUND', 'Блокировка не найдена'))
+    }
+
+    return reply.code(204).send()
   })
 
   app.get('/api/v1/bookings/:bookingId', async (request, reply) => {
@@ -633,9 +725,18 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     const eventType = await findEventTypeById(booking.eventTypeId)
     const durationMin = eventType?.durationMin ?? 30
+    const host = await defaultHost()
+
+    const slotInterval = {
+      startAt: slot.startAt,
+      endAt: new Date(new Date(slot.startAt).getTime() + durationMin * 60_000).toISOString(),
+    }
+
+    if (host && isBlocked(slotInterval, await listBlockIntervals(host.id))) {
+      return reply.code(409).send(v1Error('CONFLICT', 'Время заблокировано организатором'))
+    }
 
     const updated = await rescheduleBookingV1(booking, slot, durationMin)
-    const host = await defaultHost()
 
     return toBooking(updated, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
@@ -659,3 +760,4 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   return app
 }
+
