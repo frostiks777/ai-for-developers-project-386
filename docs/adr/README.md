@@ -42,3 +42,4 @@
 | [0007](0007-visual-redesign-and-themes.md) | Визуальный редизайн (A + D) и светлая/тёмная тема | Accepted | 2026-09-23 |
 | [0008](0008-reschedule-by-token.md) | Перенос брони по токену-ссылке | Accepted | 2026-09-23 |
 | [0009](0009-hosts-and-api-v1.md) | Хосты и версионированный API v1 | Accepted | 2026-09-23 |
+| [0010](0010-landing-and-booking-routes.md) | Главная страница (лендинг) и маршрут бронирования `/book/:slug` | Accepted | 2026-09-24 |
