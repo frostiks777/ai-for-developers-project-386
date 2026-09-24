@@ -18,8 +18,8 @@
 | `src/components/` | UI-компоненты приложения (функциональные, с типизацией пропсов) |
 | `src/components/ui/` | Компоненты shadcn/ui — базовые примитивы (кнопки, инпуты, диалоги) |
 | `src/pages/` | Маршруты/страницы; только здесь разрешены default-экспорты |
-| `src/hooks/` | Кастомные хуки (`use-slots.ts` → `useSlots`) |
-| `src/api/` | Клиентский слой API-вызовов — все обращения к бэкенду только отсюда |
+| `src/hooks/` | Кастомные хуки (например `use-availability.ts` → `useAvailability`) |
+| `src/api/` | Клиентский слой API-вызовов — все обращения к бэкенду только отсюда; сгенерированный SDK — в `src/api/generated/` |
 | `src/utils/`, `src/lib/` | Утилиты; в `src/lib/utils.ts` живёт хелпер `cn()` |
 | `src/types/` | Общие TypeScript-типы (интерфейсы сущностей: слот, бронирование) |
 | `src/main.tsx` | Точка входа приложения |
@@ -28,8 +28,8 @@
 
 ```ts
 import { Button } from '@/components/ui/button'
-import { fetchSlots } from '@/api/slots'
-import type { Slot } from '@/types/slot'
+import { fetchHostSlots } from '@/api/client'
+import type { HostSettings } from '@/types/host'
 ```
 
 ## Бэкенд
@@ -41,21 +41,37 @@ import type { Slot } from '@/types/slot'
 - `server/validation.ts` — zod-схемы API-контракта (`createBookingSchema`, `availabilityRulesSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).
 - `server/availability.ts` — правила доступности (`AvailabilityRules`), дефолт и чистая генерация слотов `generateSlotStarts`; конверсия строк таблицы `availability_rules`. См. [ADR-0004](adr/0004-slot-generation-rules.md), [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md).
 - `server/rules.ts` — персистентные правила: `loadAvailabilityRules` / `saveAvailabilityRules` / `regenerateFutureSlots` (пересборка свободных будущих слотов, занятые не трогаются).
-- `server/db/schema.ts` — схема БД в терминах Drizzle ORM (таблицы `slots`, `bookings`, `availability_rules`).
+- `server/db/schema.ts` — схема БД в терминах Drizzle ORM (таблицы `hosts`, `slots`, `bookings`, `availability_rules`).
+- `server/hosts.ts` — слой хостов API v1: `GET /api/v1/hosts/:slug/settings` и `/slots` (404 на неизвестный slug). См. [ADR-0009](adr/0009-hosts-and-api-v1.md).
 - `server/db/` — клиент Drizzle поверх `better-sqlite3`; путь к файлу БД переопределяется переменной `DATABASE_PATH` (`:memory:` используется в тестах).
 - `server/data/app.db` — файл базы SQLite. БД **in-app**: не требует отдельного сервера СУБД, файл живёт внутри проекта.
 
 Миграции и синхронизация схемы выполняются через drizzle-kit (`npm run db:generate` / `npm run db:push`). Для скелета при старте создаются недостающие таблицы и колонки, а также сидируются слоты по правилам доступности (если будущих слотов нет).
 
-Маршруты фронтенда (React Router): `/` — страница гостя (`HomePage`), `/dashboard` — панель организатора (`DashboardPage`: список броней с отменой и настройки доступности).
+Маршруты фронтенда (React Router): `/` — лендинг гостя (`LandingPage`), `/book/:slug` — бронирование (`HomePage`), `/dashboard` — панель организатора (`DashboardPage`), `/cancel/:token` и `/reschedule/:token` — self-service, `*` — 404. См. [ADR-0010](adr/0010-landing-and-booking-routes.md).
 
-Интеграционные тесты API живут в `server/app.test.ts` и `server/dashboard.test.ts` и работают с in-memory БД (`DATABASE_PATH=:memory:` в `vite.config.ts` → `test.env`).
+Интеграционные тесты API живут в `server/app.test.ts`, `server/dashboard.test.ts`, `server/hosts.test.ts`, `server/availability.test.ts` и работают с in-memory БД (`DATABASE_PATH=:memory:` в `vite.config.ts` → `test.env`).
+
+## Контракт API (TypeSpec)
+
+Контракт `/api/v1` описывается в `api/main.tsp` (TypeSpec) и генерируется одной командой:
+
+```bash
+npm run api:generate   # tsp compile api/main.tsp + openapi-typescript
+```
+
+Артефакты (сгенерированные файлы коммитятся и вручную не правятся):
+- `docs/openapi/openapi.yaml` — OpenAPI 3.
+- `src/api/generated/` — клиентский SDK (TypeScript).
+- `server/generated/api-types.ts` — серверные типы из OpenAPI.
+
+Обоснование и toolchain — `docs/research/typespec-toolchain.md`; спецификация — `docs/spec.md`.
 
 ## Поток данных
 
-В dev-режиме фронтенд открывается на порту Vite (5173), а все запросы к API идут через **прокси**: Vite перенаправляет пути `/api/*` на Fastify (`http://localhost:3000`, настроено в `vite.config.ts`). Поэтому клиентский код всегда обращается к относительному пути `/api/...` и не знает ни про порт сервера, ни про CORS.
+В dev-режиме фронтенд открывается на порту Vite (5173), а все запросы к API идут через **прокси**: Vite перенаправляет пути `/api/*` (включая `/api/v1/*`) на Fastify (`http://localhost:3000`, настроено в `vite.config.ts`). Поэтому клиентский код всегда обращается к относительному пути `/api/...` и не знает ни про порт сервера, ни про CORS.
 
-Цепочка: **браузер → vite dev proxy `/api` → Fastify :3000 → Drizzle → SQLite**.
+Цепочка: **браузер → vite dev proxy `/api` → Fastify :3000 → Drizzle → SQLite**. Гостевые страницы используют `/api/v1` (типы, слоты, брони из контракта), легаси-слой `/api/*` сохранён для дашборда/тестов.
 
 Пример на двух эндпоинтах:
 
@@ -91,5 +107,6 @@ import type { Slot } from '@/types/slot'
 | `npm run build` | Продакшн-сборка (`tsc --noEmit && vite build`) |
 | `npm run db:generate` | Генерация миграций Drizzle по изменениям схемы |
 | `npm run db:push` | Применение схемы к БД напрямую (для локальной разработки) |
+| `npm run api:generate` | Генерация OpenAPI, клиентского SDK и серверных типов из `api/main.tsp` |
 
 Для полноценной локальной работы нужны два процесса: `npm run server:dev` и `npm run dev` — бэкенд и фронтенд запускаются параллельно.
