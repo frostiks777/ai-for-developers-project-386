@@ -40,6 +40,12 @@ paths:
                 anyOf:
                   - $ref: '#/components/schemas/Booking'
                   - $ref: '#/components/schemas/ErrorResponse'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelBookingRequest'
   /api/v1/bookings/{bookingId}/reschedule:
     post:
       operationId: Bookings_rescheduleBooking
@@ -430,6 +436,10 @@ components:
           nullable: true
         status:
           $ref: '#/components/schemas/BookingStatus'
+        cancellationReason:
+          type: string
+          nullable: true
+          description: Причина отмены, если бронь отменена.
         createdAt:
           type: string
     BookingStatus:
@@ -437,6 +447,12 @@ components:
       enum:
         - confirmed
         - cancelled
+    CancelBookingRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Необязательная причина отмены.
     CreateBookingRequest:
       type: object
       required:

@@ -208,10 +208,16 @@ export interface components {
             clientPhone?: string | null;
             clientNotes?: string | null;
             status: components["schemas"]["BookingStatus"];
+            /** @description Причина отмены, если бронь отменена. */
+            cancellationReason?: string | null;
             createdAt: string;
         };
         /** @enum {string} */
         BookingStatus: "confirmed" | "cancelled";
+        CancelBookingRequest: {
+            /** @description Необязательная причина отмены. */
+            reason?: string;
+        };
         CreateBookingRequest: {
             eventTypeId: string;
             /** @description Желаемое начало слота (UTC ISO 8601). */
@@ -346,7 +352,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequest"];
+            };
+        };
         responses: {
             /** @description The request has succeeded. */
             200: {

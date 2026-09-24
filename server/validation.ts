@@ -134,3 +134,13 @@ export const v1CreateBookingSchema = z.object({
 export const v1RescheduleBookingSchema = z.object({
   startAt: z.string().trim().min(1, 'Укажите время'),
 })
+
+// Отмена брони v1 с необязательной причиной (только сервер)
+export const v1CancelBookingSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .max(500, 'Причина слишком длинная')
+    .optional()
+    .transform((value) => value || undefined),
+})

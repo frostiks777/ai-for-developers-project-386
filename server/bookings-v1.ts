@@ -58,10 +58,10 @@ export function createBookingV1(
     .get()
 }
 
-export function cancelBookingV1(booking: BookingRow): BookingRow {
+export function cancelBookingV1(booking: BookingRow, reason?: string): BookingRow {
   return db
     .update(bookings)
-    .set({ status: 'cancelled' })
+    .set({ status: 'cancelled', cancellationReason: reason ?? null })
     .where(eq(bookings.id, booking.id))
     .returning()
     .get()

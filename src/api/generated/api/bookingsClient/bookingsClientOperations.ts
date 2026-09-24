@@ -3,10 +3,12 @@ import type { BookingsClientContext } from "./bookingsClientContext.js";
 import { createRestError } from "../../helpers/error.js";
 import type { OperationOptions } from "../../helpers/interfaces.js";
 import {
+  jsonCancelBookingRequestToTransportTransform,
   jsonRescheduleBookingRequestToTransportTransform,
 } from "../../models/internal/serializers.js";
 import type {
   Booking,
+  CancelBookingRequest,
   ErrorResponse,
   RescheduleBookingRequest,
 } from "../../models/models.js";
@@ -35,7 +37,9 @@ export async function getBooking(
   throw createRestError(response);
 }
 ;
-export interface CancelBookingOptions extends OperationOptions {}
+export interface CancelBookingOptions extends OperationOptions {
+  body?: CancelBookingRequest
+}
 export async function cancelBooking(
   client: BookingsClientContext,
   bookingId: string,
@@ -45,7 +49,9 @@ export async function cancelBooking(
     bookingId: bookingId
   });
   const httpRequestOptions = {
-    headers: {},
+    headers: {
+
+    },body: jsonCancelBookingRequestToTransportTransform(options?.body),
   };
   const response = await client.pathUnchecked(path).post(httpRequestOptions);
 

@@ -49,6 +49,8 @@ export const bookings = sqliteTable('bookings', {
   comment: text('comment'),
   // Статус брони: активная занимает слот, отменённая — нет (ADR-0011)
   status: text('status').notNull().default('confirmed'),
+  // Причина отмены, если бронь отменена (гостем или организатором)
+  cancellationReason: text('cancellationReason'),
   // Снимок времени встречи на момент бронирования (UTC ISO)
   startAt: text('startAt').notNull(),
   endAt: text('endAt').notNull(),
