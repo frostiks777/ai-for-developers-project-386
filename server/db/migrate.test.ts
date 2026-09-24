@@ -91,4 +91,34 @@ describe('runMigrations', () => {
 
     client.close()
   })
+
+  it('досыпает hostId в старую availability_rules', () => {
+    const client = new Database(':memory:')
+    client.exec(`
+      CREATE TABLE availability_rules (
+        id INTEGER PRIMARY KEY,
+        weekdays TEXT NOT NULL,
+        windowStartHour INTEGER NOT NULL,
+        windowEndHour INTEGER NOT NULL,
+        slotDurationMin INTEGER NOT NULL,
+        bufferMin INTEGER NOT NULL,
+        minNoticeMin INTEGER NOT NULL,
+        horizonDays INTEGER NOT NULL
+      );
+    `)
+    client
+      .prepare(
+        'INSERT INTO availability_rules (id, weekdays, windowStartHour, windowEndHour, slotDurationMin, bufferMin, minNoticeMin, horizonDays) VALUES (1, ?, 10, 18, 30, 10, 120, 14)',
+      )
+      .run('[1,2,3,4,5]')
+
+    runMigrations(client)
+
+    const row = client.prepare('SELECT hostId FROM availability_rules WHERE id = 1').get() as {
+      hostId: string | null
+    }
+    expect(row.hostId).toBeTruthy()
+
+    client.close()
+  })
 })
