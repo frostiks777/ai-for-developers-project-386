@@ -6,6 +6,7 @@ dist-ssr
 *.tsbuildinfo
 coverage
 server/data
+tsp-output
 *.db
 *.db-journal
 .env

@@ -15,6 +15,7 @@
     "dev:all": "node scripts/dev-all.mjs",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "api:generate": "node scripts/api-generate.mjs",
     "start": "tsx server/index.ts"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-label": "^2.1.15",
     "@radix-ui/react-slot": "^1.1.1",
+    "@typespec/ts-http-runtime": "^0.2.1",
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -36,6 +38,7 @@
     "sonner": "^2.0.8",
     "tailwind-merge": "^2.6.0",
     "tsx": "^4.23.15",
+    "uri-template": "^2.0.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -48,6 +51,10 @@
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@typespec/compiler": "^1.16.0",
+    "@typespec/http": "^1.16.0",
+    "@typespec/http-client-js": "^0.16.2",
+    "@typespec/openapi3": "^1.16.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.11",
