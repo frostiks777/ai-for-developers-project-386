@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-23 (Редизайн A + D и светлая/тёмная тема завершены, этапы 1–7; [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) Accepted)
+> Дата последнего обновления: 2026-09-24 (Шаг 1 курса: `CONTEXT.md`, ADR-0010, лендинг на `/`, бронь на `/book/:slug`)
 
 ## Текущее состояние
 
@@ -27,28 +27,34 @@
 ├── render.yaml               ✅ Render Blueprint (docker, free, frankfurt)
 ├── src/
 │   ├── main.tsx              ✅
-│   ├── App.tsx               ✅ маршруты (React Router): / и /dashboard
-│   ├── App.test.tsx          ✅ smoke-тесты (MemoryRouter)
+│   ├── App.tsx               ✅ маршруты (React Router): / (лендинг), /book/:slug, /dashboard, /cancel/:token, /reschedule/:token, *
+│   ├── App.test.tsx          ✅ 3 smoke-теста (лендинг, бронь, 404)
 │   ├── index.css             ✅ shadcn CSS-переменные + Tailwind
 │   ├── lib/utils.ts          ✅ cn()
 │   ├── lib/validation.ts     ✅ zod-схемы брони + правил доступности (зеркало server/validation.ts)
 │   ├── types/booking.ts      ✅ TimeSlot, Booking, CreateBookingBody (+email)
+│   ├── types/host.ts         ✅ HostSettings (зеркало server/types.ts)
 │   ├── types/availability.ts ✅ AvailabilityRules (зеркало server/availability.ts)
-│   ├── api/client.ts         ✅ fetchSlots, createBooking, fetchBookings, cancelBooking, cancelBookingByToken, fetch/updateAvailability
-│   ├── hooks/use-availability.ts ✅ (no-unsafe-finally исправлен, фильтр прошедших)
+│   ├── api/client.ts         ✅ fetchSlots, fetchHostSettings, fetchHostSlots, createBooking, fetchBookings, cancelBooking, cancelBookingByToken, fetch/updateAvailability
+│   ├── hooks/use-availability.ts ✅ принимает slug, тянет /api/v1/hosts/:slug/slots (фильтр прошедших)
 │   ├── hooks/use-availability.test.tsx ✅ 2 теста (фильтр, ошибка загрузки)
 │   ├── utils/dates.ts        ✅ (toDateKey/parseDateKey/startOfDay)
 │   ├── utils/calendar.ts     ✅ buildIcs / googleCalendarUrl / downloadIcs
 │   ├── utils/timezone.ts     ✅ toDateKeyInZone / formatDateTimeInZone / timeZoneOptionLabel
-│   ├── pages/home-page.tsx   ✅
-│   ├── pages/home-page.test.tsx ✅ 6 тестов (экран успеха, экспорт, назад, TZ, фильтр)
+│   ├── pages/landing-page.tsx ✅ главная (витрина, данные из /api/v1/hosts/:slug/settings)
+│   ├── pages/landing-page.test.tsx ✅ 2 теста (данные из API, фолбэк на конфиг)
+│   ├── pages/not-found-page.tsx ✅ 404 (неизвестный slug/маршрут)
+│   ├── pages/home-page.tsx   ✅ страница бронирования (/book/:slug)
+│   ├── pages/home-page.test.tsx ✅ 8 тестов (экран успеха, экспорт, назад, TZ, фильтр, мобильная)
 │   ├── pages/dashboard-page.tsx ✅ панель организатора (список + отмена + настройки)
 │   ├── pages/dashboard-page.test.tsx ✅ 6 тестов
 │   ├── pages/cancel-page.tsx ✅ отмена брони по токену (/cancel/:token)
 │   ├── pages/cancel-page.test.tsx ✅ 2 теста
 │   ├── pages/reschedule-page.tsx ✅ перенос брони по токену (/reschedule/:token)
 │   ├── pages/reschedule-page.test.tsx ✅ 2 теста
-│   ├── components/bookings-table.tsx ✅ таблица броней + отмена
+│   ├── components/bookings-list.tsx ✅ список броней по дням + отмена
+│   ├── components/dashboard-sidebar.tsx ✅ сайдбар (скролл к #availability)
+│   ├── components/dashboard-sidebar.test.tsx ✅ 1 тест (скролл)
 │   ├── components/availability-form.tsx ✅ форма настроек доступности
 │   ├── components/ui/button.tsx ✅ shadcn Button
 │   └── test/setup.ts         ✅ jest-dom/vitest + jsdom-полифилы (safe для node)
@@ -76,6 +82,7 @@
 │   ├── ai-tuning-plan.md     ✅ (тюнинг AI-агентов)
 │   └── mcp.md                ✅ (MCP-серверы)
 └── AGENTS.md                 ✅ (обновлён под финальный стек)
+└── CONTEXT.md                ✅ словарь проекта (организатор, гость, слот, бронь, встреча, тип встречи, правило доступности, токен)
 ```
 
 ## Исправленные ошибки
@@ -118,7 +125,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 105/105 passed (17 файлов: App, home-page, dashboard-page, cancel-page, reschedule-page, month-calendar, timezone-select, booking-dialog, theme-toggle, date-strip, use-availability, calendar, server/app, server/dashboard, server/hosts, server/availability, timezone)
+✅ test: 109/109 passed (19 файлов: App, landing-page, home-page, dashboard-page, cancel-page, reschedule-page, dashboard-sidebar, month-calendar, timezone-select, booking-dialog, theme-toggle, date-strip, use-availability, calendar, server/app, server/dashboard, server/hosts, server/availability, timezone)
 ✅ build: vite v6.4.3 — 439.64 kB JS (gzip 134.53), 43.15 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
@@ -209,10 +216,11 @@
 46. ✅ Визуальный редизайн, **Этап 6** (`7293469`): редизайн панели организатора — `src/components/dashboard-sidebar.tsx` (десктопный сайдбар: лого-`h1`, «Встречи» со счётчиком, «Доступность» → `#availability`, `ThemeToggle`), `src/components/bookings-list.tsx` вместо `bookings-table.tsx` (группировка по дню через `toDateKeyInZone`, карточки `<li>`, пустое состояние «Пока нет ни одной брони»; старый файл удалён), `src/components/booking-filter.tsx` (сегменты «Все / Неделя / Сегодня», `role="tablist"`, фильтр на клиенте), `src/components/availability-form.tsx` (дни-«таблетки», select часов, подсказка «≈ N слотов в рабочий день», кнопка «Сохранить» во всю ширину; `id` полей и zod-схема сохранены). Тесты: `closest('tr') → closest('li')` + новые (группировка, фильтр «Сегодня», подсказка «≈ 12 слотов»).
 47. ✅ Внешний бэклог Gemini: добавлен `docs/gemini-code-1790192589378.md` (спека от внешнего ревью) + раздел «Backlog из внешней спеки» в `docs/todo.md` (только MISSING/PARTIAL, P0/P1); `docs/roadmap.html` перегенерирован. Итог: 105/105 тестов (17 файлов).
 48. ✅ Визуальный редизайн, **Этап 7** (документация, текущий): [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) переведён в **Accepted** (ветка `feat/redesign-a-d-themes` смержена в `main`), индекс `docs/adr/README.md` обновлён; `README.md` упоминает светлую/тёмную тему и десктоп/мобильные раскладки; `MEMORY.md` и `docs/todo.md` отмечают завершение этапов 1–7.
+49. ✅ Шаг 1 курса (главная страница): `CONTEXT.md` — словарь проекта (русские каноны + англ. алиасы); [ADR-0010](docs/adr/0010-landing-and-booking-routes.md); маршруты — `/` = новый `LandingPage` (витрина гостя: hero, «Как это работает», карточка организатора, CTA; данные из `GET /api/v1/hosts/:slug/settings`, фолбэк на `src/config/host.ts`), `/book/:slug` = `HomePage`, `*` = `NotFoundPage`; `host.slug = 'default'`; фронт брони переведён на API v1 (`fetchHostSettings`/`fetchHostSlots`, `useAvailability(slug)`), легаси `/api/*` сохранён; ссылки дашборда/отмены/переноса → `/book/${host.slug}`; фикс бага сайдбара (`scrollIntoView`); 3 теста лендинга + 3 smoke `App` + обновлены `home-page`/`use-availability`. Итог: 109/109 тестов, lint/typecheck/build — зелёные.
 
 ## Что осталось (следующие шаги)
 
-- [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница через `grill-with-docs` + `CONTEXT.md` + ADR + `implement`; (2) проектирование бронирования через `wayfinder` → `to-spec` → `to-tickets`, Design First: `TypeSpec → OpenAPI → SDK + серверные артефакты`; (3) реализация тикетов через `implement` + Playwright; (4) Docker/деплой — **уже выполнено**. Шаги 1–3 не начаты; подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
+- [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница через `grill-with-docs` + `CONTEXT.md` + ADR + `implement` — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования через `wayfinder` → `to-spec` → `to-tickets`, Design First: `TypeSpec → OpenAPI → SDK + серверные артефакты`; (3) реализация тикетов через `implement` + Playwright; (4) Docker/деплой — **уже выполнено**. Шаги 2–3 не начаты; подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
@@ -254,6 +262,7 @@
 | Скиллы Matt Pocock | Набор `mattpocock/skills` в `.agents/skills/` + `skills-lock.json`; конфиг трекера/меток/домена в `docs/agents/` | Требование шага курса: GitHub Issues, дефолтные метки, single-context (`CONTEXT.md` + `docs/adr/`) |
 | Раскладки редизайна | Десктоп A / телефон D выбираются хуком `useMediaQuery('(min-width: 1024px)')`, а не скрытием через CSS | В DOM нет дублей календаря — не ломаются тесты и доступность ([ADR-0007](docs/adr/0007-visual-redesign-and-themes.md)) |
 | Светлая/тёмная тема | `ThemeProvider` + `localStorage` (`call-calendar-theme`, режим `system` по умолчанию) + inline-анти-флеш-скрипт в `index.html`; `sonner` берёт `resolvedTheme` | Токены shadcn (HSL) для обеих тем, без «белых вспышек» при первой загрузке ([ADR-0007](docs/adr/0007-visual-redesign-and-themes.md)) |
+| Маршруты главная/бронь | `/` — лендинг (`LandingPage`), `/book/:slug` — бронь (`HomePage`), `*` — 404; slug из `src/config/host.ts`; бронь на API v1 | Требование Шага 1 + спека `/book/:slug`; Hexlet-автопроверка `/` отвечает 200 ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)) |
 
 ## Окружение
 
