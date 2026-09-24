@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -154,7 +155,7 @@ export function AvailabilitySettingsForm({
                         startMinute: timeToMinute(event.target.value),
                       })
                     }
-                    className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-sm"
                   />
                   <span className="text-muted-foreground">–</span>
                   <input
@@ -166,15 +167,17 @@ export function AvailabilitySettingsForm({
                         endMinute: timeToMinute(event.target.value),
                       })
                     }
-                    className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
+                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-sm"
                   />
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
+                    aria-label={`Убрать интервал: ${label} ${position + 1}`}
                     onClick={() => removeInterval(value, position)}
+                    className="shrink-0"
                   >
-                    Убрать
+                    <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
                   </Button>
                 </div>
               ))}
