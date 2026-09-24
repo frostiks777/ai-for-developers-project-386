@@ -73,6 +73,7 @@
 - [x] Визуальный редизайн A + D и светлая/тёмная тема, этапы 1–7 ([ADR-0007](adr/0007-visual-redesign-and-themes.md)): 1 — токены/шрифты/тема (`ThemeProvider`, `ThemeToggle`, `useMediaQuery`, анти-флеш-скрипт); 2 — десктоп-раскладка бронирования; 3 — мобильная раскладка (`date-strip.tsx`, `booking-bar.tsx`); 4 — рестайл диалога брони; 5 — рестайл экрана успеха; 6 — редизайн панели организатора (`dashboard-sidebar.tsx`, `bookings-list.tsx`, `booking-filter.tsx`, `availability-form.tsx`); 7 — документация (данный этап)
 - [x] **Шаг 1 курса**: `CONTEXT.md` (словарь проекта), [ADR-0010](adr/0010-landing-and-booking-routes.md); главная `/` — новый `LandingPage`, бронь переехала на `/book/:slug`, фронт брони на API v1 (`fetchHostSettings`/`fetchHostSlots`), `NotFoundPage`; ссылки дашборда/отмены/переноса обновлены; 3 теста лендинга + обновлены `App`/`home-page` (`src/App.test.tsx`, `src/pages/landing-page.test.tsx`)
 - [x] **Шаг 2 курса** (проектирование бронирования): карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 (все закрыты); спецификация `docs/spec.md`; TypeSpec-контракт `api/main.tsp`; [ADR-0011](adr/0011-event-types-status-and-availability-ranges.md); генерация одной командой `npm run api:generate` → `docs/openapi/openapi.yaml`, `src/api/generated/` (SDK), `server/generated/api-types.ts`
+- [x] **Шаг 3, T1–T7** (реализация): миграции, типы встреч, диапазоны доступности, слоты по типу/дате, жизненный цикл брони, отмена/перенос по публичному id v1; фронт переведён на сгенерированный SDK ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25)) — ручной `src/api/client.ts` удалён, добавлены `src/api/sdk.ts` (клиент + `call()`/`ApiError`) и `src/api/mappers.ts`
 
 ## Осталось
 
@@ -80,7 +81,7 @@
 
 1. ~~**Шаг 1** — `CONTEXT.md` + интервью по главной (`grill-with-docs`) + ADR + `/implement`~~ ✅ **выполнено 2026-09-24**: `CONTEXT.md`, [ADR-0010](adr/0010-landing-and-booking-routes.md), лендинг `/`, бронь `/book/:slug`
 2. ~~**Шаг 2** — карта решений (`wayfinder`) → `to-spec` → `to-tickets`; Design First: TypeSpec → OpenAPI → SDK + серверные артефакты~~ ✅ **выполнено 2026-09-24**: карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`
-3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий: `/to-tickets` по `docs/spec.md` → реализация `event_types`/`status`/`availability_ranges` + `server/db/migrate.ts` → миграция `src/api/client.ts` на SDK → e2e Playwright
+3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий: T1–T7 готовы (SQLite-миграции, event_types, status, availability_ranges, слоты/брони v1, SDK-миграция фронта); осталось **T8** ([#26](https://github.com/frostiks777/ai-for-developers-project-386/issues/26)) — контракт-тесты + e2e Playwright, **T9** ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)) — финальная сверка со спецификацией
 4. Ввести сущность «тип встречи» (event-types) — спроектирована в `docs/spec.md`/контракте, реализация — Шаг 3
 
 ### Low

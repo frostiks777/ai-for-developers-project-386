@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Clock, Globe, Video } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
-import { fetchAvailability, fetchEventTypes } from '@/api/client'
+import type { EventType } from '@/api/generated'
+import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
 import { BookingBar } from '@/components/booking-bar'
 import { BookingDialog } from '@/components/booking-dialog'
@@ -17,7 +18,6 @@ import { host } from '@/config/host'
 import { useAvailability } from '@/hooks/use-availability'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
-import type { EventType } from '@/types/event-type'
 import { parseDateKey } from '@/utils/dates'
 import { pluralRu } from '@/utils/plural'
 import {
@@ -103,7 +103,7 @@ export default function HomePage() {
   useEffect(() => {
     let isActive = true
 
-    fetchAvailability()
+    call(api.availabilityClient.getAvailability(slug ?? ''))
       .then((rules) => {
         if (isActive) {
           setMinNoticeMin(typeof rules?.minNoticeMin === 'number' ? rules.minNoticeMin : null)
@@ -118,12 +118,12 @@ export default function HomePage() {
     return () => {
       isActive = false
     }
-  }, [])
+  }, [slug])
 
   useEffect(() => {
     let isActive = true
 
-    fetchEventTypes(slug ?? '')
+    call(api.eventTypesClient.listEventTypes(slug ?? ''))
       .then((types) => {
         if (!isActive) {
           return

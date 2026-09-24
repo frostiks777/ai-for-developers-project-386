@@ -2,8 +2,7 @@ import type { Booking, TimeSlot } from '@/types/booking'
 import { buildIcs, googleCalendarUrl } from './calendar'
 
 const booking: Booking = {
-  id: 7,
-  slotId: 1,
+  id: '7',
   name: 'Иван',
   phone: '+79000000000',
   email: 'ivan@example.com',

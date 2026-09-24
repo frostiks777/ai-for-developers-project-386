@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarCheck, Clock, MailCheck, UserRound, Video } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { fetchHostSettings } from '@/api/client'
+import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
@@ -35,14 +35,17 @@ export default function LandingPage() {
   useEffect(() => {
     let isActive = true
 
-    fetchHostSettings(host.slug)
-      .then((settings) => {
+    Promise.all([
+      call(api.getHostSettings(host.slug)),
+      call(api.availabilityClient.getAvailability(host.slug)),
+    ])
+      .then(([settings, availability]) => {
         if (!isActive) {
           return
         }
 
         setHostName(settings.name)
-        setDurationMin(settings.availability.slotDurationMin)
+        setDurationMin(availability.slotDurationMin)
       })
       .catch(() => {
         // Лендинг — витрина: при недоступности API показываем данные из конфига

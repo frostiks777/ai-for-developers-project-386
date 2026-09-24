@@ -2,19 +2,17 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { LocationType, type EventType } from '@/api/generated'
 import { EventTypesEditor } from '@/components/event-types-editor'
-import type { EventType } from '@/types/event-type'
 
 const type = (overrides: Partial<EventType> = {}): EventType => ({
   id: 'type-1',
-  hostId: 'host-1',
   slug: 'consultation',
   title: 'Звонок-консультация',
-  description: null,
+  description: 'Описание',
   durationMin: 30,
-  locationType: 'online',
+  locationType: LocationType.Online,
   isActive: true,
-  createdAt: '2026-09-24 10:00:00',
   ...overrides,
 })
 

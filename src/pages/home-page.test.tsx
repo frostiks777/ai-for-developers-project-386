@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
+import { jsonResponse, requestPath } from '@/test/http'
 import type { TimeSlot } from '@/types/booking'
 import { toDateKeyInZone } from '@/utils/timezone'
 import HomePage from './home-page'
@@ -37,31 +38,28 @@ const eventType = {
 
 function mockFetch(slots: TimeSlot[] = [slot]) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input)
+    const url = requestPath(input)
 
     if (url.startsWith('/api/v1/hosts/default/slots')) {
-      return new Response(
-        JSON.stringify({
-          timeZone: 'UTC',
-          date: null,
-          slots: slots.map((item) => ({
-            id: item.id,
-            startAt: item.startAt,
-            durationMin: item.durationMin,
-            available: !item.isBooked,
-          })),
-        }),
-        { status: 200 },
-      )
+      return jsonResponse({
+        timeZone: 'UTC',
+        date: null,
+        slots: slots.map((item) => ({
+          id: item.id,
+          startAt: item.startAt,
+          durationMin: item.durationMin,
+          available: !item.isBooked,
+        })),
+      })
     }
 
     if (url === '/api/v1/hosts/default/event-types') {
-      return new Response(JSON.stringify([eventType]), { status: 200 })
+      return jsonResponse([eventType])
     }
 
     if (url === '/api/v1/hosts/default/bookings' && init?.method === 'POST') {
-      return new Response(
-        JSON.stringify({
+      return jsonResponse(
+        {
           id: 'booking-token',
           hostSlug: 'default',
           eventTypeId: 'type-1',
@@ -73,12 +71,23 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
           clientPhone: '+79000000000',
           clientNotes: null,
           createdAt: '2099-09-23T07:00:00.000Z',
-        }),
-        { status: 201 },
+        },
+        201,
       )
     }
 
-    return new Response(JSON.stringify({ error: 'Не найдено' }), { status: 404 })
+    if (url === '/api/v1/hosts/default/availability') {
+      return jsonResponse({
+        timeZone: 'UTC',
+        slotDurationMin: 30,
+        bufferMin: 10,
+        minNoticeMin: 120,
+        horizonDays: 14,
+        ranges: [],
+      })
+    }
+
+    return jsonResponse({ error: 'Не найдено' }, 404)
   })
 }
 
@@ -307,31 +316,28 @@ describe('HomePage: выбор типа встречи', () => {
     ]
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
+      const url = requestPath(input)
 
       if (url === '/api/v1/hosts/default/event-types') {
-        return new Response(JSON.stringify(types), { status: 200 })
+        return jsonResponse(types)
       }
 
       if (url.startsWith('/api/v1/hosts/default/slots')) {
-        return new Response(
-          JSON.stringify({
-            timeZone: 'UTC',
-            date: null,
-            slots: [
-              {
-                id: 1,
-                startAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-                durationMin: 30,
-                available: true,
-              },
-            ],
-          }),
-          { status: 200 },
-        )
+        return jsonResponse({
+          timeZone: 'UTC',
+          date: null,
+          slots: [
+            {
+              id: 1,
+              startAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              durationMin: 30,
+              available: true,
+            },
+          ],
+        })
       }
 
-      return new Response(JSON.stringify({ error: 'Не найдено' }), { status: 404 })
+      return jsonResponse({ error: 'Не найдено' }, 404)
     })
     vi.stubGlobal('fetch', fetchMock)
 

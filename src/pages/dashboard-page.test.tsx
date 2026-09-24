@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 
+import { jsonResponse, requestPath } from '@/test/http'
 import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
 import {
@@ -12,8 +13,7 @@ import {
 import DashboardPage from './dashboard-page'
 
 const booking: BookingWithSlot = {
-  id: 1,
-  slotId: 10,
+  id: 'token-1',
   name: 'Иван',
   phone: '+79000000000',
   email: 'ivan@example.com',
@@ -22,7 +22,6 @@ const booking: BookingWithSlot = {
   startAt: '2099-09-24T07:00:00.000Z',
   durationMin: 30,
   status: 'confirmed',
-  cancelToken: 'token-1',
   eventTypeId: 'default-consultation',
   eventTypeTitle: 'Звонок-консультация',
 }
@@ -42,40 +41,63 @@ const defaultSettings: AvailabilitySettings = {
   ],
 }
 
+// UI-модель → контрактная модель брони v1
+const toApi = (item: BookingWithSlot) => ({
+  id: item.id,
+  hostSlug: 'default',
+  eventTypeId: item.eventTypeId,
+  startAt: item.startAt,
+  endAt: new Date(new Date(item.startAt).getTime() + item.durationMin * 60_000).toISOString(),
+  timeZone: 'UTC',
+  clientName: item.name,
+  clientEmail: item.email,
+  clientPhone: item.phone,
+  clientNotes: item.comment,
+  status: item.status,
+  createdAt: item.createdAt,
+})
+
+const eventType = {
+  id: 'default-consultation',
+  slug: 'consultation',
+  title: 'Звонок-консультация',
+  durationMin: 30,
+  locationType: 'online',
+  isActive: true,
+}
+
 function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
   let bookings = [...initialBookings]
 
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input)
+    const url = requestPath(input)
     const method = init?.method ?? 'GET'
 
-    if (url === '/api/bookings' && method === 'GET') {
-      return new Response(JSON.stringify(bookings), { status: 200 })
+    if (url === '/api/v1/hosts/default/bookings' && method === 'GET') {
+      return jsonResponse(bookings.map(toApi))
     }
 
     if (url.startsWith('/api/v1/bookings/') && url.endsWith('/cancel') && method === 'POST') {
       const id = url.split('/')[4]
       bookings = bookings.map((item) =>
-        item.cancelToken === id ? { ...item, status: 'cancelled' } : item,
+        item.id === id ? { ...item, status: 'cancelled' } : item,
       )
-      return new Response(JSON.stringify({ status: 'cancelled' }), { status: 200 })
-    }
-
-    if (url.startsWith('/api/bookings/') && method === 'DELETE') {
-      const id = Number(url.split('/').pop())
-      bookings = bookings.filter((item) => item.id !== id)
-      return new Response(null, { status: 204 })
+      return jsonResponse({})
     }
 
     if (url === '/api/v1/hosts/default/availability' && method === 'GET') {
-      return new Response(JSON.stringify(defaultSettings), { status: 200 })
+      return jsonResponse(defaultSettings)
     }
 
     if (url === '/api/v1/hosts/default/availability' && method === 'PUT') {
-      return new Response(String(init?.body), { status: 200 })
+      return jsonResponse(JSON.parse(String(init?.body)))
     }
 
-    return new Response(JSON.stringify({ error: 'Не найдено' }), { status: 404 })
+    if (url === '/api/v1/hosts/default/event-types' && method === 'GET') {
+      return jsonResponse([eventType])
+    }
+
+    return jsonResponse({ error: 'Не найдено' }, 404)
   })
 }
 
@@ -118,7 +140,7 @@ describe('DashboardPage', () => {
     await waitFor(() => expect(screen.queryByText('Иван')).toBeNull())
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/bookings/token-1/cancel',
+      expect.stringContaining('/api/v1/bookings/token-1/cancel'),
       expect.objectContaining({ method: 'POST' }),
     )
     expect(screen.getByText('Пока нет ни одной брони')).toBeInTheDocument()
@@ -142,7 +164,8 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       const putCall = fetchMock.mock.calls.find(
         ([url, init]) =>
-          String(url) === '/api/v1/hosts/default/availability' && init?.method === 'PUT',
+          requestPath(url).startsWith('/api/v1/hosts/default/availability') &&
+          init?.method === 'PUT',
       )
       expect(putCall).toBeDefined()
       const body = JSON.parse(String(putCall?.[1]?.body)) as AvailabilitySettings
@@ -177,11 +200,9 @@ describe('DashboardPage', () => {
   it('не показывает отменённые брони', async () => {
     const cancelled: BookingWithSlot = {
       ...booking,
-      id: 2,
-      slotId: 11,
+      id: 'token-2',
       name: 'Отменённый',
       status: 'cancelled',
-      cancelToken: 'token-2',
     }
     vi.stubGlobal('fetch', mockFetch([booking, cancelled]))
     renderDashboard()
@@ -206,7 +227,8 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       const putCall = fetchMock.mock.calls.find(
         ([url, init]) =>
-          String(url) === '/api/v1/hosts/default/availability' && init?.method === 'PUT',
+          requestPath(url).startsWith('/api/v1/hosts/default/availability') &&
+          init?.method === 'PUT',
       )
       const body = JSON.parse(String(putCall?.[1]?.body)) as AvailabilitySettings
       expect(body.ranges.filter((range) => range.weekday === 1)).toHaveLength(2)
@@ -214,7 +236,7 @@ describe('DashboardPage', () => {
   })
 })
 
-describe('BookingsTable', () => {
+describe('BookingsList', () => {
   it('не показывает телефон, если он не указан', async () => {
     vi.stubGlobal('fetch', mockFetch([{ ...booking, phone: null }]))
     renderDashboard()
@@ -233,8 +255,7 @@ describe('DashboardPage grouping and filter', () => {
   it('группирует брони по дням', async () => {
     const second: BookingWithSlot = {
       ...booking,
-      id: 2,
-      slotId: 11,
+      id: 'token-2',
       name: 'Мария',
       email: 'maria@example.com',
       comment: null,
@@ -260,15 +281,13 @@ describe('DashboardPage grouping and filter', () => {
     const now = new Date()
     const todayBooking: BookingWithSlot = {
       ...booking,
-      id: 3,
-      slotId: 12,
+      id: 'token-3',
       name: 'Сегодняшний',
       startAt: now.toISOString(),
     }
     const tomorrowBooking: BookingWithSlot = {
       ...booking,
-      id: 4,
-      slotId: 13,
+      id: 'token-4',
       name: 'Завтрашний',
       startAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
     }

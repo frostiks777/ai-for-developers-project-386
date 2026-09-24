@@ -2,23 +2,23 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
-import type { V1Booking } from '@/types/booking'
+import { BookingStatus, type Booking as ApiBooking } from '@/api/generated'
+import { jsonResponse, requestPath } from '@/test/http'
 import ReschedulePage from './reschedule-page'
 
 const currentStart = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString()
 const newStart = new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString()
 
-const booking: V1Booking = {
+const booking: ApiBooking = {
   id: 'token-123',
   hostSlug: 'default',
   eventTypeId: 'type-1',
   startAt: currentStart,
   endAt: new Date(new Date(currentStart).getTime() + 30 * 60 * 1000).toISOString(),
-  status: 'confirmed',
+  timeZone: 'UTC',
+  status: BookingStatus.Confirmed,
   clientName: 'Иван',
   clientEmail: 'ivan@example.com',
-  clientPhone: null,
-  clientNotes: null,
   createdAt: '2099-09-23T07:00:00.000Z',
 }
 
@@ -39,26 +39,22 @@ const slotRows = [
 
 function mockFetch() {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input)
+    const url = requestPath(input)
     const method = init?.method ?? 'GET'
 
     if (url === '/api/v1/bookings/token-123' && method === 'GET') {
-      return new Response(JSON.stringify(booking), { status: 200 })
+      return jsonResponse(booking)
     }
 
     if (url.startsWith('/api/v1/hosts/default/slots') && method === 'GET') {
-      return new Response(JSON.stringify({ timeZone: 'UTC', date: null, slots: slotRows }), {
-        status: 200,
-      })
+      return jsonResponse({ timeZone: 'UTC', date: null, slots: slotRows })
     }
 
     if (url === '/api/v1/bookings/token-123/reschedule' && method === 'POST') {
-      return new Response(JSON.stringify({ ...booking, startAt: newStart }), { status: 200 })
+      return jsonResponse({ ...booking, startAt: newStart })
     }
 
-    return new Response(JSON.stringify({ error: { code: 'NOT_FOUND', message: 'Не найдено' } }), {
-      status: 404,
-    })
+    return jsonResponse({ error: { code: 'NOT_FOUND', message: 'Не найдено' } }, 404)
   })
 }
 
@@ -90,7 +86,7 @@ describe('ReschedulePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Встреча перенесена' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/bookings/token-123/reschedule',
+      expect.stringContaining('/api/v1/bookings/token-123/reschedule'),
       expect.objectContaining({ method: 'POST' }),
     )
   })
@@ -98,12 +94,8 @@ describe('ReschedulePage', () => {
   it('показывает ошибку для недействительной ссылки', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({ error: { code: 'NOT_FOUND', message: 'Бронь не найдена' } }),
-            { status: 404 },
-          ),
+      vi.fn(async () =>
+        jsonResponse({ error: { code: 'NOT_FOUND', message: 'Бронь не найдена' } }, 404),
       ),
     )
 

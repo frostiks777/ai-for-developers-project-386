@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { ApiError, cancelBookingV1 } from '@/api/client'
+import { ApiError, api, call } from '@/api/sdk'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
 
@@ -22,7 +22,7 @@ export default function CancelPage() {
     setStatus('cancelling')
 
     try {
-      await cancelBookingV1(token)
+      await call(api.bookingsClient.cancelBooking(token))
       setStatus('done')
     } catch (caught) {
       setStatus('error')

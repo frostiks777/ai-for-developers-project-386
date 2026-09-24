@@ -2,37 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import {
-  ApiError,
-  fetchBookingV1,
-  fetchHostSlots,
-  rescheduleBookingV1,
-} from '@/api/client'
+import { toBookingWithSlot, toTimeSlot } from '@/api/mappers'
+import { ApiError, api, call } from '@/api/sdk'
 import { MonthCalendar } from '@/components/month-calendar'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
-import type { BookingWithSlot, TimeSlot, V1Booking } from '@/types/booking'
+import type { BookingWithSlot, TimeSlot } from '@/types/booking'
 import { defaultTimeZone, formatDateTimeInZone, toDateKeyInZone } from '@/utils/timezone'
-
-const durationMinutes = (startAt: string, endAt: string): number =>
-  Math.max(1, Math.round((new Date(endAt).getTime() - new Date(startAt).getTime()) / 60_000))
-
-const toBookingWithSlot = (booking: V1Booking): BookingWithSlot => ({
-  id: 0,
-  slotId: 0,
-  name: booking.clientName,
-  phone: booking.clientPhone,
-  email: booking.clientEmail,
-  comment: booking.clientNotes,
-  createdAt: booking.createdAt,
-  startAt: booking.startAt,
-  durationMin: durationMinutes(booking.startAt, booking.endAt),
-  status: booking.status,
-  cancelToken: booking.id,
-  eventTypeId: booking.eventTypeId,
-  eventTypeTitle: null,
-})
 
 export default function ReschedulePage() {
   const { token } = useParams<{ token: string }>()
@@ -57,11 +34,13 @@ export default function ReschedulePage() {
     setIsLoading(true)
 
     try {
-      const current = await fetchBookingV1(token)
-      const allSlots = await fetchHostSlots(current.hostSlug, current.eventTypeId)
+      const current = await call(api.bookingsClient.getBooking(token))
+      const allSlots = await call(
+        api.listSlots(current.hostSlug, { eventTypeId: current.eventTypeId }),
+      )
 
       setBooking(toBookingWithSlot(current))
-      setSlots(allSlots)
+      setSlots(allSlots.slots.map(toTimeSlot))
       setLoadError(null)
     } catch {
       setLoadError('Бронь не найдена или ссылка недействительна')
@@ -92,7 +71,7 @@ export default function ReschedulePage() {
     setReschedulingId(slotId)
 
     try {
-      const updated = await rescheduleBookingV1(token, startAt)
+      const updated = await call(api.bookingsClient.rescheduleBooking(token, { startAt }))
       setResult(toBookingWithSlot(updated))
       toast.success('Встреча перенесена')
     } catch (error) {

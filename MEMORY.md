@@ -230,11 +230,16 @@
     - `npm run api:generate` (`scripts/api-generate.mjs`) → `docs/openapi/openapi.yaml`, `src/api/generated/` (клиентский SDK), `server/generated/api-types.ts` (серверные типы через `openapi-typescript`).
     - [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md) — типы встреч, статусы брони, диапазоны доступности; `CONTEXT.md` дополнен терминами.
     - Правки: `@service(#{ title })` (TypeSpec 1.16), `src/api/generated` и `server/generated` вне ESLint, `tsp-output/` в `.gitignore`; повторная генерация детерминирована. Проверки: lint/typecheck/test (109)/build — зелёные.
+51. ⏳ **Шаг 3 курса, T7** ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25)): фронт переведён на сгенерированный SDK. Ручной `src/api/client.ts` удалён; добавлены `src/api/sdk.ts` (инстанс `ApiV1Client` + `call()` + `ApiError`) и `src/api/mappers.ts` (контрактные модели → UI-типы). Все страницы/хуки/компоненты ходят через `api.*`. Технические решения:
+    - SDK сконфигурирован `endpoint: window.location.origin`, `allowInsecureConnection: true`, `retryOptions: { maxRetries: 0 }`, кастомный `httpClient` поверх глобального `fetch` — иначе в Node-тестах `@typespec/ts-http-runtime` резолвит nodeHttpClient и не перехватывается `vi.stubGlobal('fetch')`.
+    - Удалены `src/types/{host,availability,event-type}.ts`; `src/types/booking.ts` оставлен как UI-модели; типы `AvailabilitySettings`/`EventType`/`Booking` из `@/api/generated`.
+    - Тестовый хелпер `src/test/http.ts` (`requestPath` + `jsonResponse`); моки обновлены (абсолютный URL SDK, обязательный `Content-Type: application/json`). `dashboard` собирает `eventTypeTitle` из `listEventTypes`.
+    - Проверки: lint 0, typecheck чисто, **137/137 тестов**, build ✓ (JS 510.78 kB / gzip 155.12 — предупреждение о размере чанка).
 
 ## Что осталось (следующие шаги)
 
 - [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **не начато**; (4) Docker/деплой — **уже выполнено**. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
-- [ ] **Шаг 3 курса**: разложить спецификацию (`docs/spec.md`) на вертикальные тикеты (`/to-tickets`) и реализовать; заменить ручной `src/api/client.ts` на сгенерированный SDK; реализовать новые сущности (`event_types`, `status`, `availability_ranges`, миграции `server/db/migrate.ts`); e2e Playwright.
+- [ ] **Шаг 3 курса**: тикеты T1–T7 закрыты (см. #19–#25); фронт переведён на сгенерированный SDK ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25), `src/api/sdk.ts` + `mappers.ts`, ручной `src/api/client.ts` удалён). Осталось: T8 (#26) контракт-тесты + e2e Playwright, T9 (#27) финальная сверка со спецификацией.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
