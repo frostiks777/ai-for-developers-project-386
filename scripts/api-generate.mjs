@@ -57,3 +57,28 @@ await writeFile(
   'utf8',
 )
 console.log(`> ${clientDest}`)
+
+const typesDest = join(root, 'server', 'generated', 'api-types.ts')
+const openapiTypesBin = join(
+  root,
+  'node_modules',
+  '.bin',
+  process.platform === 'win32' ? 'openapi-typescript.cmd' : 'openapi-typescript',
+)
+await mkdir(dirname(typesDest), { recursive: true })
+console.log('> openapi-typescript docs/openapi/openapi.yaml')
+const types = spawnSync(
+  openapiTypesBin,
+  ['docs/openapi/openapi.yaml', '-o', 'server/generated/api-types.ts'],
+  {
+    cwd: root,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  },
+)
+if (types.status !== 0) {
+  console.error('openapi-typescript failed')
+  process.exit(types.status ?? 1)
+}
+console.log(`> ${typesDest}`)
+
