@@ -440,6 +440,8 @@ export default function HomePage() {
 
       <BookingDialog
         slot={selectedSlot}
+        hostSlug={slug ?? ''}
+        eventTypeId={selectedTypeId}
         timeZone={timeZone}
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}

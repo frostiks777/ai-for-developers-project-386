@@ -111,3 +111,26 @@ export const availabilitySettingsSchema = z.object({
   horizonDays: z.int().min(1, 'Горизонт не меньше дня').max(90, 'Горизонт не больше 90 дней'),
   ranges: z.array(availabilityRangeSchema).min(1, 'Добавьте хотя бы один интервал'),
 })
+// Бронирование v1 (гость): тип встречи + время начала
+export const v1CreateBookingSchema = z.object({
+  eventTypeId: z.string().trim().min(1, 'Укажите тип встречи'),
+  startAt: z.string().trim().min(1, 'Укажите время'),
+  clientName: z.string().trim().min(1, 'Укажите имя'),
+  clientEmail: z.string().trim().pipe(z.email('Неверный email')),
+  clientPhone: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined)
+    .refine((value) => value === undefined || isValidPhone(value), 'Неверный номер телефона'),
+  clientNotes: z
+    .string()
+    .trim()
+    .max(1000, 'Комментарий слишком длинный')
+    .optional()
+    .transform((value) => value || undefined),
+})
+
+export const v1RescheduleBookingSchema = z.object({
+  startAt: z.string().trim().min(1, 'Укажите время'),
+})

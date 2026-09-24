@@ -16,6 +16,8 @@ import { formatDialogDate, formatTimeRange, toDateKeyInZone } from '@/utils/time
 
 interface BookingDialogProps {
   slot: TimeSlot | null
+  hostSlug: string
+  eventTypeId: string | null
   timeZone: string
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -25,6 +27,8 @@ interface BookingDialogProps {
 
 export function BookingDialog({
   slot,
+  hostSlug,
+  eventTypeId,
   timeZone,
   open,
   onOpenChange,
@@ -65,11 +69,18 @@ export function BookingDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!slot || !isFormValid) {
+    if (!slot || !eventTypeId || !isFormValid) {
       return
     }
 
-    const booking = await bookSlot(parseResult.data)
+    const booking = await bookSlot(hostSlug, {
+      eventTypeId,
+      startAt: slot.startAt,
+      clientName: name,
+      clientEmail: email,
+      clientPhone: phone.trim() || undefined,
+      clientNotes: comment.trim() || undefined,
+    })
 
     if (booking) {
       onBooked(booking)

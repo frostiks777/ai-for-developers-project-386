@@ -23,6 +23,8 @@ function renderDialog() {
   return render(
     <BookingDialog
       slot={slot}
+      hostSlug="default"
+      eventTypeId="type-1"
       timeZone="UTC"
       open
       onOpenChange={onOpenChange}
@@ -30,6 +32,22 @@ function renderDialog() {
     />,
   )
 }
+
+const v1BookingResponse = (overrides: Record<string, unknown> = {}) =>
+  JSON.stringify({
+    id: 'booking-token',
+    hostSlug: 'default',
+    eventTypeId: 'type-1',
+    startAt: slot.startAt,
+    endAt: slot.startAt,
+    status: 'confirmed',
+    clientName: 'Иван',
+    clientEmail: 'ivan@example.com',
+    clientPhone: '+79000000000',
+    clientNotes: null,
+    createdAt: '2026-09-22T07:00:00.000Z',
+    ...overrides,
+  })
 
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Имя'), 'Иван')
@@ -93,18 +111,7 @@ describe('BookingDialog', () => {
 
   it('бронирует слот без телефона (поле необязательное)', async () => {
     const fetchMock = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            id: 1,
-            slotId: 1,
-            name: 'Иван',
-            phone: null,
-            email: 'ivan@example.com',
-            createdAt: '2026-09-22T07:00:00.000Z',
-          }),
-          { status: 201 },
-        ),
+      async () => new Response(v1BookingResponse({ clientPhone: null }), { status: 201 }),
     )
     vi.stubGlobal('fetch', fetchMock)
 
@@ -116,7 +123,7 @@ describe('BookingDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/bookings',
+      '/api/v1/hosts/default/bookings',
       expect.objectContaining({ method: 'POST' }),
     )
     expect(onBooked).toHaveBeenCalledTimes(1)
@@ -124,20 +131,7 @@ describe('BookingDialog', () => {
   })
 
   it('бронирует слот, показывает уведомление и закрывает диалог', async () => {
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            id: 1,
-            slotId: 1,
-            name: 'Иван',
-            phone: '+79000000000',
-            email: 'ivan@example.com',
-            createdAt: '2026-09-22T07:00:00.000Z',
-          }),
-          { status: 201 },
-        ),
-    )
+    const fetchMock = vi.fn(async () => new Response(v1BookingResponse(), { status: 201 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
@@ -147,7 +141,7 @@ describe('BookingDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/bookings',
+      '/api/v1/hosts/default/bookings',
       expect.objectContaining({ method: 'POST' }),
     )
     expect(toast.success).toHaveBeenCalledWith('Звонок забронирован')
@@ -158,18 +152,7 @@ describe('BookingDialog', () => {
   it('отправляет комментарий, если он заполнен', async () => {
     const fetchMock = vi.fn(
       async () =>
-        new Response(
-          JSON.stringify({
-            id: 1,
-            slotId: 1,
-            name: 'Иван',
-            phone: '+79000000000',
-            email: 'ivan@example.com',
-            comment: 'Хочу обсудить проект',
-            createdAt: '2026-09-22T07:00:00.000Z',
-          }),
-          { status: 201 },
-        ),
+        new Response(v1BookingResponse({ clientNotes: 'Хочу обсудить проект' }), { status: 201 }),
     )
     vi.stubGlobal('fetch', fetchMock)
 
@@ -181,17 +164,21 @@ describe('BookingDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/bookings',
+      '/api/v1/hosts/default/bookings',
       expect.objectContaining({
         method: 'POST',
-        body: expect.stringContaining('"comment":"Хочу обсудить проект"'),
+        body: expect.stringContaining('"clientNotes":"Хочу обсудить проект"'),
       }),
     )
   })
 
   it('показывает ошибку, если слот уже занят', async () => {
     const fetchMock = vi.fn(
-      async () => new Response(JSON.stringify({ error: 'Слот уже занят' }), { status: 409 }),
+      async () =>
+        new Response(
+          JSON.stringify({ error: { code: 'SLOT_TAKEN', message: 'Слот только что заняли' } }),
+          { status: 409 },
+        ),
     )
     vi.stubGlobal('fetch', fetchMock)
 
@@ -201,7 +188,7 @@ describe('BookingDialog', () => {
     await fillValidForm(user)
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
-    expect(toast.error).toHaveBeenCalledWith('Слот уже занят')
+    expect(toast.error).toHaveBeenCalledWith('Слот только что заняли')
     expect(onBooked).not.toHaveBeenCalled()
     expect(onOpenChange).not.toHaveBeenCalled()
   })

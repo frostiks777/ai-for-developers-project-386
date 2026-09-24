@@ -6,8 +6,10 @@ import type { HostSettings } from '@/types/host'
 import type {
   BookingWithSlot,
   CreateBookingBody,
+  CreateBookingV1Body,
   CreatedBooking,
   TimeSlot,
+  V1Booking,
 } from '@/types/booking'
 import type {
   CreateEventTypeBody,
@@ -28,14 +30,21 @@ export class ApiError extends Error {
 async function readErrorMessage(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => null)
 
-  if (
-    body !== null &&
-    typeof body === 'object' &&
-    'error' in body &&
-    typeof body.error === 'string' &&
-    body.error.trim() !== ''
-  ) {
-    return body.error
+  if (body !== null && typeof body === 'object' && 'error' in body) {
+    const error = (body as { error: unknown }).error
+
+    if (typeof error === 'string' && error.trim() !== '') {
+      return error
+    }
+
+    if (
+      error !== null &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as { message: unknown }).message === 'string'
+    ) {
+      return (error as { message: string }).message
+    }
   }
 
   return `Ошибка запроса: ${response.status}`
@@ -92,6 +101,66 @@ export function createBooking(body: CreateBookingBody): Promise<CreatedBooking> 
     },
     body: JSON.stringify(body),
   })
+}
+
+// Создание брони через API v1: по типу встречи и времени начала
+export async function createBookingV1(
+  slug: string,
+  body: CreateBookingV1Body,
+): Promise<CreatedBooking> {
+  const row = await request<V1Booking>(
+    `/api/v1/hosts/${encodeURIComponent(slug)}/bookings`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    },
+  )
+
+  return {
+    id: 0,
+    slotId: 0,
+    name: row.clientName,
+    phone: row.clientPhone,
+    email: row.clientEmail,
+    comment: row.clientNotes,
+    createdAt: row.createdAt,
+    cancelToken: row.id,
+  }
+}
+
+export function fetchBookingV1(id: string): Promise<V1Booking> {
+  return request<V1Booking>(`/api/v1/bookings/${encodeURIComponent(id)}`)
+}
+
+export function cancelBookingV1(id: string): Promise<V1Booking> {
+  return request<V1Booking>(`/api/v1/bookings/${encodeURIComponent(id)}/cancel`, {
+    method: 'POST',
+  })
+}
+
+export async function rescheduleBookingV1(id: string, startAt: string): Promise<CreatedBooking> {
+  const row = await request<V1Booking>(
+    `/api/v1/bookings/${encodeURIComponent(id)}/reschedule`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startAt }),
+    },
+  )
+
+  return {
+    id: 0,
+    slotId: 0,
+    name: row.clientName,
+    phone: row.clientPhone,
+    email: row.clientEmail,
+    comment: row.clientNotes,
+    createdAt: row.createdAt,
+    cancelToken: row.id,
+  }
 }
 
 export function fetchBookings(): Promise<BookingWithSlot[]> {
