@@ -13,6 +13,7 @@ import { AvailabilityForm } from '@/components/availability-form'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
 import { BookingsList } from '@/components/bookings-list'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
+import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { AvailabilityRules } from '@/types/availability'
 import type { BookingWithSlot } from '@/types/booking'
@@ -158,7 +159,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader linkTo="/" linkLabel="Бронирование" variant="mobile" />
+      <AppHeader linkTo={`/book/${host.slug}`} linkLabel="Бронирование" variant="mobile" />
       <main className="mx-auto w-full max-w-md px-4 py-4">
         <h2 className="font-serif text-[28px] font-semibold leading-tight">
           Панель организатора

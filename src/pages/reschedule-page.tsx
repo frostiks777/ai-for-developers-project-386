@@ -11,6 +11,7 @@ import {
 import { MonthCalendar } from '@/components/month-calendar'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
+import { host } from '@/config/host'
 import type { BookingWithSlot, TimeSlot } from '@/types/booking'
 import { defaultTimeZone, formatDateTimeInZone, toDateKeyInZone } from '@/utils/timezone'
 
@@ -88,7 +89,10 @@ export default function ReschedulePage() {
     <div className="container mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Перенос встречи</h1>
-        <Link to="/" className="text-sm text-primary underline-offset-4 hover:underline">
+        <Link
+          to={`/book/${host.slug}`}
+          className="text-sm text-primary underline-offset-4 hover:underline"
+        >
           К странице бронирования
         </Link>
       </header>
@@ -104,7 +108,7 @@ export default function ReschedulePage() {
             Новое время: {formatDateTimeInZone(result.startAt, timeZone)} ({result.durationMin} мин)
           </p>
           <Button className="mt-6" asChild>
-            <Link to="/">К списку слотов</Link>
+            <Link to={`/book/${host.slug}`}>К списку слотов</Link>
           </Button>
         </section>
       )}

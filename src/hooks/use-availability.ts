@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import { fetchSlots } from '@/api/client'
+import { fetchHostSlots } from '@/api/client'
 import type { TimeSlot } from '@/types/booking'
 
-export function useAvailability() {
+export function useAvailability(slug: string) {
   const [slots, setSlots] = useState<TimeSlot[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -12,7 +12,7 @@ export function useAvailability() {
     setIsLoading(true)
 
     try {
-      const data = await fetchSlots()
+      const data = await fetchHostSlots(slug)
       // Бэкенд тоже фильтрует, но вкладка могла быть открыта долго — не показываем прошедшее
       setSlots(data.filter((slot) => new Date(slot.startAt).getTime() >= Date.now()))
       setError(null)
@@ -21,7 +21,7 @@ export function useAvailability() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [slug])
 
   useEffect(() => {
     void loadSlots()

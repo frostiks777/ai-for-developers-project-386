@@ -1,4 +1,5 @@
 import type { AvailabilityRules } from '@/types/availability'
+import type { HostSettings } from '@/types/host'
 import type {
   BookingWithSlot,
   CreateBookingBody,
@@ -52,6 +53,14 @@ async function requestVoid(path: string, init?: RequestInit): Promise<void> {
 
 export function fetchSlots(): Promise<TimeSlot[]> {
   return request<TimeSlot[]>('/api/slots')
+}
+
+export function fetchHostSettings(slug: string): Promise<HostSettings> {
+  return request<HostSettings>(`/api/v1/hosts/${encodeURIComponent(slug)}/settings`)
+}
+
+export function fetchHostSlots(slug: string): Promise<TimeSlot[]> {
+  return request<TimeSlot[]>(`/api/v1/hosts/${encodeURIComponent(slug)}/slots`)
 }
 
 export function createBooking(body: CreateBookingBody): Promise<CreatedBooking> {

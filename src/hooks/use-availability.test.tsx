@@ -32,7 +32,7 @@ describe('useAvailability', () => {
   it('отбрасывает прошедшие слоты', async () => {
     stubSlotsResponse([pastSlot, futureSlot])
 
-    const { result } = renderHook(() => useAvailability())
+    const { result } = renderHook(() => useAvailability('default'))
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.slots).toEqual([futureSlot])
@@ -42,10 +42,11 @@ describe('useAvailability', () => {
   it('показывает ошибку при неудачном запросе', async () => {
     stubSlotsResponse({ error: 'Внутренняя ошибка' }, 500)
 
-    const { result } = renderHook(() => useAvailability())
+    const { result } = renderHook(() => useAvailability('default'))
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.error).toBe('Не удалось загрузить слоты')
     expect(result.current.slots).toEqual([])
   })
 })
+
