@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import {
   ApiError,
   cancelBooking,
+  cancelBookingV1,
   fetchAvailabilitySettings,
   fetchBookings,
   updateAvailabilitySettings,
@@ -89,9 +90,13 @@ export default function DashboardPage() {
     })()
   }, [loadBookings])
 
-  const handleCancel = async (id: number) => {
+  const handleCancel = async (booking: BookingWithSlot) => {
     try {
-      await cancelBooking(id)
+      if (booking.cancelToken) {
+        await cancelBookingV1(booking.cancelToken)
+      } else {
+        await cancelBooking(booking.id)
+      }
       toast.success('Бронь отменена')
       await loadBookings()
     } catch (error) {
@@ -115,7 +120,8 @@ export default function DashboardPage() {
     }
   }
 
-  const filteredBookings = applyFilter(bookings, filter, new Date())
+  const activeBookings = bookings.filter((booking) => booking.status === 'confirmed')
+  const filteredBookings = applyFilter(activeBookings, filter, new Date())
 
   if (isDesktop) {
     return (

@@ -21,6 +21,8 @@ const booking: BookingWithSlot = {
   createdAt: '2026-09-23T10:00:00.000Z',
   startAt: '2099-09-24T07:00:00.000Z',
   durationMin: 30,
+  status: 'confirmed',
+  cancelToken: 'token-1',
 }
 
 const defaultSettings: AvailabilitySettings = {
@@ -47,6 +49,14 @@ function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
 
     if (url === '/api/bookings' && method === 'GET') {
       return new Response(JSON.stringify(bookings), { status: 200 })
+    }
+
+    if (url.startsWith('/api/v1/bookings/') && url.endsWith('/cancel') && method === 'POST') {
+      const id = url.split('/')[4]
+      bookings = bookings.map((item) =>
+        item.cancelToken === id ? { ...item, status: 'cancelled' } : item,
+      )
+      return new Response(JSON.stringify({ status: 'cancelled' }), { status: 200 })
     }
 
     if (url.startsWith('/api/bookings/') && method === 'DELETE') {
@@ -106,8 +116,8 @@ describe('DashboardPage', () => {
     await waitFor(() => expect(screen.queryByText('Иван')).toBeNull())
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/bookings/1',
-      expect.objectContaining({ method: 'DELETE' }),
+      '/api/v1/bookings/token-1/cancel',
+      expect.objectContaining({ method: 'POST' }),
     )
     expect(screen.getByText('Пока нет ни одной брони')).toBeInTheDocument()
   })
@@ -160,6 +170,22 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Пока нет ни одной брони')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Отменить' })).toBeNull()
+  })
+
+  it('не показывает отменённые брони', async () => {
+    const cancelled: BookingWithSlot = {
+      ...booking,
+      id: 2,
+      slotId: 11,
+      name: 'Отменённый',
+      status: 'cancelled',
+      cancelToken: 'token-2',
+    }
+    vi.stubGlobal('fetch', mockFetch([booking, cancelled]))
+    renderDashboard()
+
+    expect(await screen.findByText('Иван')).toBeInTheDocument()
+    expect(screen.queryByText('Отменённый')).toBeNull()
   })
 
   it('позволяет задать несколько интервалов в день', async () => {

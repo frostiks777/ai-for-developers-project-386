@@ -48,6 +48,8 @@ const bookingWithSlotColumns = {
   phone: bookings.phone,
   email: bookings.email,
   comment: bookings.comment,
+  status: bookings.status,
+  cancelToken: bookings.cancelToken,
   createdAt: bookings.createdAt,
   startAt: slots.startAt,
   durationMin: slots.durationMin,
