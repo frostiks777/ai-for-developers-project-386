@@ -258,7 +258,7 @@
 - [x] **Фаза 0 — гигиена/синхронизация (2026-09-24):** фикс UI-бага «Доступность», заметки в `docs/todo.md` (несколько интервалов — сделано), это обновление `MEMORY.md`.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] **Фаза 1 — новые формы:** блокировка дат/часов (ТЗ §2.1: `BlockTimeModal` + API/schema), причина отмены (`cancellation_reason`) + модалка подтверждения.
-- [ ] **Фаза 2 — P0 публичный флоу:** имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» / `/booking/:uuid/confirmed`.
+- [ ] **Фаза 2 — P0 публичный флоу:** имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`.
 - [ ] **Фаза 3 — P1 self-service/dashboard:** роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
 - [ ] **Фаза 4 — Low/архитектура (нужны ADR):** мульти-хост-модель (`host_id` в `slots`/`bookings`, `/book/:hostId`), авторизация `/dashboard`.
 
