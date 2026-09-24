@@ -90,3 +90,24 @@ export const updateEventTypeSchema = z.object({
   locationType: locationTypeSchema.optional(),
   isActive: z.boolean().optional(),
 })
+
+// Настройки доступности v1: диапазоны по дням недели (ADR-0011)
+export const availabilityRangeSchema = z
+  .object({
+    weekday: z.int().min(1, 'День недели 1–7').max(7, 'День недели 1–7'),
+    startMinute: z.int().min(0, 'Начало не раньше 0:00').max(1439, 'Начало до 23:59'),
+    endMinute: z.int().min(1, 'Конец не раньше 0:01').max(1440, 'Конец до 24:00'),
+  })
+  .refine((range) => range.endMinute > range.startMinute, {
+    message: 'Конец интервала должен быть позже начала',
+    path: ['endMinute'],
+  })
+
+export const availabilitySettingsSchema = z.object({
+  timeZone: z.string().trim().min(1, 'Укажите часовой пояс'),
+  slotDurationMin: z.int().min(5, 'Слот не короче 5 минут').max(480, 'Слот не длиннее 8 часов'),
+  bufferMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
+  minNoticeMin: z.int().min(0).max(10080, 'Не больше недели'),
+  horizonDays: z.int().min(1, 'Горизонт не меньше дня').max(90, 'Горизонт не больше 90 дней'),
+  ranges: z.array(availabilityRangeSchema).min(1, 'Добавьте хотя бы один интервал'),
+})

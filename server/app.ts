@@ -7,6 +7,7 @@ import { eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
 import { bookings, hosts, slots } from './db/schema'
+import { loadAvailabilitySettings, saveAvailabilitySettings } from './availability-settings'
 import {
   createEventType,
   deleteEventType,
@@ -18,6 +19,7 @@ import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } f
 import type { BookingWithSlot, HostSettings, TimeSlot } from './types'
 import {
   availabilityRulesSchema,
+  availabilitySettingsSchema,
   cancelBookingSchema,
   createBookingSchema,
   createEventTypeSchema,
@@ -307,6 +309,37 @@ export async function buildApp(): Promise<FastifyInstance> {
     const result = selectFutureSlots()
 
     return date ? result.filter((slot) => dateKeyInZone(slot.startAt, timeZone) === date) : result
+  })
+
+  // ── API v1: диапазоны доступности ────────────────────────────────────
+  app.get('/api/v1/hosts/:slug/availability', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    return loadAvailabilitySettings(host.id, host.timezone)
+  })
+
+  app.put('/api/v1/hosts/:slug/availability', (request, reply) => {
+    const { slug } = request.params as { slug: string }
+    const host = findHost(slug)
+
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
+    }
+
+    const parsed = availabilitySettingsSchema.safeParse(request.body)
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Невалидные настройки доступности'
+      return reply.code(422).send({ error: message })
+    }
+
+    saveAvailabilitySettings(host.id, parsed.data)
+
+    return loadAvailabilitySettings(host.id, host.timezone)
   })
 
   // ── API v1: типы встреч ──────────────────────────────────────────────
