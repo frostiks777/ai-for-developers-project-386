@@ -28,6 +28,8 @@ const toBookingWithSlot = (booking: V1Booking): BookingWithSlot => ({
   createdAt: booking.createdAt,
   startAt: booking.startAt,
   durationMin: durationMinutes(booking.startAt, booking.endAt),
+  status: booking.status,
+  cancelToken: booking.id,
 })
 
 export default function ReschedulePage() {

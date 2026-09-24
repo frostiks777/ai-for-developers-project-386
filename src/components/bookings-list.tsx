@@ -12,7 +12,7 @@ import {
 
 interface BookingsListProps {
   bookings: BookingWithSlot[]
-  onCancel: (id: number) => void
+  onCancel: (booking: BookingWithSlot) => void
 }
 
 function endTimeIso(booking: BookingWithSlot): string {
@@ -111,7 +111,7 @@ export function BookingsList({ bookings, onCancel }: BookingsListProps) {
                     type="button"
                     variant="outline"
                     className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => onCancel(booking.id)}
+                    onClick={() => onCancel(booking)}
                   >
                     Отменить
                   </Button>
@@ -142,7 +142,7 @@ export function BookingsList({ bookings, onCancel }: BookingsListProps) {
                     type="button"
                     variant="outline"
                     className="mt-1.5 h-11 w-full rounded-xl border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => onCancel(booking.id)}
+                    onClick={() => onCancel(booking)}
                   >
                     Отменить
                   </Button>
