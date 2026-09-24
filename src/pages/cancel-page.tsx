@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { ApiError, cancelBookingByToken } from '@/api/client'
 import { Button } from '@/components/ui/button'
+import { host } from '@/config/host'
 
 type Status = 'idle' | 'cancelling' | 'done' | 'error'
 
@@ -41,7 +42,7 @@ export default function CancelPage() {
               Слот снова свободен. Вы можете записаться на другое время.
             </p>
             <Button className="mt-6" asChild>
-              <Link to="/">К списку слотов</Link>
+              <Link to={`/book/${host.slug}`}>К списку слотов</Link>
             </Button>
           </>
         ) : (
@@ -59,7 +60,7 @@ export default function CancelPage() {
                 {status === 'cancelling' ? 'Отмена…' : 'Отменить встречу'}
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/">Не отменять</Link>
+                <Link to={`/book/${host.slug}`}>Не отменять</Link>
               </Button>
             </div>
           </>

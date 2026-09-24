@@ -2,6 +2,7 @@ import { Calendar, ExternalLink, List, SlidersHorizontal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { ThemeToggle } from '@/components/theme-toggle'
+import { host } from '@/config/host'
 import { defaultTimeZone } from '@/utils/timezone'
 
 interface DashboardSidebarProps {
@@ -56,7 +57,7 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
 
       <div className="mt-auto flex flex-col gap-3 border-t pt-4">
         <Link
-          to="/"
+          to={`/book/${host.slug}`}
           className="flex min-h-11 items-center gap-2 px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <ExternalLink className="size-4" strokeWidth={1.8} aria-hidden="true" />

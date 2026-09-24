@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Clock, Globe, Video } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 
 import { fetchAvailability } from '@/api/client'
 import { AppHeader } from '@/components/app-header'
@@ -62,7 +63,8 @@ function SlotsSkeleton() {
 }
 
 export default function HomePage() {
-  const { slots, isLoading, error, refetch } = useAvailability()
+  const { slug } = useParams<{ slug: string }>()
+  const { slots, isLoading, error, refetch } = useAvailability(slug ?? '')
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [bookedBooking, setBookedBooking] = useState<CreatedBooking | null>(null)

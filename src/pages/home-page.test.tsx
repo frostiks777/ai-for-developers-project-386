@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import type { TimeSlot } from '@/types/booking'
 import { toDateKeyInZone } from '@/utils/timezone'
@@ -8,8 +8,10 @@ import HomePage from './home-page'
 
 function renderHomePage() {
   return render(
-    <MemoryRouter>
-      <HomePage />
+    <MemoryRouter initialEntries={['/book/default']}>
+      <Routes>
+        <Route path="/book/:slug" element={<HomePage />} />
+      </Routes>
     </MemoryRouter>,
   )
 }
@@ -25,7 +27,7 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
 
-    if (url === '/api/slots') {
+    if (url === '/api/v1/hosts/default/slots') {
       return new Response(JSON.stringify(slots), { status: 200 })
     }
 
