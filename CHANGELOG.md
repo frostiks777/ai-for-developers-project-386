@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.10.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.9.0...v1.10.0) (2026-09-24)
+
+
+### Features
+
+* **api:** add availability ranges settings and form ([#22](https://github.com/frostiks777/ai-for-developers-project-386/issues/22)) ([d0585e5](https://github.com/frostiks777/ai-for-developers-project-386/commit/d0585e511da6cc831ac5637512672fe3b9c31d6b))
+* **api:** create bookings via v1 with type and conflict handling ([#24](https://github.com/frostiks777/ai-for-developers-project-386/issues/24)) ([912d3d0](https://github.com/frostiks777/ai-for-developers-project-386/commit/912d3d0b04c927fa4192e7ad0c903cbd031a8a82))
+* **api:** filter slots by event type and add guest type picker ([#23](https://github.com/frostiks777/ai-for-developers-project-386/issues/23)) ([e4ac65d](https://github.com/frostiks777/ai-for-developers-project-386/commit/e4ac65d3025ddf91d441105638ad582b5b41a16c))
+* **api:** migrate frontend to generated SDK ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25)) ([98b95b7](https://github.com/frostiks777/ai-for-developers-project-386/commit/98b95b7f4db9a0ae42093881d99412cadc91220f))
+* **booking:** cancel and reschedule via v1 public id ([#30](https://github.com/frostiks777/ai-for-developers-project-386/issues/30)) ([60e0de7](https://github.com/frostiks777/ai-for-developers-project-386/commit/60e0de739a59fe1f3623be15f1e96777b180ceda))
+* **booking:** reflect selected event type in host info panel ([b676f72](https://github.com/frostiks777/ai-for-developers-project-386/commit/b676f72116d8b19b52a9ab02b3d2d3fd77ec05b7))
+* **dashboard:** reflect booking status in owner list and cancel via v1 ([#31](https://github.com/frostiks777/ai-for-developers-project-386/issues/31)) ([3176e6c](https://github.com/frostiks777/ai-for-developers-project-386/commit/3176e6cba5df4ba6b987fb19c425c92503d270a3))
+* **test:** contract tests and e2e Playwright gate ([#26](https://github.com/frostiks777/ai-for-developers-project-386/issues/26)) ([387c97b](https://github.com/frostiks777/ai-for-developers-project-386/commit/387c97b4865d56a949ebda72199644fe2be751aa))
+* **ui:** show booking event type in owner list and cap guest booking page height ([134e023](https://github.com/frostiks777/ai-for-developers-project-386/commit/134e0238c343f8dc5039f2b4be5f64e2d18ea546))
+
+
+### Bug Fixes
+
+* **db:** backfill hostId when migrating old availability_rules ([#20](https://github.com/frostiks777/ai-for-developers-project-386/issues/20)) ([7b526b6](https://github.com/frostiks777/ai-for-developers-project-386/commit/7b526b68261770be59346fe56a9998162dd83b89))
+* **ui:** hide native scrollbar in booking card columns ([edb3dc7](https://github.com/frostiks777/ai-for-developers-project-386/commit/edb3dc799b1611584cc430c472314300c0afa028))
+* **ui:** keep organizer sidebar sticky while page scrolls ([63a3643](https://github.com/frostiks777/ai-for-developers-project-386/commit/63a3643b53d84752c99a5b1acfd89a5f7984244c))
+* **ui:** make month calendar fit block height ([4e4ddb6](https://github.com/frostiks777/ai-for-developers-project-386/commit/4e4ddb638e946e83485ad000963f9caec45daa56))
+* **ui:** use readable select colors for event type format in dark theme ([3dea80d](https://github.com/frostiks777/ai-for-developers-project-386/commit/3dea80d76ca1b145a8c00fc10173f36fa022e535))
+
 ## [1.9.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.8.0...v1.9.0) (2026-09-24)
 
 
