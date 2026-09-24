@@ -83,7 +83,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `POST` | `/api/bookings/reschedule` | перенести бронь: `{ token, slotId }` |
 | `GET` | `/api/availability` | правила доступности организатора |
 | `PUT` | `/api/availability` | обновить правила (пересобирает будущие слоты) |
-| `GET` | `/api/v1/hosts/:slug/settings` | настройки хоста + правила доступности (`404` — неизвестный slug) |
+| `GET` | `/api/v1/hosts/:slug/settings` | публичные настройки хоста (`slug`, `name`, `timeZone`; `404` — неизвестный slug) |
 | `GET` | `/api/v1/hosts/:slug/slots` | слоты хоста; необязательные `?date=YYYY-MM-DD` и `?timezone=IANA` |
 
 Примеры:
@@ -119,7 +119,8 @@ curl http://127.0.0.1:3000/api/bookings
 | `npm run server:dev` | Fastify с автоперезапуском (:3000) |
 | `npm run build` | typecheck + продакшн-сборка |
 | `npm run start` | запуск продакшн-сервера |
-| `npm test` | тесты (Vitest) |
+| `npm test` | юнит + интеграционные тесты (Vitest) |
+| `npm run test:e2e` | сквозные тесты в браузере (Playwright; отдельный гейт, не входит в `npm test`) |
 | `npm run lint` / `npm run typecheck` | линтер / проверка типов |
 | `npm run db:generate` / `npm run db:push` | миграции Drizzle |
 | `npm run api:generate` | генерация OpenAPI + клиентского SDK из `api/main.tsp` |
@@ -148,11 +149,23 @@ docs/      архитектура, конвенции, ADR, планы
 ## Тесты
 
 ```bash
-npm test
+npm test          # Vitest: юнит + интеграционные + контрактные
+npm run test:e2e  # Playwright: сквозной сценарий в браузере (отдельный гейт)
 ```
 
 - фронтенд — React Testing Library (jsdom);
-- API — интеграционные тесты через `app.inject()` на in-memory SQLite (`DATABASE_PATH=:memory:`).
+- API — интеграционные тесты через `app.inject()` на in-memory SQLite (`DATABASE_PATH=:memory:`);
+- контрактные (`server/contract.test.ts`) — маршруты `/api/v1/*` из `docs/openapi/openapi.yaml` зарегистрированы, а ключевые ответы (настройки, слоты, бронь) валидны по OpenAPI через ajv;
+- e2e (`e2e/`) — Playwright гоняется против **собранного** приложения (`npm run build && npm start`, БД `:memory:`) и проверяет сквозной сценарий гостя и конфликт слотов.
+
+Перед первым запуском e2e установите браузер:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+`npm run test:e2e` не входит в `npm test` и в CI — это отдельный локальный гейт.
 
 ## Деплой
 

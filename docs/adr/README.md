@@ -44,3 +44,4 @@
 | [0009](0009-hosts-and-api-v1.md) | Хосты и версионированный API v1 | Accepted | 2026-09-23 |
 | [0010](0010-landing-and-booking-routes.md) | Главная страница (лендинг) и маршрут бронирования `/book/:slug` | Accepted | 2026-09-24 |
 | [0011](0011-event-types-status-and-availability-ranges.md) | Типы встреч, статусы брони и диапазоны доступности | Accepted | 2026-09-24 |
+| [0012](0012-contract-tests-and-e2e.md) | Контракт-тесты (ajv) и e2e Playwright как отдельный гейт | Accepted | 2026-09-24 |

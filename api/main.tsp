@@ -67,7 +67,7 @@ model EventType {
   id: string;
   slug: string;
   title: string;
-  description?: string;
+  description?: string | null;
   @doc("Длительность встречи в минутах (MVP: 30).")
   durationMin: int32;
   locationType: LocationType;
@@ -144,7 +144,7 @@ model Slot {
 
 model AvailabilityDay {
   @doc("Дата фильтра, если была запрошена.")
-  date?: LocalDate;
+  date?: LocalDate | null;
   @doc("IANA-пояс, к которому относятся startAt слотов.")
   timeZone: string;
   slots: Slot[];
@@ -165,8 +165,8 @@ model Booking {
   timeZone: string;
   clientName: string;
   clientEmail: string;
-  clientPhone?: string;
-  clientNotes?: string;
+  clientPhone?: string | null;
+  clientNotes?: string | null;
   status: BookingStatus;
   createdAt: string;
 }

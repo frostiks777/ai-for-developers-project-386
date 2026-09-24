@@ -132,7 +132,8 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 109/109 passed (19 файлов: App, landing-page, home-page, dashboard-page, cancel-page, reschedule-page, dashboard-sidebar, month-calendar, timezone-select, booking-dialog, theme-toggle, date-strip, use-availability, calendar, server/app, server/dashboard, server/hosts, server/availability, timezone)
+✅ test: 141/141 passed (25 файлов: фронтенд RTL + server/app, server/dashboard, server/hosts, server/availability, server/event-types, server/availability-settings, server/bookings-v1, server/db/migrate, server/contract)
+✅ e2e: playwright — 2/2 (сквозной сценарий гостя + конфликт слотов), собранное приложение на :3100, DATABASE_PATH=:memory:
 ✅ build: vite v6.4.3 — 439.64 kB JS (gzip 134.53), 43.15 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
    /api/slots 200 (6 слотов, прошедших нет), POST booking с email 201, POST с невалидным email 400,
@@ -235,11 +236,16 @@
     - Удалены `src/types/{host,availability,event-type}.ts`; `src/types/booking.ts` оставлен как UI-модели; типы `AvailabilitySettings`/`EventType`/`Booking` из `@/api/generated`.
     - Тестовый хелпер `src/test/http.ts` (`requestPath` + `jsonResponse`); моки обновлены (абсолютный URL SDK, обязательный `Content-Type: application/json`). `dashboard` собирает `eventTypeTitle` из `listEventTypes`.
     - Проверки: lint 0, typecheck чисто, **137/137 тестов**, build ✓ (JS 510.78 kB / gzip 155.12 — предупреждение о размере чанка).
+52. ⏳ **Шаг 3 курса, T8** ([#26](https://github.com/frostiks777/ai-for-developers-project-386/issues/26)): контракт-тесты + e2e Playwright ([ADR-0012](docs/adr/0012-contract-tests-and-e2e.md)).
+    - Контракт приведён к реальности и реализация — к контракту: `api/main.tsp` — optional-поля `? : T | null` (`EventType.description`, `AvailabilityDay.date`, `Booking.clientPhone/clientNotes`), перегенерировано; сервер `toBooking(row, slug, timeZone)` теперь отдаёт `timeZone`, `/api/v1/hosts/:slug/settings` возвращает контрактные `{slug,name,timeZone}` (убрана легаси-форма `{...host, availability}`). `server/types.ts`: удалён устаревший `HostSettings`.
+    - `server/contract.test.ts`: все маршруты `/api/v1/*` из `docs/openapi/openapi.yaml` зарегистрированы (`app.hasRoute`); ключевые ответы (HostSettings, AvailabilityDay, Booking, EventType[]) валидируются `ajv` + `ajv-formats`; `nullable: true` нормализуется в JSON Schema `anyOf`.
+    - `playwright.config.ts` + `e2e/guest-booking.spec.ts`: `webServer` = `npm run build && npm start`, `PORT=3100`, `DATABASE_PATH=:memory:`; сценарии — сквозной путь гостя и конфликт слотов (`409 SLOT_TAKEN`, в т.ч. другим типом). Скрипт `npm run test:e2e` (вне `npm test` и CI); `e2e/**` исключён из vitest.
+    - devDeps: `ajv`, `ajv-formats`, `yaml`, `@playwright/test` (Chromium 153). README дополнен разделом про e2e. Проверки: lint 0, typecheck чисто, **141/141 тестов**, e2e 2/2, build ✓.
 
 ## Что осталось (следующие шаги)
 
 - [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **не начато**; (4) Docker/деплой — **уже выполнено**. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
-- [ ] **Шаг 3 курса**: тикеты T1–T7 закрыты (см. #19–#25); фронт переведён на сгенерированный SDK ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25), `src/api/sdk.ts` + `mappers.ts`, ручной `src/api/client.ts` удалён). Осталось: T8 (#26) контракт-тесты + e2e Playwright, T9 (#27) финальная сверка со спецификацией.
+- [ ] **Шаг 3 курса**: тикеты T1–T8 закрыты (см. #19–#26); фронт на SDK, контракт-тесты + e2e Playwright готовы. Осталось: **T9 (#27)** — финальная сверка со спецификацией.
 - [ ] Записать asciinema для README (сейчас заглушка `asciinema.org/a/placeholder` в разделе «Демо»)
 - [ ] Low-этап: полная мульти-хост-модель (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, `/book/:hostId`), авторизация `/dashboard`
 
@@ -287,6 +293,7 @@
 | Модель данных v1 | Материализованные `slots` остаются; `event_types`; `bookings.eventTypeId` + `status` + `startAt`/`endAt`; `availability_ranges`; partial unique `UNIQUE(slotId) WHERE status != 'cancelled'`; миграции — `server/db/migrate.ts` | Отклонение от ТЗ §5 (нет `slots`) обосновано: SQLite без exclusion constraint ([ADR-0003](docs/adr/0003-unique-slot-booking.md), [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md), [#12](https://github.com/frostiks777/ai-for-developers-project-386/issues/12)) |
 | Отмена брони (Шаг 2) | Смена `status` на `cancelled` вместо удаления строки; занятость считается только для `confirmed` | ТЗ требует `status` и историю ([ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md)); в коде — переход на Шаге 3 |
 | Тестирование v1 | API (`app.inject` + in-memory) + RTL/jsdOM + e2e Playwright (`npm run test:e2e`, отдельный гейт); контракт-тесты — валидация ключевых ответов по OpenAPI; миграции на `:memory:` | Требование курса: сценарий и конфликт покрыты; правила на сервере ([#14](https://github.com/frostiks777/ai-for-developers-project-386/issues/14)) |
+| Контракт-тесты и e2e | `server/contract.test.ts` (`ajv` по `docs/openapi/openapi.yaml`); Playwright против собранного приложения (`PORT=3100`, `DATABASE_PATH=:memory:`), `npm run test:e2e` вне `npm test`/CI | [ADR-0012](docs/adr/0012-contract-tests-and-e2e.md); Design First — сервер приведён к контракту (Booking.timeZone, HostSettings, nullable) |
 
 ## Окружение
 

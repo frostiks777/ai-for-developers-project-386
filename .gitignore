@@ -9,6 +9,8 @@ server/data
 tsp-output
 *.db
 *.db-journal
+playwright-report
+test-results
 .env
 .env.*
 !.env.example

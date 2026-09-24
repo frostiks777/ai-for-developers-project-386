@@ -6,7 +6,7 @@ export interface EventType {
   id: string;
   slug: string;
   title: string;
-  description?: string;
+  description?: string | null;
   /**
    * Длительность встречи в минутах (MVP: 30).
    */
@@ -118,8 +118,8 @@ export interface Booking {
   timeZone: string;
   clientName: string;
   clientEmail: string;
-  clientPhone?: string;
-  clientNotes?: string;
+  clientPhone?: string | null;
+  clientNotes?: string | null;
   status: BookingStatus;
   createdAt: string;
 }
@@ -167,7 +167,7 @@ export interface AvailabilityDay {
   /**
    * Дата фильтра, если была запрошена.
    */
-  date?: string;
+  date?: string | null;
   /**
    * IANA-пояс, к которому относятся startAt слотов.
    */
