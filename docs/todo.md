@@ -9,19 +9,19 @@
 
 ### Функциональность
 
-- 🟡 Сквозной сценарий: тип встречи → календарь → слот → запись → подтверждение <нет «типа встречи» как сущности; экран успеха есть на `/book/:slug`, отдельного `/booking/:uuid/confirmed` нет>
-- 🟡 Занятый слот не бронируется повторно + понятное сообщение о конфликте <`UNIQUE(slotId)` + `409` и тост есть; типов встреч нет, сообщение не выделено как спец-алерт>
+- 🟡 Сквозной сценарий: тип встречи → календарь → слот → запись → подтверждение <типы встреч спроектированы (`docs/spec.md`, `event_types`), реализация — Шаг 3; экран успеха есть на `/book/:slug`>
+- 🟡 Занятый слот не бронируется повторно + понятное сообщение о конфликте <`UNIQUE(slotId)` + `409` и тост есть; `status`/partial index и «тип встречи» — Шаг 3>
 - ✅ Правила бронирования выполняются на сервере (`minNotice`, генерация, проверка в `POST /api/bookings`)
-- 🟡 Страница владельца со встречами всех типов в одном списке <`/dashboard` есть, но типов нет>
-- ❌ API по контракту: OpenAPI из TypeSpec → клиентский SDK + серверные артефакты <нет TypeSpec/OpenAPI/SDK; ручной `src/api/client.ts`>
+- 🟡 Страница владельца со встречами всех типов в одном списке <`/dashboard` есть; группировка по типам — Шаг 3>
+- ✅ API по контракту: OpenAPI из TypeSpec → клиентский SDK + серверные артефакты (`api/main.tsp`, `docs/openapi/openapi.yaml`, `src/api/generated/`, `server/generated/api-types.ts`, `npm run api:generate`)
 - ✅ Окно записи 14 дней, слоты по 30 минут (`ADR-0004`)
 - ✅ Docker-образ, авто-старт, порт из `PORT`, ссылка в `README.md` (`render.yaml`, `calendar-slots-app.onrender.com`)
 
 ### Проверяемость
 
 - ✅ Тесты + линтер в GitHub Actions, `main` зелёный (`ci.yml`)
-- ✅ Тесты покрывают сценарий бронирования и конфликт слотов (интеграционные + `409`)
-- ✅ Conventional Commits, release-please создаёт release-PR (`release-please.yml`)
+- ✅ Тесты покрывают сценарий бронирования и конфликт слотов (интеграционные + `409`); требования к покрытию Шага 3 — в `docs/spec.md` §7
+- ✅ Conventional Commits, release-please создаёт release-PR (`release-please.yml`; открыт PR #9 на 1.8.0)
 - ✅ Секретов в репозитории нет (`.env` в `.gitignore`, `.env.example`)
 
 ### Настройка агентной разработки
@@ -32,12 +32,12 @@
 
 ### Следы работы по скиллам
 
-- ❌ В Issues есть карта решений с закрытыми задачами и ответами <Issues пусты — не начат шаг 2 (`wayfinder`)>
-- ❌ В Issues есть спецификация приложения и тикеты с зависимостями <не начат (`to-spec` → `to-tickets`)>
-- ✅ `CONTEXT.md` со словарём проекта (создан на Шаге 1; записи `docs/adr/` — ADR-0001…0010)
-- ❌ Тикеты ссылаются на спецификацию, коммиты — на тикеты <тикетов нет>
+- ✅ В Issues есть карта решений с закрытыми задачами и ответами ([#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) + #11–#18)
+- ✅ В Issues есть спецификация приложения и тикеты с зависимостями (`docs/spec.md`; тикеты #11–#18 с `blocked_by`)
+- ✅ `CONTEXT.md` со словарём проекта (Шаг 1; ADR-0001…ADR-0011)
+- 🟡 Тикеты ссылаются на спецификацию, коммиты — на тикеты <тикеты Шага 3 ещё не созданы; Шаг 3>
 
-**Итог:** критичные пробелы приёмки — TypeSpec→OpenAPI→SDK (Функциональность), `CONTEXT.md` и весь трекер (Следы работы по скиллам). Это шаги курса 1–3, а не хвосты MVP.
+**Итог:** проектные пробелы Шага 2 закрыты (карта, спецификация, тикеты, TypeSpec→OpenAPI→SDK+серверные типы). Осталось Шаг 3 — реализация спецификации.
 
 ## Сделано
 
@@ -72,15 +72,16 @@
 - [x] Хосты + версионированный API v1 (Low, аддитивно): таблица `hosts` (UUID PK, unique slug), сид дефолтного хоста, `GET /api/v1/hosts/:slug/settings` и `GET /api/v1/hosts/:slug/slots?date=&timezone=` (`404` неизвестный slug, `400` дата/пояс); `/api/*` не тронут; [ADR-0009](adr/0009-hosts-and-api-v1.md); 7 API-тестов
 - [x] Визуальный редизайн A + D и светлая/тёмная тема, этапы 1–7 ([ADR-0007](adr/0007-visual-redesign-and-themes.md)): 1 — токены/шрифты/тема (`ThemeProvider`, `ThemeToggle`, `useMediaQuery`, анти-флеш-скрипт); 2 — десктоп-раскладка бронирования; 3 — мобильная раскладка (`date-strip.tsx`, `booking-bar.tsx`); 4 — рестайл диалога брони; 5 — рестайл экрана успеха; 6 — редизайн панели организатора (`dashboard-sidebar.tsx`, `bookings-list.tsx`, `booking-filter.tsx`, `availability-form.tsx`); 7 — документация (данный этап)
 - [x] **Шаг 1 курса**: `CONTEXT.md` (словарь проекта), [ADR-0010](adr/0010-landing-and-booking-routes.md); главная `/` — новый `LandingPage`, бронь переехала на `/book/:slug`, фронт брони на API v1 (`fetchHostSettings`/`fetchHostSlots`), `NotFoundPage`; ссылки дашборда/отмены/переноса обновлены; 3 теста лендинга + обновлены `App`/`home-page` (`src/App.test.tsx`, `src/pages/landing-page.test.tsx`)
+- [x] **Шаг 2 курса** (проектирование бронирования): карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 (все закрыты); спецификация `docs/spec.md`; TypeSpec-контракт `api/main.tsp`; [ADR-0011](adr/0011-event-types-status-and-availability-ranges.md); генерация одной командой `npm run api:generate` → `docs/openapi/openapi.yaml`, `src/api/generated/` (SDK), `server/generated/api-types.ts`
 
 ## Осталось
 
 ### Blocker приёмки (шаги курса, [docs/course-steps.md](course-steps.md))
 
 1. ~~**Шаг 1** — `CONTEXT.md` + интервью по главной (`grill-with-docs`) + ADR + `/implement`~~ ✅ **выполнено 2026-09-24**: `CONTEXT.md`, [ADR-0010](adr/0010-landing-and-booking-routes.md), лендинг `/`, бронь `/book/:slug`
-2. **Шаг 2** — карта решений (`wayfinder`) → `to-spec` → `to-tickets`; **Design First: TypeSpec → OpenAPI → SDK + серверные артефакты**
-3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий
-4. Ввести сущность «тип встречи» (event-types) — общий корень для контракта Шага 2 и страницы владельца
+2. ~~**Шаг 2** — карта решений (`wayfinder`) → `to-spec` → `to-tickets`; Design First: TypeSpec → OpenAPI → SDK + серверные артефакты~~ ✅ **выполнено 2026-09-24**: карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`
+3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий: `/to-tickets` по `docs/spec.md` → реализация `event_types`/`status`/`availability_ranges` + `server/db/migrate.ts` → миграция `src/api/client.ts` на SDK → e2e Playwright
+4. Ввести сущность «тип встречи» (event-types) — спроектирована в `docs/spec.md`/контракте, реализация — Шаг 3
 
 ### Low
 
@@ -90,10 +91,12 @@
 
 ## Ключевые расхождения со спекой
 
-1. **Схема БД**: есть `availability_rules` (одна строка, один хост), нет `hosts`, статусов и диапазонов времени по дням; правила доступности — персистентны, [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md).
-2. **API**: `/api/v1` и хосты добавлены аддитивно ([ADR-0009](adr/0009-hosts-and-api-v1.md)): есть `GET /api/v1/hosts/:slug/settings|slots?date=&timezone=`; полной мульти-хост-модели (`host_id` в `slots`/`bookings`, `POST /api/v1/bookings`) нет. Тело брони другое, отмена реализована как `DELETE /api/bookings/:id`.
-3. **Форма**: email (обяз.) добавлен, телефон валидируется по формату и теперь опционален (как допускает спека); нет telegram.
-4. **Экраны**: `/dashboard` реализован (список, отмена, настройки, без auth); нет `/book/:hostId`.
+> Целевое состояние зафиксировано в утверждённой спецификации `docs/spec.md` (Шаг 2). Ниже — расхождения **текущего кода** с этой целью; закрываются на Шаге 3.
+
+1. **Схема БД**: есть `slots`, `bookings`, `availability_rules` + `hosts`; **нет** `event_types`, `bookings.status`/`eventTypeId`, `availability_ranges`. Миграции — Шаг 3 (`server/db/migrate.ts`).
+2. **API**: `/api/v1` реализован частично (`GET hosts/:slug/settings|slots`); контракт `api/main.tsp` описывает полный `/api/v1` (event-types CRUD, availability GET/PUT, bookings, cancel/reschedule по UUID), реализация — Шаг 3. Легаси `/api/*` сохранён.
+3. **Форма**: email (обяз.) добавлен, телефон опционален; нет `guests`/согласия/`Idempotency-Key` (бэклог P0).
+4. **Экраны**: `/` — лендинг, `/book/:slug` — бронь, `/dashboard` (без auth), `/cancel/:token`, `/reschedule/:token`; вместо токенов спека предполагает `/booking/:uuid/...` (Шаг 3).
 
 ## Backlog из внешней спеки (Gemini, docs/gemini-code-1790192589378.md)
 
