@@ -135,9 +135,9 @@
 
 - [ ] Роуты `/booking/:uuid/cancel` и `/booking/:uuid/reschedule` (§2.1–2.2): сейчас `/cancel/:token`, `/reschedule/:token`
 - [ ] Детали встречи на странице отмены (§2.1)
-- [ ] Поле `cancellation_reason` (§2.1)
-- [ ] Модалка подтверждения отмены (§2.1) <частично: inline-подтверждение на странице есть>
-- [ ] `POST /api/bookings/:uuid/cancel` (§2.1) <частично: есть `POST /api/bookings/cancel` по токену в теле>
+- [x] Поле `cancellation_reason` (§2.1) — **сделано**: колонка `bookings.cancellationReason`, `POST /api/v1/bookings/:id/cancel` принимает `{reason}`, поле + модалка подтверждения на `/cancel/:token`
+- [x] Модалка подтверждения отмены (§2.1) — **сделано**: `Dialog` «Вы уверены, что хотите отменить бронирование?» с полем причины
+- [ ] `POST /api/bookings/:uuid/cancel` (§2.1) <частично: есть `POST /api/bookings/cancel` по токену в теле и v1 `POST /api/v1/bookings/:id/cancel`>
 
 ### P1 — Дашборд организатора (§3.1–3.3)
 
@@ -150,4 +150,4 @@
 - [ ] Роут `/admin/bookings` (§3.3) <частично: список на `/dashboard` есть>
 - [ ] Табы Upcoming / Past / Canceled (§3.3) <частично: фильтр Все / Неделя / Сегодня>
 - [ ] Поиск по имени и email (§3.3)
-- [ ] `BlockTimeModal` + форма блокировки времени (§3.3)
+- [x] `BlockTimeModal` + форма блокировки времени (§3.3) — **сделано**: таблица `time_blocks`, API `/api/v1/hosts/:slug/blocks`, `BlocksEditor` + `BlockTimeModal` в панели; блокировки исключают слоты и дают `409`

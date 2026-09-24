@@ -66,6 +66,14 @@ const statements = [
     "startMinute" INTEGER NOT NULL,
     "endMinute" INTEGER NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS time_blocks (
+    id SERIAL PRIMARY KEY,
+    "hostId" TEXT NOT NULL REFERENCES hosts(id),
+    "startAt" TEXT NOT NULL,
+    "endAt" TEXT NOT NULL,
+    reason TEXT,
+    "createdAt" TEXT NOT NULL DEFAULT (now()::text)
+  )`,
   // Уникальность слота — только для активных броней (ADR-0011)
   `CREATE UNIQUE INDEX IF NOT EXISTS "bookings_slotId_active_unique"
      ON bookings("slotId") WHERE status <> 'cancelled'`,

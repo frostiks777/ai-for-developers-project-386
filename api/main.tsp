@@ -199,6 +199,28 @@ model CancelBookingRequest {
 }
 
 // ---------------------------------------------------------------------------
+// Блокировки времени (отпуск, личные дела)
+// ---------------------------------------------------------------------------
+
+/** Интервал, в который организатор не принимает записи. */
+model TimeBlock {
+  id: string;
+  @doc("Начало блокировки (UTC ISO 8601).")
+  startAt: UtcDateTime;
+  @doc("Конец блокировки (UTC ISO 8601).")
+  endAt: UtcDateTime;
+  @doc("Необязательная причина блокировки.")
+  reason?: string | null;
+  createdAt: string;
+}
+
+model CreateTimeBlockRequest {
+  startAt: UtcDateTime;
+  endAt: UtcDateTime;
+  reason?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Операции
 // ---------------------------------------------------------------------------
 
@@ -265,6 +287,25 @@ namespace ApiV1 {
       @path slug: HostSlug,
       @body body: CreateBookingRequest,
     ): { @statusCode statusCode: 201; @body body: Booking } | ErrorResponse;
+  }
+
+  @route("/hosts/{slug}/blocks")
+  namespace TimeBlocks {
+    @get
+    op listTimeBlocks(@path slug: HostSlug): TimeBlock[] | ErrorResponse;
+
+    @post
+    op createTimeBlock(
+      @path slug: HostSlug,
+      @body body: CreateTimeBlockRequest,
+    ): { @statusCode statusCode: 201; @body body: TimeBlock } | ErrorResponse;
+
+    @route("/{blockId}")
+    @delete
+    op deleteTimeBlock(
+      @path slug: HostSlug,
+      @path blockId: string,
+    ): { @statusCode statusCode: 204 } | ErrorResponse;
   }
 
   @route("/bookings/{bookingId}")

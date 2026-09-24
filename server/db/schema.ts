@@ -98,3 +98,18 @@ export const hosts = pgTable('hosts', {
     .notNull()
     .default(sql`(now()::text)`),
 })
+
+// Ручные блокировки времени: отпуск, личные дела (слоты внутри не выдаются)
+export const timeBlocks = pgTable('time_blocks', {
+  id: serial('id').primaryKey(),
+  hostId: text('hostId')
+    .notNull()
+    .references(() => hosts.id),
+  // Начало и конец блокировки (UTC ISO 8601)
+  startAt: text('startAt').notNull(),
+  endAt: text('endAt').notNull(),
+  reason: text('reason'),
+  createdAt: text('createdAt')
+    .notNull()
+    .default(sql`(now()::text)`),
+})

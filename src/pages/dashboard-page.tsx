@@ -5,6 +5,7 @@ import { toBookingWithSlot } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
 import { AvailabilitySettingsForm } from '@/components/availability-settings-form'
+import { BlocksEditor } from '@/components/blocks-editor'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
 import { BookingsList } from '@/components/bookings-list'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
@@ -55,7 +56,7 @@ export default function DashboardPage() {
   const [rulesError, setRulesError] = useState<string | null>(null)
 
   const [filter, setFilter] = useState<BookingFilterValue>('all')
-  const [mobileTab, setMobileTab] = useState<'bookings' | 'availability' | 'event-types'>(
+  const [mobileTab, setMobileTab] = useState<'bookings' | 'availability' | 'event-types' | 'blocks'>(
     'bookings',
   )
 
@@ -148,6 +149,16 @@ export default function DashboardPage() {
               </div>
               <EventTypesEditor slug={host.slug} />
             </section>
+
+            <section id="blocks" className="rounded-[18px] border bg-card p-6">
+              <div className="mb-5">
+                <h2 className="text-xl font-semibold">Блокировки времени</h2>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  Отпуск и личные дела — гости не увидят эти слоты
+                </p>
+              </div>
+              <BlocksEditor slug={host.slug} />
+            </section>
           </div>
 
           <section
@@ -180,7 +191,7 @@ export default function DashboardPage() {
           Панель организатора
         </h2>
 
-        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-secondary p-0.5">
+        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-4 gap-1 rounded-xl bg-secondary p-0.5">
           <button
             type="button"
             role="tab"
@@ -223,6 +234,20 @@ export default function DashboardPage() {
           >
             Доступность
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobileTab === 'blocks'}
+            onClick={() => setMobileTab('blocks')}
+            className={cn(
+              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              mobileTab === 'blocks'
+                ? 'bg-segment-active font-semibold shadow-sm'
+                : 'text-muted-foreground',
+            )}
+          >
+            Блокировки
+          </button>
         </div>
 
         {mobileTab === 'bookings' && (
@@ -250,6 +275,12 @@ export default function DashboardPage() {
               <AvailabilitySettingsForm settings={settings} isSaving={isSavingRules} onSave={handleSaveRules} />
             )}
           </div>
+        )}
+
+        {mobileTab === 'blocks' && (
+          <section className="mt-4 rounded-[18px] border bg-card p-5">
+            <BlocksEditor slug={host.slug} />
+          </section>
         )}
       </main>
     </div>

@@ -7,12 +7,14 @@ import type {
   CancelBookingRequest,
   CreateBookingRequest,
   CreateEventTypeRequest,
+  CreateTimeBlockRequest,
   ErrorCode,
   ErrorResponse,
   EventType,
   HostSettings,
   RescheduleBookingRequest,
   Slot,
+  TimeBlock,
   UpdateAvailabilityRequest,
   UpdateEventTypeRequest,
 } from "../models.js";
@@ -78,6 +80,10 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   payload: RescheduleBookingRequest,
 ) {
   return jsonRescheduleBookingRequestToTransportTransform(payload)!;
+}export function createTimeBlockPayloadToTransport(
+  payload: CreateTimeBlockRequest,
+) {
+  return jsonCreateTimeBlockRequestToTransportTransform(payload)!;
 }export function createBookingPayloadToTransport(
   payload: CreateBookingRequest,
 ) {
@@ -389,6 +395,68 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   }
     return {
     eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes
+  }!;
+}export function jsonArrayTimeBlockToTransportTransform(
+  items_?: Array<TimeBlock> | null,
+): any {
+  if(!items_) {
+    return items_ as any;
+  }
+  const _transformedArray = [];
+
+  for (const item of items_ ?? []) {
+    const transformedItem = jsonTimeBlockToTransportTransform(item as any);
+    _transformedArray.push(transformedItem);
+  }
+
+  return _transformedArray as any;
+}export function jsonArrayTimeBlockToApplicationTransform(
+  items_?: any,
+): Array<TimeBlock> {
+  if(!items_) {
+    return items_ as any;
+  }
+  const _transformedArray = [];
+
+  for (const item of items_ ?? []) {
+    const transformedItem = jsonTimeBlockToApplicationTransform(item as any);
+    _transformedArray.push(transformedItem);
+  }
+
+  return _transformedArray as any;
+}export function jsonTimeBlockToTransportTransform(
+  input_?: TimeBlock | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    id: input_.id,startAt: input_.startAt,endAt: input_.endAt,reason: input_.reason,createdAt: input_.createdAt
+  }!;
+}export function jsonTimeBlockToApplicationTransform(input_?: any): TimeBlock {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    id: input_.id,startAt: input_.startAt,endAt: input_.endAt,reason: input_.reason,createdAt: input_.createdAt
+  }!;
+}export function jsonCreateTimeBlockRequestToTransportTransform(
+  input_?: CreateTimeBlockRequest | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    startAt: input_.startAt,endAt: input_.endAt,reason: input_.reason
+  }!;
+}export function jsonCreateTimeBlockRequestToApplicationTransform(
+  input_?: any,
+): CreateTimeBlockRequest {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    startAt: input_.startAt,endAt: input_.endAt,reason: input_.reason
   }!;
 }export function jsonCancelBookingRequestToTransportTransform(
   input_?: CancelBookingRequest | null,
