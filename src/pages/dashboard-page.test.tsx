@@ -211,6 +211,22 @@ describe('DashboardPage', () => {
     expect(screen.queryByText('Отменённый')).toBeNull()
   })
 
+  it('счётчик встреч считает только активные брони', async () => {
+    const cancelled: BookingWithSlot = {
+      ...booking,
+      id: 'token-2',
+      name: 'Отменённый',
+      status: 'cancelled',
+    }
+    vi.stubGlobal('fetch', mockFetch([booking, cancelled]))
+    renderDashboard()
+
+    // Десктопный сайдбар: одна активная бронь из двух
+    expect(await screen.findByText('Иван')).toBeInTheDocument()
+    const sidebar = screen.getByRole('navigation', { name: 'Панель организатора' })
+    expect(within(sidebar).getByText('1')).toBeInTheDocument()
+  })
+
   it('позволяет задать несколько интервалов в день', async () => {
     const fetchMock = mockFetch()
     vi.stubGlobal('fetch', fetchMock)
