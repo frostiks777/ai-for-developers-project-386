@@ -13,3 +13,6 @@ services:
         value: production
       - key: PORT
         value: 10000
+      # Строка подключения Neon (Postgres) задаётся в дашборде Render, не в репозитории
+      - key: DATABASE_URL
+        sync: false

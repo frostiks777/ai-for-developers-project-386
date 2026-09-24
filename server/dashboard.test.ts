@@ -19,24 +19,25 @@ afterAll(async () => {
 })
 
 // Изолируем тесты: брони не должны влиять на перегенерацию слотов в других describe
-afterEach(() => {
-  db.delete(bookings).run()
+afterEach(async () => {
+  await db.delete(bookings)
 })
 
-function createFutureSlot(offsetHours = 3) {
-  return db
-    .insert(slots)
-    .values({
-      startAt: new Date(Date.now() + offsetHours * 60 * 60 * 1000).toISOString(),
-      durationMin: 30,
-    })
-    .returning()
-    .get()
+async function createFutureSlot(offsetHours = 3) {
+  return (
+    await db
+      .insert(slots)
+      .values({
+        startAt: new Date(Date.now() + offsetHours * 60 * 60 * 1000).toISOString(),
+        durationMin: 30,
+      })
+      .returning()
+  )[0]
 }
 
 describe('GET /api/bookings + DELETE /api/bookings/:id', () => {
   it('отменяет бронь, освобождает слот и отвечает 204', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const created = await app.inject({
       method: 'POST',
@@ -71,7 +72,7 @@ describe('GET /api/bookings + DELETE /api/bookings/:id', () => {
 
 describe('POST /api/bookings/cancel', () => {
   it('создание брони возвращает токен отмены', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const created = await app.inject({
       method: 'POST',
@@ -93,7 +94,7 @@ describe('POST /api/bookings/cancel', () => {
   })
 
   it('отменяет бронь по токену и освобождает слот', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const created = await app.inject({
       method: 'POST',
@@ -143,7 +144,7 @@ describe('POST /api/bookings/cancel', () => {
 
 describe('перенос брони по токену', () => {
   it('GET by-token отдаёт бронь с данными слота', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
     const created = await app.inject({
       method: 'POST',
       url: '/api/bookings',
@@ -164,8 +165,8 @@ describe('перенос брони по токену', () => {
   })
 
   it('переносит бронь на другой слот и освобождает старый', async () => {
-    const firstSlot = createFutureSlot(3)
-    const secondSlot = createFutureSlot(5)
+    const firstSlot = await createFutureSlot(3)
+    const secondSlot = await createFutureSlot(5)
 
     const created = await app.inject({
       method: 'POST',
@@ -189,8 +190,8 @@ describe('перенос брони по токену', () => {
   })
 
   it('отвечает 409, если целевой слот уже занят', async () => {
-    const firstSlot = createFutureSlot(3)
-    const takenSlot = createFutureSlot(5)
+    const firstSlot = await createFutureSlot(3)
+    const takenSlot = await createFutureSlot(5)
 
     await app.inject({
       method: 'POST',
@@ -215,7 +216,7 @@ describe('перенос брони по токену', () => {
   })
 
   it('отвечает 404 на неизвестный токен', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
     const response = await app.inject({
       method: 'POST',
       url: '/api/bookings/reschedule',

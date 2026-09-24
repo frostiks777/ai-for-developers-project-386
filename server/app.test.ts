@@ -43,15 +43,16 @@ function validBody(slotId: number) {
   }
 }
 
-function createFutureSlot() {
-  return db
-    .insert(slots)
-    .values({
-      startAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-      durationMin: 30,
-    })
-    .returning()
-    .get()
+async function createFutureSlot() {
+  return (
+    await db
+      .insert(slots)
+      .values({
+        startAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+        durationMin: 30,
+      })
+      .returning()
+  )[0]
 }
 
 describe('GET /health', () => {
@@ -66,7 +67,7 @@ describe('GET /health', () => {
 describe('GET /api/slots', () => {
   it('не отдаёт прошедшие слоты', async () => {
     const pastStartAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    db.insert(slots).values({ startAt: pastStartAt, durationMin: 30 }).run()
+    await db.insert(slots).values({ startAt: pastStartAt, durationMin: 30 })
 
     const allSlots = await requestSlots()
     const nowIso = new Date().toISOString()
@@ -77,7 +78,7 @@ describe('GET /api/slots', () => {
 
   it('не отдаёт слоты в пределах minNotice', async () => {
     const soonStartAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    db.insert(slots).values({ startAt: soonStartAt, durationMin: 30 }).run()
+    await db.insert(slots).values({ startAt: soonStartAt, durationMin: 30 })
 
     const allSlots = await requestSlots()
 
@@ -130,7 +131,7 @@ describe('GET /api/bookings', () => {
 
 describe('целостность bookings.slotId', () => {
   it('запрещает вторую бронь на тот же слот на уровне БД', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -139,21 +140,22 @@ describe('целостность bookings.slotId', () => {
     })
     expect(response.statusCode).toBe(201)
 
-    expect(() =>
-      db
-        .insert(bookings)
-        .values({
-          slotId: slot.id,
-          name: 'Пётр',
-          phone: '+79100000001',
-          email: 'petr@example.com',
-          startAt: slot.startAt,
-          endAt: new Date(
-            new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
-          ).toISOString(),
-        })
-        .run(),
-    ).toThrowError(/UNIQUE/)
+    let uniqueCode: string | undefined
+
+    try {
+      await db.insert(bookings).values({
+        slotId: slot.id,
+        name: 'Пётр',
+        phone: '+79100000001',
+        email: 'petr@example.com',
+        startAt: slot.startAt,
+        endAt: new Date(new Date(slot.startAt).getTime() + slot.durationMin * 60_000).toISOString(),
+      })
+    } catch (error) {
+      uniqueCode = (error as { cause?: { code?: string } }).cause?.code
+    }
+
+    expect(uniqueCode).toBe('23505')
   })
 })
 
@@ -177,7 +179,7 @@ describe('POST /api/bookings', () => {
   })
 
   it('сохраняет комментарий и отдаёт его в GET /api/bookings', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -193,7 +195,7 @@ describe('POST /api/bookings', () => {
   })
 
   it('сохраняет null, если комментарий не передан', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -206,7 +208,7 @@ describe('POST /api/bookings', () => {
   })
 
   it('создаёт бронь без телефона и сохраняет null', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -219,7 +221,7 @@ describe('POST /api/bookings', () => {
   })
 
   it('считает пустой телефон отсутствующим', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -232,7 +234,7 @@ describe('POST /api/bookings', () => {
   })
 
   it('сохраняет null для пустого комментария', async () => {
-    const slot = createFutureSlot()
+    const slot = await createFutureSlot()
 
     const response = await app.inject({
       method: 'POST',
@@ -294,11 +296,9 @@ describe('POST /api/bookings', () => {
 
   it('отвечает 400, если слот прошедший', async () => {
     const pastStartAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    const pastSlot = db
-      .insert(slots)
-      .values({ startAt: pastStartAt, durationMin: 30 })
-      .returning()
-      .get()
+    const pastSlot = (
+      await db.insert(slots).values({ startAt: pastStartAt, durationMin: 30 }).returning()
+    )[0]
 
     const response = await app.inject({
       method: 'POST',
@@ -311,11 +311,9 @@ describe('POST /api/bookings', () => {
 
   it('отвечает 400, если до слота меньше minNotice', async () => {
     const soonStartAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    const soonSlot = db
-      .insert(slots)
-      .values({ startAt: soonStartAt, durationMin: 30 })
-      .returning()
-      .get()
+    const soonSlot = (
+      await db.insert(slots).values({ startAt: soonStartAt, durationMin: 30 }).returning()
+    )[0]
 
     const response = await app.inject({
       method: 'POST',

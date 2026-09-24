@@ -1,60 +1,56 @@
-import { mkdirSync } from 'node:fs'
-import { randomUUID } from 'node:crypto'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import Database from 'better-sqlite3'
+import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres'
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { gte } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { Pool } from 'pg'
 import { defaultAvailabilityRules, generateSlotStarts, rulesFromRow } from '../availability'
-import { defaultHost } from '../hosts'
-import { runMigrations } from './migrate'
+import { env } from '../env'
+import { runMigrations, type Db } from './migrate'
 import * as schema from './schema'
 
-// ESM: __dirname недоступен, вычисляем пути от import.meta.url
-const currentDir = path.dirname(fileURLToPath(import.meta.url))
-const dataDir = path.join(currentDir, '..', 'data')
-// DATABASE_PATH=:memory: — изоляция БД в интеграционных тестах
-const dbPath = process.env.DATABASE_PATH ?? path.join(dataDir, 'app.db')
+// DATABASE_URL (Neon/Postgres) — прод и dev. Если не задан (тесты, локальная
+// разработка без Postgres) — используется PGlite (WASM-Postgres в процессе).
+async function createDb(): Promise<Db> {
+  if (env.DATABASE_URL) {
+    const pool = new Pool({ connectionString: env.DATABASE_URL, max: 5 })
+    return drizzlePg(pool, { schema })
+  }
 
-if (dbPath !== ':memory:') {
-  mkdirSync(dataDir, { recursive: true })
+  // Динамический импорт: PGlite — devDependency, в проде не нужен и не попадает в образ
+  const [{ PGlite }, { drizzle: drizzlePglite }] = await Promise.all([
+    import('@electric-sql/pglite'),
+    import('drizzle-orm/pglite'),
+  ])
+  const pglite = new PGlite()
+  return drizzlePglite(pglite, { schema }) as unknown as NodePgDatabase<typeof schema>
 }
 
-const client = new Database(dbPath)
+export const db = await createDb()
 
-// Схема приводится к актуальной идемпотентными миграциями при каждом старте.
-runMigrations(client)
+await runMigrations(db)
 
-export const db = drizzle(client, { schema })
-
-// Сидирование дефолтного хоста для /api/v1 (мульти-хост в MVP не используется)
-if (!db.select().from(schema.hosts).get()) {
-  db.insert(schema.hosts)
-    .values({ id: randomUUID(), ...defaultHost })
-    .run()
-}
-
-// Сидирование: если будущих слотов нет — генерируем по правилам доступности
-// (рабочие дни и окно, шаг «длительность + буфер», minNotice, горизонт).
-// Правила берём из таблицы, если организатор их сохранял, иначе — дефолтные.
-const storedRules = db.select().from(schema.availabilityRules).get()
+// Сидирование дефолтного хоста и типа встречи выполняет runMigrations;
+// здесь гарантируем наличие будущих слотов по сохранённым правилам доступности.
+const storedRules = (await db.select().from(schema.availabilityRules).limit(1))[0]
 const rules = storedRules ? rulesFromRow(storedRules) : defaultAvailabilityRules
 
-const hasFutureSlots = db
-  .select()
-  .from(schema.slots)
-  .where(gte(schema.slots.startAt, new Date().toISOString()))
-  .get()
+const hasFutureSlots =
+  (
+    await db
+      .select({ id: schema.slots.id })
+      .from(schema.slots)
+      .where(gte(schema.slots.startAt, new Date().toISOString()))
+      .limit(1)
+  ).length > 0
 
 if (!hasFutureSlots) {
   const slotStarts = generateSlotStarts(new Date(), rules)
 
-  db.insert(schema.slots)
-    .values(
+  if (slotStarts.length > 0) {
+    await db.insert(schema.slots).values(
       slotStarts.map((startAt) => ({
         startAt,
         durationMin: rules.slotDurationMin,
       })),
     )
-    .run()
+  }
 }

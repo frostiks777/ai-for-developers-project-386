@@ -22,29 +22,31 @@ export type UpdateEventTypeInput = {
   isActive?: boolean
 }
 
-export function listEventTypes(hostId: string): EventType[] {
-  return db
-    .select()
-    .from(eventTypes)
-    .where(eq(eventTypes.hostId, hostId))
-    .orderBy(asc(eventTypes.slug))
-    .all()
+export async function listEventTypes(hostId: string): Promise<EventType[]> {
+  return db.select().from(eventTypes).where(eq(eventTypes.hostId, hostId)).orderBy(asc(eventTypes.slug))
 }
 
-export function findEventType(hostId: string, id: string): EventType | undefined {
-  return db
+export async function findEventType(hostId: string, id: string): Promise<EventType | undefined> {
+  const rows = await db
     .select()
     .from(eventTypes)
     .where(and(eq(eventTypes.hostId, hostId), eq(eventTypes.id, id)))
-    .get()
+    .limit(1)
+
+  return rows[0]
 }
 
-export function findEventTypeById(id: string): EventType | undefined {
-  return db.select().from(eventTypes).where(eq(eventTypes.id, id)).get()
+export async function findEventTypeById(id: string): Promise<EventType | undefined> {
+  const rows = await db.select().from(eventTypes).where(eq(eventTypes.id, id)).limit(1)
+
+  return rows[0]
 }
 
-export function createEventType(hostId: string, input: CreateEventTypeInput): EventType {
-  return db
+export async function createEventType(
+  hostId: string,
+  input: CreateEventTypeInput,
+): Promise<EventType> {
+  const rows = await db
     .insert(eventTypes)
     .values({
       id: randomUUID(),
@@ -57,32 +59,33 @@ export function createEventType(hostId: string, input: CreateEventTypeInput): Ev
       isActive: input.isActive ?? true,
     })
     .returning()
-    .get()
+
+  return rows[0]
 }
 
-export function updateEventType(
+export async function updateEventType(
   hostId: string,
   id: string,
   patch: UpdateEventTypeInput,
-): EventType | undefined {
-  if (!findEventType(hostId, id)) {
+): Promise<EventType | undefined> {
+  if (!(await findEventType(hostId, id))) {
     return undefined
   }
 
-  return db
+  const rows = await db
     .update(eventTypes)
     .set(patch)
     .where(and(eq(eventTypes.hostId, hostId), eq(eventTypes.id, id)))
     .returning()
-    .get()
+
+  return rows[0]
 }
 
-export function deleteEventType(hostId: string, id: string): boolean {
-  const deleted = db
+export async function deleteEventType(hostId: string, id: string): Promise<boolean> {
+  const deleted = await db
     .delete(eventTypes)
     .where(and(eq(eventTypes.hostId, hostId), eq(eventTypes.id, id)))
     .returning()
-    .get()
 
-  return Boolean(deleted)
+  return deleted.length > 0
 }
