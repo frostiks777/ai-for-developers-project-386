@@ -66,8 +66,7 @@ const createTables = `
 
 type BookingColumn = { name: string; notnull: number }
 
-type LegacyBookingRow = {
-  id: number
+type LegacyBookingRow = {  id: number
   slotId: number
   name: string
   phone: string | null
@@ -174,6 +173,15 @@ export function runMigrations(client: BetterSqlite3.Database): void {
 
   const hostId = ensureDefaultHost(client)
   ensureDefaultEventType(client, hostId)
+
+  // availability_rules получила hostId позже — досыпаем колонку и привязываем к хосту
+  const rulesColumns = () => client.pragma('table_info(availability_rules)') as BookingColumn[]
+  if (!rulesColumns().some((column) => column.name === 'hostId')) {
+    client.exec(`ALTER TABLE availability_rules ADD COLUMN hostId TEXT REFERENCES hosts(id)`)
+    client
+      .prepare('UPDATE availability_rules SET hostId = ? WHERE hostId IS NULL')
+      .run(hostId)
+  }
 
   const bookingColumns = () => client.pragma('table_info(bookings)') as BookingColumn[]
 
