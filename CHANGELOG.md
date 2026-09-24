@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.8.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.7.0...v1.8.0) (2026-09-24)
+
+
+### Features
+
+* **api:** add TypeSpec contract for /api/v1 ([a875980](https://github.com/frostiks777/ai-for-developers-project-386/commit/a8759800179f7d66d2e5cc1627941f9dbde0b113))
+* **api:** generate OpenAPI and client SDK from TypeSpec via api:generate ([18b33e0](https://github.com/frostiks777/ai-for-developers-project-386/commit/18b33e0193e64e6c98f37c782581def92a34b676))
+* **api:** generate server API types from OpenAPI ([8ed202f](https://github.com/frostiks777/ai-for-developers-project-386/commit/8ed202f01cf328c69223b6ad6bd1714f7a2807b8))
+* **booking:** add landing page and move booking to /book/:slug ([d45367d](https://github.com/frostiks777/ai-for-developers-project-386/commit/d45367de64f2c749c2dfb312a1b416fe62a79807))
+
+
+### Bug Fixes
+
+* **dashboard:** scroll to availability section from sidebar link ([acc168e](https://github.com/frostiks777/ai-for-developers-project-386/commit/acc168e564e152ec8864140fc91b4b73f1e7a0cd))
+
 ## [1.7.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.6.0...v1.7.0) (2026-09-23)
 
 
