@@ -83,8 +83,8 @@ export class ApiV1Client {
   async getHostSettings(slug: string, options?: GetHostSettingsOptions) {
     return getHostSettings(this.#context, slug, options);
   };
-  async listSlots(slug: string, date: string, options?: ListSlotsOptions) {
-    return listSlots(this.#context, slug, date, options);
+  async listSlots(slug: string, options?: ListSlotsOptions) {
+    return listSlots(this.#context, slug, options);
   }
 }
 export class BookingsClient {

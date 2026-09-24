@@ -139,9 +139,13 @@ paths:
           content:
             application/json:
               schema:
-                anyOf:
-                  - $ref: '#/components/schemas/Booking'
-                  - $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiError'
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
       requestBody:
         required: true
         content:
@@ -182,9 +186,13 @@ paths:
           content:
             application/json:
               schema:
-                anyOf:
-                  - $ref: '#/components/schemas/EventType'
-                  - $ref: '#/components/schemas/ApiError'
+                $ref: '#/components/schemas/ApiError'
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventType'
       requestBody:
         required: true
         content:
@@ -271,7 +279,7 @@ paths:
             type: string
         - name: date
           in: query
-          required: true
+          required: false
           schema:
             $ref: '#/components/schemas/LocalDate'
           explode: false

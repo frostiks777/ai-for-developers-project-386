@@ -205,7 +205,7 @@ namespace ApiV1 {
     op createEventType(
       @path slug: HostSlug,
       @body body: CreateEventTypeRequest,
-    ): EventType | ApiError;
+    ): { @statusCode statusCode: 201; @body body: EventType } | ApiError;
 
     @route("/{eventTypeId}")
     @patch
@@ -220,7 +220,7 @@ namespace ApiV1 {
     op deleteEventType(
       @path slug: HostSlug,
       @path eventTypeId: string,
-    ): void | ApiError;
+    ): { @statusCode statusCode: 204 } | ApiError;
   }
 
   @route("/hosts/{slug}/availability")
@@ -239,7 +239,7 @@ namespace ApiV1 {
   @get
   op listSlots(
     @path slug: HostSlug,
-    @query date: LocalDate,
+    @query date?: LocalDate,
     @query eventTypeId?: string,
   ): AvailabilityDay | ApiError;
 
@@ -252,7 +252,7 @@ namespace ApiV1 {
     op createBooking(
       @path slug: HostSlug,
       @body body: CreateBookingRequest,
-    ): Booking | ApiError;
+    ): { @statusCode statusCode: 201; @body body: Booking } | ApiError;
   }
 
   @route("/bookings/{bookingId}")
