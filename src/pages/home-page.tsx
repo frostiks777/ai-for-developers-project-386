@@ -216,6 +216,7 @@ export default function HomePage() {
               booking={bookedBooking}
               slot={bookedSlot}
               timeZone={timeZone}
+              eventTypeTitle={selectedType?.title ?? null}
               onReset={handleReset}
             />
           ) : (
@@ -300,6 +301,7 @@ export default function HomePage() {
               booking={bookedBooking}
               slot={bookedSlot}
               timeZone={timeZone}
+              eventTypeTitle={selectedType?.title ?? null}
               onReset={handleReset}
             />
           ) : (

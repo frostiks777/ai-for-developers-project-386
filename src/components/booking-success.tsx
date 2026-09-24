@@ -14,6 +14,7 @@ interface BookingSuccessProps {
   booking: CreatedBooking
   slot: TimeSlot
   timeZone: string
+  eventTypeTitle?: string | null
   onReset: () => void
 }
 
@@ -29,10 +30,17 @@ function formatTimeRange(slot: TimeSlot, timeZone: string): string {
   return `${startLabel} — ${endLabel}`
 }
 
-export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSuccessProps) {
+export function BookingSuccess({
+  booking,
+  slot,
+  timeZone,
+  eventTypeTitle,
+  onReset,
+}: BookingSuccessProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const cancelUrl = `${window.location.origin}/cancel/${booking.cancelToken}`
-  const googleUrl = googleCalendarUrl(booking, slot)
+  const calendarOptions = eventTypeTitle ? { title: eventTypeTitle } : undefined
+  const googleUrl = googleCalendarUrl(booking, slot, calendarOptions)
 
   const handleCopy = async () => {
     try {
@@ -44,7 +52,7 @@ export function BookingSuccess({ booking, slot, timeZone, onReset }: BookingSucc
   }
 
   const handleDownload = () => {
-    downloadIcs(`booking-${booking.id}.ics`, buildIcs(booking, slot))
+    downloadIcs(`booking-${booking.id}.ics`, buildIcs(booking, slot, calendarOptions))
   }
 
   return (
