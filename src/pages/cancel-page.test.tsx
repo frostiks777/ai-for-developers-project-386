@@ -36,7 +36,7 @@ describe('CancelPage', () => {
             clientNotes: null,
             createdAt: '2099-09-23T07:00:00.000Z',
           }),
-          { status: 200 },
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
         ),
     )
     vi.stubGlobal('fetch', fetchMock)
@@ -48,7 +48,7 @@ describe('CancelPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Встреча отменена' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/bookings/token-123/cancel',
+      expect.stringContaining('/api/v1/bookings/token-123/cancel'),
       expect.objectContaining({ method: 'POST' }),
     )
   })
@@ -60,7 +60,7 @@ describe('CancelPage', () => {
         async () =>
           new Response(
             JSON.stringify({ error: { code: 'NOT_FOUND', message: 'Бронь не найдена' } }),
-            { status: 404 },
+            { status: 404, headers: { 'Content-Type': 'application/json' } },
           ),
       ),
     )

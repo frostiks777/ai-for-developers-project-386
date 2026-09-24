@@ -1,22 +1,24 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { ApiError, createBookingV1 } from '@/api/client'
-import type { CreateBookingV1Body, CreatedBooking } from '@/types/booking'
+import type { CreateBookingRequest } from '@/api/generated'
+import { toCreatedBooking } from '@/api/mappers'
+import { ApiError, api, call } from '@/api/sdk'
+import type { CreatedBooking } from '@/types/booking'
 
 export function useBooking() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const bookSlot = async (
     hostSlug: string,
-    body: CreateBookingV1Body,
+    body: CreateBookingRequest,
   ): Promise<CreatedBooking | null> => {
     setIsSubmitting(true)
 
     try {
-      const booking = await createBookingV1(hostSlug, body)
+      const booking = await call(api.hostBookingsClient.createBooking(hostSlug, body))
       toast.success('Звонок забронирован')
-      return booking
+      return toCreatedBooking(booking)
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : 'Не удалось забронировать звонок')
       return null

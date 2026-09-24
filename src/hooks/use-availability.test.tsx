@@ -29,7 +29,16 @@ function stubSlotsResponse(slots: TimeSlot[], status = 200) {
     })),
   }
 
-  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status })))
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    ),
+  )
 }
 
 describe('useAvailability', () => {
@@ -50,7 +59,13 @@ describe('useAvailability', () => {
   it('показывает ошибку при неудачном запросе', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ error: 'Внутренняя ошибка' }), { status: 500 })),
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: 'Внутренняя ошибка' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      ),
     )
 
     const { result } = renderHook(() => useAvailability('default'))

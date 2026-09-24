@@ -1,28 +1,34 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { HostSettings } from '@/types/host'
+import { jsonResponse, requestPath } from '@/test/http'
 import LandingPage from './landing-page'
 
-const settings: HostSettings = {
-  id: 'host-1',
-  slug: 'default',
-  name: 'Анна Петрова',
-  timezone: 'UTC',
-  createdAt: '2026-09-01T00:00:00.000Z',
-  availability: {
-    weekdays: [1, 2, 3, 4, 5],
-    windowStartHour: 10,
-    windowEndHour: 18,
-    slotDurationMin: 30,
-    bufferMin: 10,
-    minNoticeMin: 120,
-    horizonDays: 14,
-  },
+const availability = {
+  timeZone: 'UTC',
+  slotDurationMin: 30,
+  bufferMin: 10,
+  minNoticeMin: 120,
+  horizonDays: 14,
+  ranges: [],
 }
 
-function mockFetch(status = 200, body: unknown = settings) {
-  return vi.fn(async () => new Response(JSON.stringify(body), { status }))
+const settings = { slug: 'default', name: 'Анна Петрова', timeZone: 'UTC' }
+
+function mockFetch(status = 200) {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    if (status !== 200) {
+      return jsonResponse({ error: 'Внутренняя ошибка' }, status)
+    }
+
+    const url = requestPath(input)
+
+    if (url === '/api/v1/hosts/default/availability') {
+      return jsonResponse(availability)
+    }
+
+    return jsonResponse(settings)
+  })
 }
 
 function renderLanding() {
@@ -51,7 +57,7 @@ describe('LandingPage', () => {
   })
 
   it('показывает данные из конфига, если API недоступно', async () => {
-    vi.stubGlobal('fetch', mockFetch(500, { error: 'Внутренняя ошибка' }))
+    vi.stubGlobal('fetch', mockFetch(500))
     renderLanding()
 
     expect(await screen.findAllByText('Организатор')).toHaveLength(2)

@@ -1,24 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { HostSettings } from '@/types/host'
+import type { HostSettings } from '@/api/generated'
+import { jsonResponse, requestPath } from '@/test/http'
 import { App } from './App'
 
 const settings: HostSettings = {
-  id: 'host-1',
   slug: 'default',
   name: 'Организатор',
-  timezone: 'UTC',
-  createdAt: '2026-09-01T00:00:00.000Z',
-  availability: {
-    weekdays: [1, 2, 3, 4, 5],
-    windowStartHour: 10,
-    windowEndHour: 18,
-    slotDurationMin: 30,
-    bufferMin: 10,
-    minNoticeMin: 120,
-    horizonDays: 14,
-  },
+  timeZone: 'UTC',
 }
 
 const slot = {
@@ -30,31 +20,28 @@ const slot = {
 
 function mockFetch() {
   return vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input)
+    const url = requestPath(input)
 
     if (url === '/api/v1/hosts/default/settings') {
-      return new Response(JSON.stringify(settings), { status: 200 })
+      return jsonResponse(settings)
     }
 
     if (url === '/api/v1/hosts/default/slots') {
-      return new Response(
-        JSON.stringify({
-          timeZone: 'UTC',
-          date: null,
-          slots: [
-            {
-              id: slot.id,
-              startAt: slot.startAt,
-              durationMin: slot.durationMin,
-              available: true,
-            },
-          ],
-        }),
-        { status: 200 },
-      )
+      return jsonResponse({
+        timeZone: 'UTC',
+        date: null,
+        slots: [
+          {
+            id: slot.id,
+            startAt: slot.startAt,
+            durationMin: slot.durationMin,
+            available: true,
+          },
+        ],
+      })
     }
 
-    return new Response(JSON.stringify([]), { status: 200 })
+    return jsonResponse([])
   })
 }
 

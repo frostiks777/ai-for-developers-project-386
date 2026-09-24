@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-import {
-  ApiError,
-  cancelBooking,
-  cancelBookingV1,
-  fetchAvailabilitySettings,
-  fetchBookings,
-  updateAvailabilitySettings,
-} from '@/api/client'
+import { toBookingWithSlot } from '@/api/mappers'
+import { ApiError, api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
 import { AvailabilitySettingsForm } from '@/components/availability-settings-form'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
@@ -69,7 +63,13 @@ export default function DashboardPage() {
     setIsLoadingBookings(true)
 
     try {
-      setBookings(await fetchBookings())
+      const [rows, types] = await Promise.all([
+        call(api.hostBookingsClient.listHostBookings(host.slug)),
+        call(api.eventTypesClient.listEventTypes(host.slug)).catch(() => []),
+      ])
+      const titleById = new Map(types.map((type) => [type.id, type.title]))
+
+      setBookings(rows.map((row) => toBookingWithSlot(row, titleById.get(row.eventTypeId) ?? null)))
       setBookingsError(null)
     } catch {
       setBookingsError('Не удалось загрузить брони')
@@ -82,7 +82,7 @@ export default function DashboardPage() {
     void loadBookings()
     void (async () => {
       try {
-        setSettings(await fetchAvailabilitySettings(host.slug))
+        setSettings(await call(api.availabilityClient.getAvailability(host.slug)))
         setRulesError(null)
       } catch {
         setRulesError('Не удалось загрузить настройки доступности')
@@ -92,11 +92,7 @@ export default function DashboardPage() {
 
   const handleCancel = async (booking: BookingWithSlot) => {
     try {
-      if (booking.cancelToken) {
-        await cancelBookingV1(booking.cancelToken)
-      } else {
-        await cancelBooking(booking.id)
-      }
+      await call(api.bookingsClient.cancelBooking(booking.id))
       toast.success('Бронь отменена')
       await loadBookings()
     } catch (error) {
@@ -108,7 +104,7 @@ export default function DashboardPage() {
     setIsSavingRules(true)
 
     try {
-      const saved = await updateAvailabilitySettings(host.slug, next)
+      const saved = await call(api.availabilityClient.updateAvailability(host.slug, next))
       setSettings(saved)
       toast.success('Настройки сохранены')
       return true

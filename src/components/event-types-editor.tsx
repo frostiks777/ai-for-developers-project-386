@@ -1,22 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-import {
-  ApiError,
-  createEventType,
-  deleteEventType,
-  fetchEventTypes,
-  updateEventType,
-} from '@/api/client'
+import { LocationType, type EventType } from '@/api/generated'
+import { ApiError, api, call } from '@/api/sdk'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { EventType, LocationType } from '@/types/event-type'
 
 const LOCATION_LABELS: Record<LocationType, string> = {
-  online: 'Онлайн',
-  offline: 'Офлайн',
-  phone: 'Телефон',
+  [LocationType.Online]: 'Онлайн',
+  [LocationType.Offline]: 'Офлайн',
+  [LocationType.Phone]: 'Телефон',
 }
 
 interface EventTypesEditorProps {
@@ -28,7 +22,7 @@ const emptyForm = {
   title: '',
   description: '',
   durationMin: 30,
-  locationType: 'online' as LocationType,
+  locationType: LocationType.Online,
 }
 
 export function EventTypesEditor({ slug }: EventTypesEditorProps) {
@@ -42,7 +36,7 @@ export function EventTypesEditor({ slug }: EventTypesEditorProps) {
     setIsLoading(true)
 
     try {
-      setTypes(await fetchEventTypes(slug))
+      setTypes(await call(api.eventTypesClient.listEventTypes(slug)))
       setError(null)
     } catch {
       setError('Не удалось загрузить типы встреч')
@@ -60,13 +54,15 @@ export function EventTypesEditor({ slug }: EventTypesEditorProps) {
     setIsSaving(true)
 
     try {
-      const created = await createEventType(slug, {
-        slug: form.slug.trim(),
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        durationMin: form.durationMin,
-        locationType: form.locationType,
-      })
+      const created = await call(
+        api.eventTypesClient.createEventType(slug, {
+          slug: form.slug.trim(),
+          title: form.title.trim(),
+          description: form.description.trim() || undefined,
+          durationMin: form.durationMin,
+          locationType: form.locationType,
+        }),
+      )
       setTypes((prev) => [...prev, created])
       setForm(emptyForm)
       toast.success('Тип встречи добавлен')
@@ -79,7 +75,9 @@ export function EventTypesEditor({ slug }: EventTypesEditorProps) {
 
   const handleToggle = async (type: EventType) => {
     try {
-      const updated = await updateEventType(slug, type.id, { isActive: !type.isActive })
+      const updated = await call(
+        api.eventTypesClient.updateEventType(slug, type.id, { isActive: !type.isActive }),
+      )
       setTypes((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : 'Не удалось изменить тип')
@@ -88,7 +86,7 @@ export function EventTypesEditor({ slug }: EventTypesEditorProps) {
 
   const handleDelete = async (type: EventType) => {
     try {
-      await deleteEventType(slug, type.id)
+      await call(api.eventTypesClient.deleteEventType(slug, type.id))
       setTypes((prev) => prev.filter((item) => item.id !== type.id))
       toast.success('Тип встречи удалён')
     } catch (error) {
