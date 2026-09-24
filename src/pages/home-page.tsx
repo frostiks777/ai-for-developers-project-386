@@ -219,7 +219,7 @@ export default function HomePage() {
             />
           ) : (
             <div className="grid min-h-0 flex-1 overflow-hidden rounded-card border bg-card text-card-foreground shadow-soft lg:grid-cols-[300px_460px_minmax(0,1fr)]">
-              <div className="min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
+              <div className="scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 <HostInfo
                   durationMin={slots[0]?.durationMin ?? null}
                   minNoticeMin={minNoticeMin}
@@ -228,7 +228,7 @@ export default function HomePage() {
                 />
               </div>
 
-              <div className="min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
+              <div className="scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 {isLoading ? (
                   <CalendarSkeleton />
                 ) : (
@@ -275,7 +275,7 @@ export default function HomePage() {
                       {freeCount} {pluralRu(freeCount, ['свободное окно', 'свободных окна', 'свободных окон'])} ·
                       время по {timeZone}
                     </p>
-                    <div className="mt-5 flex-1 overflow-y-auto">
+                    <div className="scrollbar-none mt-5 flex-1 overflow-y-auto">
                       <SlotGrid
                         slots={visibleSlots}
                         selectedSlotId={selectedSlotId}
