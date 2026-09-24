@@ -8,7 +8,21 @@ interface DashboardSidebarProps {
   bookingCount: number
 }
 
+const AVAILABILITY_SECTION_ID = 'availability'
+
 export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
+  const handleAvailabilityClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    const section = document.getElementById(AVAILABILITY_SECTION_ID)
+
+    if (!section) {
+      return
+    }
+
+    event.preventDefault()
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    window.history.replaceState(null, '', `#${AVAILABILITY_SECTION_ID}`)
+  }
+
   return (
     <nav
       aria-label="Панель организатора"
@@ -32,7 +46,8 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
         </span>
       </span>
       <a
-        href="#availability"
+        href={`#${AVAILABILITY_SECTION_ID}`}
+        onClick={handleAvailabilityClick}
         className="flex h-11 items-center gap-2.5 rounded-lg px-3 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <SlidersHorizontal className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
