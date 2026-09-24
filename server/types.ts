@@ -1,5 +1,4 @@
 // Типы API-контракта, зеркалятся фронтендом — менять только согласованно
-import type { AvailabilityRules } from './availability'
 
 export interface TimeSlot {
   id: number
@@ -39,14 +38,4 @@ export interface BookingWithSlot extends Booking {
 // Ответ на создание брони: содержит токен для публичной отмены по ссылке
 export interface CreatedBooking extends Booking {
   cancelToken: string
-}
-
-// Хост и его правила доступности — ответ /api/v1/hosts/:slug/settings
-export interface HostSettings {
-  id: string
-  slug: string
-  name: string
-  timezone: string
-  createdAt: string
-  availability: AvailabilityRules
 }

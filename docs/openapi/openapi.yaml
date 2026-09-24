@@ -325,8 +325,10 @@ components:
         - slots
       properties:
         date:
+          type: string
           allOf:
             - $ref: '#/components/schemas/LocalDate'
+          nullable: true
           description: Дата фильтра, если была запрошена.
         timeZone:
           type: string
@@ -422,8 +424,10 @@ components:
           type: string
         clientPhone:
           type: string
+          nullable: true
         clientNotes:
           type: string
+          nullable: true
         status:
           $ref: '#/components/schemas/BookingStatus'
         createdAt:
@@ -501,6 +505,7 @@ components:
           type: string
         description:
           type: string
+          nullable: true
         durationMin:
           type: integer
           format: int32

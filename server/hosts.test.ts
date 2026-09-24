@@ -3,7 +3,6 @@ import type { FastifyInstance } from 'fastify'
 
 import { buildApp } from './app'
 import { dateKeyInZone } from './hosts'
-import type { HostSettings } from './types'
 
 let app: FastifyInstance
 
@@ -17,16 +16,11 @@ afterAll(async () => {
 })
 
 describe('GET /api/v1/hosts/:slug/settings', () => {
-  it('отдаёт дефолтного хоста с правилами доступности', async () => {
+  it('отдаёт публичные настройки хоста по контракту', async () => {
     const response = await app.inject({ method: 'GET', url: '/api/v1/hosts/default/settings' })
 
     expect(response.statusCode).toBe(200)
-    const settings = response.json<HostSettings>()
-    expect(settings.slug).toBe('default')
-    expect(settings.name).toBe('Организатор')
-    expect(settings.timezone).toBe('UTC')
-    expect(typeof settings.availability.minNoticeMin).toBe('number')
-    expect(Array.isArray(settings.availability.weekdays)).toBe(true)
+    expect(response.json()).toEqual({ slug: 'default', name: 'Организатор', timeZone: 'UTC' })
   })
 
   it('отвечает 404 на неизвестный slug', async () => {

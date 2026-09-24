@@ -25,6 +25,7 @@ export default defineConfig({
       'dist',
       '.git',
       '.agents/skills/**',
+      'e2e/**',
     ],
     env: {
       DATABASE_PATH: ':memory:',

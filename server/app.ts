@@ -27,7 +27,7 @@ import {
 } from './event-types'
 import { dateKeyInZone, dateKeyPattern, isValidTimeZone } from './hosts'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
-import type { BookingWithSlot, HostSettings, TimeSlot } from './types'
+import type { BookingWithSlot, TimeSlot } from './types'
 import {
   availabilityRulesSchema,
   availabilitySettingsSchema,
@@ -296,12 +296,13 @@ export async function buildApp(): Promise<FastifyInstance> {
   const v1Error = (code: string, message: string) => ({ error: { code, message } })
 
   // Публичное представление брони (id = cancelToken — UUID для ссылок отмены/переноса)
-  const toBooking = (row: typeof bookings.$inferSelect, slug: string) => ({
+  const toBooking = (row: typeof bookings.$inferSelect, slug: string, timeZone: string) => ({
     id: row.cancelToken ?? '',
     hostSlug: slug,
     eventTypeId: row.eventTypeId,
     startAt: row.startAt,
     endAt: row.endAt,
+    timeZone,
     status: row.status,
     clientName: row.name,
     clientEmail: row.email,
@@ -310,7 +311,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     createdAt: row.createdAt,
   })
 
-  // Настройки хоста и его правила доступности
+  // Публичные настройки хоста по контракту HostSettings
   app.get('/api/v1/hosts/:slug/settings', (request, reply) => {
     const { slug } = request.params as { slug: string }
     const host = findHost(slug)
@@ -319,9 +320,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(404).send({ error: 'Хост не найден' })
     }
 
-    const settings: HostSettings = { ...host, availability: loadAvailabilityRules() }
-
-    return settings
+    return { slug: host.slug, name: host.name, timeZone: host.timezone }
   })
 
   // Слоты хоста; необязательные ?date=YYYY-MM-DD, ?timezone=IANA, ?eventTypeId=
@@ -491,7 +490,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       .from(bookings)
       .orderBy(bookings.startAt)
       .all()
-      .map((row) => toBooking(row, host.slug))
+      .map((row) => toBooking(row, host.slug, host.timezone))
   })
 
   app.post('/api/v1/hosts/:slug/bookings', (request, reply) => {
@@ -532,7 +531,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     const created = createBookingV1(parsed.data, slot, eventType.durationMin)
 
-    return reply.code(201).send(toBooking(created, host.slug))
+    return reply.code(201).send(toBooking(created, host.slug, host.timezone))
   })
 
   app.get('/api/v1/bookings/:bookingId', (request, reply) => {
@@ -545,7 +544,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     const host = db.select().from(hosts).get()
 
-    return toBooking(booking, host?.slug ?? '')
+    return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
 
   app.post('/api/v1/bookings/:bookingId/cancel', (request, reply) => {
@@ -559,10 +558,10 @@ export async function buildApp(): Promise<FastifyInstance> {
     const host = db.select().from(hosts).get()
 
     if (booking.status === 'cancelled') {
-      return toBooking(booking, host?.slug ?? '')
+      return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
     }
 
-    return toBooking(cancelBookingV1(booking), host?.slug ?? '')
+    return toBooking(cancelBookingV1(booking), host?.slug ?? '', host?.timezone ?? 'UTC')
   })
 
   app.post('/api/v1/bookings/:bookingId/reschedule', (request, reply) => {
@@ -602,7 +601,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     const updated = rescheduleBookingV1(booking, slot, durationMin)
     const host = db.select().from(hosts).get()
 
-    return toBooking(updated, host?.slug ?? '')
+    return toBooking(updated, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/

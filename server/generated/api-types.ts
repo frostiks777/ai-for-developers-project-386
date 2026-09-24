@@ -165,7 +165,7 @@ export interface components {
         };
         AvailabilityDay: {
             /** @description Дата фильтра, если была запрошена. */
-            date?: components["schemas"]["LocalDate"];
+            date?: (string & components["schemas"]["LocalDate"]) | null;
             /** @description IANA-пояс, к которому относятся startAt слотов. */
             timeZone: string;
             slots: components["schemas"]["Slot"][];
@@ -205,8 +205,8 @@ export interface components {
             timeZone: string;
             clientName: string;
             clientEmail: string;
-            clientPhone?: string;
-            clientNotes?: string;
+            clientPhone?: string | null;
+            clientNotes?: string | null;
             status: components["schemas"]["BookingStatus"];
             createdAt: string;
         };
@@ -236,7 +236,7 @@ export interface components {
             id: string;
             slug: string;
             title: string;
-            description?: string;
+            description?: string | null;
             /**
              * Format: int32
              * @description Длительность встречи в минутах (MVP: 30).

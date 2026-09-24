@@ -20,7 +20,7 @@
 ### Проверяемость
 
 - ✅ Тесты + линтер в GitHub Actions, `main` зелёный (`ci.yml`)
-- ✅ Тесты покрывают сценарий бронирования и конфликт слотов (интеграционные + `409`); требования к покрытию Шага 3 — в `docs/spec.md` §7
+- ✅ Тесты покрывают сценарий бронирования и конфликт слотов (интеграционные + `409` + контракт-тесты `ajv` + e2e Playwright); требования к покрытию Шага 3 — в `docs/spec.md` §7, решение — [ADR-0012](adr/0012-contract-tests-and-e2e.md)
 - ✅ Conventional Commits, release-please создаёт release-PR (`release-please.yml`; открыт PR #9 на 1.8.0)
 - ✅ Секретов в репозитории нет (`.env` в `.gitignore`, `.env.example`)
 
@@ -81,7 +81,7 @@
 
 1. ~~**Шаг 1** — `CONTEXT.md` + интервью по главной (`grill-with-docs`) + ADR + `/implement`~~ ✅ **выполнено 2026-09-24**: `CONTEXT.md`, [ADR-0010](adr/0010-landing-and-booking-routes.md), лендинг `/`, бронь `/book/:slug`
 2. ~~**Шаг 2** — карта решений (`wayfinder`) → `to-spec` → `to-tickets`; Design First: TypeSpec → OpenAPI → SDK + серверные артефакты~~ ✅ **выполнено 2026-09-24**: карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`
-3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий: T1–T7 готовы (SQLite-миграции, event_types, status, availability_ranges, слоты/брони v1, SDK-миграция фронта); осталось **T8** ([#26](https://github.com/frostiks777/ai-for-developers-project-386/issues/26)) — контракт-тесты + e2e Playwright, **T9** ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)) — финальная сверка со спецификацией
+3. **Шаг 3** — реализация тикетов через `/implement`, фронт через сгенерированный SDK, Playwright на сквозной сценарий: T1–T8 готовы (SQLite-миграции, event_types, status, availability_ranges, слоты/брони v1, SDK-миграция фронта, контракт-тесты + e2e Playwright); осталось **T9** ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)) — финальная сверка со спецификацией
 4. Ввести сущность «тип встречи» (event-types) — спроектирована в `docs/spec.md`/контракте, реализация — Шаг 3
 
 ### Low
