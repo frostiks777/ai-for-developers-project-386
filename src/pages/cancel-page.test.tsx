@@ -20,7 +20,25 @@ describe('CancelPage', () => {
   })
 
   it('отменяет встречу по токену и показывает подтверждение', async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: 'token-123',
+            hostSlug: 'default',
+            eventTypeId: 'type-1',
+            startAt: '2099-09-24T07:00:00.000Z',
+            endAt: '2099-09-24T07:30:00.000Z',
+            status: 'cancelled',
+            clientName: 'Иван',
+            clientEmail: 'ivan@example.com',
+            clientPhone: null,
+            clientNotes: null,
+            createdAt: '2099-09-23T07:00:00.000Z',
+          }),
+          { status: 200 },
+        ),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
@@ -30,7 +48,7 @@ describe('CancelPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Встреча отменена' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/bookings/cancel',
+      '/api/v1/bookings/token-123/cancel',
       expect.objectContaining({ method: 'POST' }),
     )
   })
@@ -40,7 +58,10 @@ describe('CancelPage', () => {
       'fetch',
       vi.fn(
         async () =>
-          new Response(JSON.stringify({ error: 'Бронь не найдена' }), { status: 404 }),
+          new Response(
+            JSON.stringify({ error: { code: 'NOT_FOUND', message: 'Бронь не найдена' } }),
+            { status: 404 },
+          ),
       ),
     )
 
