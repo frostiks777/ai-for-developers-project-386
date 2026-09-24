@@ -48,6 +48,12 @@ describe('buildIcs', () => {
     expect(ics).toContain('Иван\\nEmail')
     expect(ics).not.toContain('Иван\r\nEmail')
   })
+
+  it('использует переданное название события в SUMMARY', () => {
+    const ics = buildIcs(booking, slot, { now: fixedNow, title: 'Звонок-консультация' })
+
+    expect(ics).toContain('SUMMARY:Звонок-консультация')
+  })
 })
 
 describe('googleCalendarUrl', () => {

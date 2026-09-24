@@ -146,6 +146,7 @@ describe('HomePage: экран успеха', () => {
     expect(await screen.findByRole('button', { name: 'Скачать .ics' })).toBeInTheDocument()
     const googleLink = screen.getByRole('link', { name: 'Добавить в Google Календарь' })
     expect(googleLink).toHaveAttribute('href', expect.stringContaining('calendar.google.com'))
+    expect(googleLink.getAttribute('href')).toContain(`text=${encodeURIComponent('Консультация')}`)
   })
 
   it('кнопка «Выбрать другое время» возвращает к списку слотов', async () => {
