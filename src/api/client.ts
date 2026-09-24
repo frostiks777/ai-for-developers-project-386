@@ -1,4 +1,7 @@
 import type { AvailabilityRules } from '@/types/availability'
+import type {
+  AvailabilitySettings,
+} from '@/types/availability-settings'
 import type { HostSettings } from '@/types/host'
 import type {
   BookingWithSlot,
@@ -122,6 +125,28 @@ export function updateAvailability(rules: AvailabilityRules): Promise<Availabili
     },
     body: JSON.stringify(rules),
   })
+}
+
+export function fetchAvailabilitySettings(slug: string): Promise<AvailabilitySettings> {
+  return request<AvailabilitySettings>(
+    `/api/v1/hosts/${encodeURIComponent(slug)}/availability`,
+  )
+}
+
+export function updateAvailabilitySettings(
+  slug: string,
+  settings: AvailabilitySettings,
+): Promise<AvailabilitySettings> {
+  return request<AvailabilitySettings>(
+    `/api/v1/hosts/${encodeURIComponent(slug)}/availability`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    },
+  )
 }
 
 export function fetchEventTypes(slug: string): Promise<EventType[]> {

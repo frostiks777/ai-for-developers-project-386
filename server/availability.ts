@@ -117,3 +117,110 @@ export function generateSlotStarts(
 
   return starts
 }
+
+// ── v1: диапазоны по дням недели (ADR-0011) ──────────────────────────────
+
+// День недели: 1 — понедельник … 7 — воскресенье; минуты от полуночи (пояс хоста)
+export interface AvailabilityRange {
+  weekday: number
+  startMinute: number
+  endMinute: number
+}
+
+export interface AvailabilitySettings {
+  timeZone: string
+  slotDurationMin: number
+  bufferMin: number
+  minNoticeMin: number
+  horizonDays: number
+  ranges: AvailabilityRange[]
+}
+
+const jsDayToIso = (jsDay: number): number => (jsDay === 0 ? 7 : jsDay)
+
+// Преобразует одно окно из легаси-правил в набор диапазонов (по дню недели)
+export function rangesFromRules(rules: AvailabilityRules): AvailabilityRange[] {
+  return rules.weekdays
+    .map((jsDay) => ({
+      weekday: jsDayToIso(jsDay),
+      startMinute: rules.windowStartHour * 60,
+      endMinute: rules.windowEndHour * 60,
+    }))
+    .sort((a, b) => a.weekday - b.weekday)
+}
+
+// Обратное преобразование: диапазоны → рабочие дни и окно для легаси-схемы
+export function windowFromRanges(
+  ranges: AvailabilityRange[],
+  fallback: AvailabilityRules = defaultAvailabilityRules,
+): Pick<AvailabilityRules, 'weekdays' | 'windowStartHour' | 'windowEndHour'> {
+  if (ranges.length === 0) {
+    return {
+      weekdays: fallback.weekdays,
+      windowStartHour: fallback.windowStartHour,
+      windowEndHour: fallback.windowEndHour,
+    }
+  }
+
+  const weekdays = [...new Set(ranges.map((range) => range.weekday % 7))].sort((a, b) => a - b)
+  const startMinute = Math.min(...ranges.map((range) => range.startMinute))
+  const endMinute = Math.max(...ranges.map((range) => range.endMinute))
+
+  return {
+    weekdays,
+    windowStartHour: Math.floor(startMinute / 60),
+    windowEndHour: Math.ceil(endMinute / 60),
+  }
+}
+
+export function defaultAvailabilitySettings(timeZone: string): AvailabilitySettings {
+  return {
+    timeZone,
+    slotDurationMin: defaultAvailabilityRules.slotDurationMin,
+    bufferMin: defaultAvailabilityRules.bufferMin,
+    minNoticeMin: defaultAvailabilityRules.minNoticeMin,
+    horizonDays: defaultAvailabilityRules.horizonDays,
+    ranges: rangesFromRules(defaultAvailabilityRules),
+  }
+}
+
+// Генерирует ISO-времена начал слотов по диапазонам дней недели.
+export function generateSlotStartsFromRanges(now: Date, settings: AvailabilitySettings): string[] {
+  const starts: string[] = []
+  const earliest = now.getTime() + settings.minNoticeMin * MS_PER_MINUTE
+  const stepMin = settings.slotDurationMin + settings.bufferMin
+
+  for (let dayOffset = 0; dayOffset < settings.horizonDays; dayOffset += 1) {
+    const day = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + dayOffset),
+    )
+    const weekday = jsDayToIso(day.getUTCDay())
+    const ranges = settings.ranges
+      .filter((range) => range.weekday === weekday)
+      .sort((a, b) => a.startMinute - b.startMinute)
+
+    for (const range of ranges) {
+      for (
+        let minute = range.startMinute;
+        minute + settings.slotDurationMin <= range.endMinute;
+        minute += stepMin
+      ) {
+        const startAt = Date.UTC(
+          day.getUTCFullYear(),
+          day.getUTCMonth(),
+          day.getUTCDate(),
+          0,
+          minute,
+        )
+
+        if (startAt < earliest) {
+          continue
+        }
+
+        starts.push(new Date(startAt).toISOString())
+      }
+    }
+  }
+
+  return starts
+}

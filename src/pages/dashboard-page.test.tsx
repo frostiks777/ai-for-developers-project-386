@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 
-import type { AvailabilityRules } from '@/types/availability'
+import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
 import {
   defaultTimeZone,
@@ -23,14 +23,19 @@ const booking: BookingWithSlot = {
   durationMin: 30,
 }
 
-const defaultRules: AvailabilityRules = {
-  weekdays: [1, 2, 3, 4, 5],
-  windowStartHour: 10,
-  windowEndHour: 18,
+const defaultSettings: AvailabilitySettings = {
+  timeZone: 'UTC',
   slotDurationMin: 30,
   bufferMin: 10,
   minNoticeMin: 120,
   horizonDays: 14,
+  ranges: [
+    { weekday: 1, startMinute: 600, endMinute: 1080 },
+    { weekday: 2, startMinute: 600, endMinute: 1080 },
+    { weekday: 3, startMinute: 600, endMinute: 1080 },
+    { weekday: 4, startMinute: 600, endMinute: 1080 },
+    { weekday: 5, startMinute: 600, endMinute: 1080 },
+  ],
 }
 
 function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
@@ -50,11 +55,11 @@ function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
       return new Response(null, { status: 204 })
     }
 
-    if (url === '/api/availability' && method === 'GET') {
-      return new Response(JSON.stringify(defaultRules), { status: 200 })
+    if (url === '/api/v1/hosts/default/availability' && method === 'GET') {
+      return new Response(JSON.stringify(defaultSettings), { status: 200 })
     }
 
-    if (url === '/api/availability' && method === 'PUT') {
+    if (url === '/api/v1/hosts/default/availability' && method === 'PUT') {
       return new Response(String(init?.body), { status: 200 })
     }
 
@@ -124,11 +129,12 @@ describe('DashboardPage', () => {
 
     await waitFor(() => {
       const putCall = fetchMock.mock.calls.find(
-        ([url, init]) => String(url) === '/api/availability' && init?.method === 'PUT',
+        ([url, init]) =>
+          String(url) === '/api/v1/hosts/default/availability' && init?.method === 'PUT',
       )
       expect(putCall).toBeDefined()
-      const body = JSON.parse(String(putCall?.[1]?.body)) as AvailabilityRules
-      expect(body.weekdays).toContain(6)
+      const body = JSON.parse(String(putCall?.[1]?.body)) as AvailabilitySettings
+      expect(body.ranges.some((range) => range.weekday === 6)).toBe(true)
     })
   })
 
@@ -154,6 +160,29 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Пока нет ни одной брони')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Отменить' })).toBeNull()
+  })
+
+  it('позволяет задать несколько интервалов в день', async () => {
+    const fetchMock = mockFetch()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const user = userEvent.setup()
+    renderDashboard()
+
+    await screen.findByRole('button', { name: 'Сохранить' })
+
+    const addButtons = await screen.findAllByRole('button', { name: 'Добавить интервал' })
+    await user.click(addButtons[0])
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url) === '/api/v1/hosts/default/availability' && init?.method === 'PUT',
+      )
+      const body = JSON.parse(String(putCall?.[1]?.body)) as AvailabilitySettings
+      expect(body.ranges.filter((range) => range.weekday === 1)).toHaveLength(2)
+    })
   })
 })
 

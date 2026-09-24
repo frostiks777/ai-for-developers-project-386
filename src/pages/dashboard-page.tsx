@@ -4,19 +4,19 @@ import { toast } from 'sonner'
 import {
   ApiError,
   cancelBooking,
-  fetchAvailability,
+  fetchAvailabilitySettings,
   fetchBookings,
-  updateAvailability,
+  updateAvailabilitySettings,
 } from '@/api/client'
 import { AppHeader } from '@/components/app-header'
-import { AvailabilityForm } from '@/components/availability-form'
+import { AvailabilitySettingsForm } from '@/components/availability-settings-form'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
 import { BookingsList } from '@/components/bookings-list'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { EventTypesEditor } from '@/components/event-types-editor'
 import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
-import type { AvailabilityRules } from '@/types/availability'
+import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
 import { defaultTimeZone, toDateKeyInZone } from '@/utils/timezone'
 import { cn } from '@/lib/utils'
@@ -55,7 +55,7 @@ export default function DashboardPage() {
   const [isLoadingBookings, setIsLoadingBookings] = useState(true)
   const [bookingsError, setBookingsError] = useState<string | null>(null)
 
-  const [rules, setRules] = useState<AvailabilityRules | null>(null)
+  const [settings, setSettings] = useState<AvailabilitySettings | null>(null)
   const [isSavingRules, setIsSavingRules] = useState(false)
   const [rulesError, setRulesError] = useState<string | null>(null)
 
@@ -81,7 +81,7 @@ export default function DashboardPage() {
     void loadBookings()
     void (async () => {
       try {
-        setRules(await fetchAvailability())
+        setSettings(await fetchAvailabilitySettings(host.slug))
         setRulesError(null)
       } catch {
         setRulesError('Не удалось загрузить настройки доступности')
@@ -99,12 +99,12 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSaveRules = async (next: AvailabilityRules): Promise<boolean> => {
+  const handleSaveRules = async (next: AvailabilitySettings): Promise<boolean> => {
     setIsSavingRules(true)
 
     try {
-      const saved = await updateAvailability(next)
-      setRules(saved)
+      const saved = await updateAvailabilitySettings(host.slug, next)
+      setSettings(saved)
       toast.success('Настройки сохранены')
       return true
     } catch (error) {
@@ -160,9 +160,9 @@ export default function DashboardPage() {
             </div>
 
             {rulesError && <p className="text-destructive">{rulesError}</p>}
-            {!rulesError && !rules && <p>Загрузка настроек…</p>}
-            {rules && (
-              <AvailabilityForm rules={rules} isSaving={isSavingRules} onSave={handleSaveRules} />
+            {!rulesError && !settings && <p>Загрузка настроек…</p>}
+            {settings && (
+              <AvailabilitySettingsForm settings={settings} isSaving={isSavingRules} onSave={handleSaveRules} />
             )}
           </section>
         </main>
@@ -243,9 +243,9 @@ export default function DashboardPage() {
         {mobileTab === 'availability' && (
           <div className="mt-4 rounded-[18px] border bg-card p-5">
             {rulesError && <p className="text-destructive">{rulesError}</p>}
-            {!rulesError && !rules && <p>Загрузка настроек…</p>}
-            {rules && (
-              <AvailabilityForm rules={rules} isSaving={isSavingRules} onSave={handleSaveRules} />
+            {!rulesError && !settings && <p>Загрузка настроек…</p>}
+            {settings && (
+              <AvailabilitySettingsForm settings={settings} isSaving={isSavingRules} onSave={handleSaveRules} />
             )}
           </div>
         )}
