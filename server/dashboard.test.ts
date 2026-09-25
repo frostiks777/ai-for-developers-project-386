@@ -5,6 +5,7 @@ import type { AvailabilityRules } from './availability'
 import { buildApp } from './app'
 import { db } from './db'
 import { bookings, slots } from './db/schema'
+import { getDefaultHostId } from './test-helpers'
 import type { Booking, BookingWithSlot, CreatedBooking, TimeSlot } from './types'
 
 let app: FastifyInstance
@@ -28,6 +29,7 @@ async function createFutureSlot(offsetHours = 3) {
     await db
       .insert(slots)
       .values({
+        hostId: await getDefaultHostId(),
         startAt: new Date(Date.now() + offsetHours * 60 * 60 * 1000).toISOString(),
         durationMin: 30,
       })

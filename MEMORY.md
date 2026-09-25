@@ -283,6 +283,13 @@
     - **README синхронизирован**: стек БД (Postgres/Neon + PGlite вместо SQLite), таблица env (`DATABASE_URL`, `ADMIN_PASSWORD` вместо `DATABASE_PATH`), раздел «Доступ организатора».
     - **Логотип сайдбара** `/dashboard` — ссылка на главную `/` (в мобильной шапке логотип уже вёл на `/`); +1 RTL-тест.
     - Проверки: lint 0, typecheck чисто, **206/206 тестов** (34 файла), build ✓.
+61. ✅ **Мульти-хост-модель** (2026-09-25) — [ADR-0018](docs/adr/0018-multi-host-model.md):
+    - Схема: `slots.hostId`/`bookings.hostId` (`NOT NULL REFERENCES hosts`), аддитивная миграция с бэкфиллом на дефолтный хост (`bookings` — через `event_types.hostId`), индексы.
+    - Генерация/чтение слотов per-host: `selectFutureSlots(hostId)`, `regenerateFutureSlots(hostId, …)`, `regenerateFutureSlotsForSettings(hostId, …)`, сид для дефолтного хоста.
+    - `findHost(ref)` — по slug **или** UUID; все `/api/v1/hosts/:ref/*` принимают UUID (сохранена совместимость со slug).
+    - CRUD: `GET/POST /api/v1/hosts` (под Basic-auth), `409` дубликат slug, `422` неверный пояс; `POST /api/v1/hosts/:ref/bookings` пишет `hostId`, списки/слоты скоупятся по хосту.
+    - Фронт: `/book/:slug` принимает slug или UUID (regex). Осталось: per-host скаляры расписания (buffer/minNotice/horizon) и UI управления хостами.
+    - Проверки: lint 0, typecheck чисто, **тесты** (11 серверных файлов + `server/multi-host.test.ts`), build ✓.
 
 ## Что осталось (следующие шаги)
 
@@ -347,6 +354,7 @@
 | Контракт-тесты и e2e | `server/contract.test.ts` (`ajv` по `docs/openapi/openapi.yaml`); Playwright против собранного приложения (`PORT=3100`, `DATABASE_PATH=:memory:`), `npm run test:e2e` вне `npm test`/CI | [ADR-0012](docs/adr/0012-contract-tests-and-e2e.md); Design First — сервер приведён к контракту (Booking.timeZone, HostSettings, nullable) |
 | Модель времени и ошибок (T9) | Время — UTC ISO (`UtcDateTime`, `@format date-time`); ошибки — конверт `{ error: ApiError }`; `timeZone` — только для отображения UI | Сверка со спецификацией ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)); контракт приведён к фактическим ответам вместо переписывания сервера под local-time |
 | Доступ к панели | HTTP Basic Auth на `/dashboard`, `/admin/*` и админские мутации API (`ADMIN_PASSWORD`, нет переменной → открыто); демо-пароль в README | [ADR-0017](docs/adr/0017-dashboard-basic-auth.md); наставнику нужен доступ, полноценные сессии/аккаунты избыточны для MVP; публичные чтения гостя не трогаем |
+| Мульти-хост | `slots`/`bookings` привязаны к `hostId`; `findHost` по slug или UUID; `GET/POST /api/v1/hosts` (Basic-auth); `/book/:uuid` | [ADR-0018](docs/adr/0018-multi-host-model.md); изоляция расписаний без ломки slug-флоу; скаляры расписания пока общие |
 
 ## Окружение
 

@@ -4,13 +4,16 @@ import type { FastifyInstance } from 'fastify'
 import { buildApp } from './app'
 import { db } from './db'
 import { bookings, slots } from './db/schema'
+import { getDefaultHostId } from './test-helpers'
 import type { Booking, BookingWithSlot, TimeSlot } from './types'
 
 let app: FastifyInstance
+let hostId: string
 
 beforeAll(async () => {
   app = await buildApp()
   await app.ready()
+  hostId = await getDefaultHostId()
 })
 
 afterAll(async () => {
@@ -48,6 +51,7 @@ async function createFutureSlot() {
     await db
       .insert(slots)
       .values({
+        hostId,
         startAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
         durationMin: 30,
       })
@@ -67,7 +71,7 @@ describe('GET /health', () => {
 describe('GET /api/slots', () => {
   it('не отдаёт прошедшие слоты', async () => {
     const pastStartAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    await db.insert(slots).values({ startAt: pastStartAt, durationMin: 30 })
+    await db.insert(slots).values({ hostId, startAt: pastStartAt, durationMin: 30 })
 
     const allSlots = await requestSlots()
     const nowIso = new Date().toISOString()
@@ -78,7 +82,7 @@ describe('GET /api/slots', () => {
 
   it('не отдаёт слоты в пределах minNotice', async () => {
     const soonStartAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
-    await db.insert(slots).values({ startAt: soonStartAt, durationMin: 30 })
+    await db.insert(slots).values({ hostId, startAt: soonStartAt, durationMin: 30 })
 
     const allSlots = await requestSlots()
 
@@ -144,6 +148,7 @@ describe('целостность bookings.slotId', () => {
 
     try {
       await db.insert(bookings).values({
+        hostId,
         slotId: slot.id,
         name: 'Пётр',
         phone: '+79100000001',
@@ -297,7 +302,7 @@ describe('POST /api/bookings', () => {
   it('отвечает 400, если слот прошедший', async () => {
     const pastStartAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     const pastSlot = (
-      await db.insert(slots).values({ startAt: pastStartAt, durationMin: 30 }).returning()
+      await db.insert(slots).values({ hostId, startAt: pastStartAt, durationMin: 30 }).returning()
     )[0]
 
     const response = await app.inject({
@@ -312,7 +317,7 @@ describe('POST /api/bookings', () => {
   it('отвечает 400, если до слота меньше minNotice', async () => {
     const soonStartAt = new Date(Date.now() + 30 * 60 * 1000).toISOString()
     const soonSlot = (
-      await db.insert(slots).values({ startAt: soonStartAt, durationMin: 30 }).returning()
+      await db.insert(slots).values({ hostId, startAt: soonStartAt, durationMin: 30 }).returning()
     )[0]
 
     const response = await app.inject({

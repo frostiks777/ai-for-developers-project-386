@@ -161,6 +161,20 @@ export const v1CancelBookingSchema = z.object({
     .transform((value) => value || undefined),
 })
 
+// Создание хоста (мульти-хост, ADR-0018). Только сервер.
+const hostSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+export const createHostSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(1, 'Укажите slug')
+    .max(60, 'Slug слишком длинный')
+    .regex(hostSlugPattern, 'Slug: строчные латинские буквы, цифры и дефис'),
+  name: z.string().trim().min(1, 'Укажите имя').max(120, 'Имя слишком длинное'),
+  timezone: z.string().trim().min(1, 'Укажите часовой пояс').optional(),
+})
+
 // Блокировка времени v1: интервал + необязательная причина
 export const createTimeBlockSchema = z
   .object({

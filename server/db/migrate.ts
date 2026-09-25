@@ -18,6 +18,7 @@ const statements = [
   )`,
   `CREATE TABLE IF NOT EXISTS slots (
     id SERIAL PRIMARY KEY,
+    "hostId" TEXT NOT NULL REFERENCES hosts(id),
     "startAt" TEXT NOT NULL,
     "durationMin" INTEGER NOT NULL DEFAULT 30
   )`,
@@ -35,6 +36,7 @@ const statements = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "event_types_host_slug_unique" ON event_types("hostId", slug)`,
   `CREATE TABLE IF NOT EXISTS bookings (
     id SERIAL PRIMARY KEY,
+    "hostId" TEXT NOT NULL REFERENCES hosts(id),
     "slotId" INTEGER NOT NULL REFERENCES slots(id),
     "eventTypeId" TEXT NOT NULL DEFAULT '${DEFAULT_EVENT_TYPE_ID}' REFERENCES event_types(id),
     name TEXT NOT NULL,
@@ -136,6 +138,25 @@ export async function runMigrations(db: Db): Promise<string> {
 
   const hostId = await ensureDefaultHost(db)
   await ensureDefaultEventType(db, hostId)
+
+  // Привязка slots/bookings к хосту (ADR-0018): аддитивно, с бэкфиллом
+  // существующих строк на дефолтный хост. hostId — UUID из кода, не из ввода.
+  const hostScopedStatements = [
+    `ALTER TABLE slots ADD COLUMN IF NOT EXISTS "hostId" TEXT REFERENCES hosts(id)`,
+    `UPDATE slots SET "hostId" = '${hostId}' WHERE "hostId" IS NULL`,
+    `ALTER TABLE slots ALTER COLUMN "hostId" SET NOT NULL`,
+    `CREATE INDEX IF NOT EXISTS slots_hostId_idx ON slots("hostId")`,
+    `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "hostId" TEXT REFERENCES hosts(id)`,
+    `UPDATE bookings b SET "hostId" = et."hostId" FROM event_types et
+       WHERE b."eventTypeId" = et.id AND b."hostId" IS NULL`,
+    `UPDATE bookings SET "hostId" = '${hostId}' WHERE "hostId" IS NULL`,
+    `ALTER TABLE bookings ALTER COLUMN "hostId" SET NOT NULL`,
+    `CREATE INDEX IF NOT EXISTS bookings_hostId_idx ON bookings("hostId")`,
+  ]
+
+  for (const statement of hostScopedStatements) {
+    await db.execute(sql.raw(statement))
+  }
 
   return hostId
 }

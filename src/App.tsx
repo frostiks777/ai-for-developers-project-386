@@ -11,10 +11,15 @@ import LandingPage from '@/pages/landing-page'
 import NotFoundPage from '@/pages/not-found-page'
 import ReschedulePage from '@/pages/reschedule-page'
 
+// Публичная ссылка хоста: slug (например, 'default') или UUID (ADR-0018)
+const HOST_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function BookingRoute() {
   const { slug } = useParams<{ slug: string }>()
 
-  return slug === host.slug ? <HomePage /> : <NotFoundPage />
+  const isKnownHost = slug === host.slug || (slug ? HOST_UUID_PATTERN.test(slug) : false)
+
+  return isKnownHost ? <HomePage /> : <NotFoundPage />
 }
 
 export function App() {

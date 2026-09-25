@@ -45,16 +45,18 @@ describe('runMigrations', () => {
 
   it('отменённая бронь не блокирует повторную запись (partial unique index)', async () => {
     const db = createPgliteDb()
-    await runMigrations(db)
+    const hostId = await runMigrations(db)
 
     const startAt = '2026-10-01T10:00:00.000Z'
     const endAt = '2026-10-01T10:30:00.000Z'
-    const slot = (await db.insert(schema.slots).values({ startAt, durationMin: 30 }).returning())[0]
+    const slot = (
+      await db.insert(schema.slots).values({ hostId, startAt, durationMin: 30 }).returning()
+    )[0]
 
     const booking = (
       await db
         .insert(schema.bookings)
-        .values({ slotId: slot.id, name: 'Иван', email: 'ivan@example.com', startAt, endAt })
+        .values({ hostId, slotId: slot.id, name: 'Иван', email: 'ivan@example.com', startAt, endAt })
         .returning()
     )[0]
 
@@ -66,7 +68,7 @@ describe('runMigrations', () => {
     await expect(
       db
         .insert(schema.bookings)
-        .values({ slotId: slot.id, name: 'Пётр', email: 'petr@example.com', startAt, endAt }),
+        .values({ hostId, slotId: slot.id, name: 'Пётр', email: 'petr@example.com', startAt, endAt }),
     ).resolves.toBeDefined()
   }, 30_000)
 })

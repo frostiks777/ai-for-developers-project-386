@@ -19,8 +19,15 @@ export type CreateBookingInput = {
   idempotencyKey?: string
 }
 
-export async function findSlotByStartAt(startAt: string): Promise<SlotRow | undefined> {
-  const rows = await db.select().from(slots).where(eq(slots.startAt, startAt)).limit(1)
+export async function findSlotByStartAt(
+  hostId: string,
+  startAt: string,
+): Promise<SlotRow | undefined> {
+  const rows = await db
+    .select()
+    .from(slots)
+    .where(and(eq(slots.hostId, hostId), eq(slots.startAt, startAt)))
+    .limit(1)
 
   return rows[0]
 }
@@ -54,6 +61,7 @@ export async function findBookingByPublicId(id: string): Promise<BookingRow | un
 }
 
 export async function createBookingV1(
+  hostId: string,
   input: CreateBookingInput,
   slot: SlotRow,
   durationMin: number,
@@ -64,6 +72,7 @@ export async function createBookingV1(
   const rows = await db
     .insert(bookings)
     .values({
+      hostId,
       slotId: slot.id,
       eventTypeId: input.eventTypeId,
       name: input.clientName,

@@ -1,9 +1,12 @@
 import { sql } from 'drizzle-orm'
 import { boolean, integer, pgTable, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
 
-// Слоты материализуются из правил доступности (ADR-0003/0004)
+// Слоты материализуются из правил доступности (ADR-0003/0004); принадлежат хосту (ADR-0018)
 export const slots = pgTable('slots', {
   id: serial('id').primaryKey(),
+  hostId: text('hostId')
+    .notNull()
+    .references(() => hosts.id),
   // Дата-время начала слота в формате ISO 8601 (UTC)
   startAt: text('startAt').notNull(),
   durationMin: integer('durationMin').notNull().default(30),
@@ -36,6 +39,9 @@ export const eventTypes = pgTable(
 // Бронирования
 export const bookings = pgTable('bookings', {
   id: serial('id').primaryKey(),
+  hostId: text('hostId')
+    .notNull()
+    .references(() => hosts.id),
   slotId: integer('slotId')
     .notNull()
     .references(() => slots.id),
