@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { useTimeFormat } from '@/hooks/use-time-format'
 import { createBookingSchema } from '@/lib/validation'
 import { cn } from '@/lib/utils'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
@@ -58,6 +59,7 @@ export function BookingDialog({
   const [conflict, setConflict] = useState(false)
   const { isSubmitting, bookSlot } = useBooking()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { hour12 } = useTimeFormat()
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -160,7 +162,7 @@ export function BookingDialog({
 
   const dateKey = slot ? toDateKeyInZone(new Date(slot.startAt), timeZone) : null
   const dialogDate = dateKey ? formatDialogDate(dateKey) : ''
-  const timeRange = slot ? formatTimeRange(slot, timeZone) : ''
+  const timeRange = slot ? formatTimeRange(slot, timeZone, hour12) : ''
   const desktopSummary = slot ? `${dialogDate}, ${timeRange} · ${slot.durationMin} мин` : ''
   const mobileSummaryLine2 = slot ? `${timeRange} · ${slot.durationMin} мин · ${timeZone}` : ''
   const inputClass = isDesktop ? 'h-11' : 'h-[52px] text-base'

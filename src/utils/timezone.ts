@@ -11,6 +11,23 @@ export const defaultTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone 
 
 export const timeZoneOptions = Array.from(new Set([defaultTimeZone, ...fallbackTimeZones]))
 
+// Полный список IANA-поясов (с фолбэком для сред без Intl.supportedValuesOf)
+export const allTimeZones: string[] = (() => {
+  const supported =
+    typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []
+  return Array.from(new Set(['UTC', defaultTimeZone, ...supported, ...fallbackTimeZones]))
+})()
+
+export function searchTimeZones(query: string, limit = 60): string[] {
+  const normalized = query.trim().toLowerCase()
+
+  if (normalized === '') {
+    return timeZoneOptions
+  }
+
+  return allTimeZones.filter((timeZone) => timeZone.toLowerCase().includes(normalized)).slice(0, limit)
+}
+
 export function toDateKeyInZone(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone,
@@ -20,19 +37,21 @@ export function toDateKeyInZone(date: Date, timeZone: string): string {
   }).format(date)
 }
 
-export function formatDateTimeInZone(iso: string, timeZone: string): string {
+export function formatDateTimeInZone(iso: string, timeZone: string, hour12?: boolean): string {
   return new Intl.DateTimeFormat('ru-RU', {
     timeZone,
     dateStyle: 'medium',
     timeStyle: 'short',
+    hour12,
   }).format(new Date(iso))
 }
 
-export function formatTimeInZone(iso: string, timeZone: string): string {
+export function formatTimeInZone(iso: string, timeZone: string, hour12?: boolean): string {
   return new Intl.DateTimeFormat('ru-RU', {
     timeZone,
     hour: '2-digit',
     minute: '2-digit',
+    hour12,
   }).format(new Date(iso))
 }
 
@@ -80,11 +99,12 @@ export function formatDialogDate(dateKey: string): string {
 export function formatTimeRange(
   slot: { startAt: string; durationMin: number },
   timeZone: string,
+  hour12?: boolean,
 ): string {
   const start = new Date(slot.startAt)
   const end = new Date(start.getTime() + slot.durationMin * 60_000)
 
-  return `${formatTimeInZone(start.toISOString(), timeZone)} – ${formatTimeInZone(end.toISOString(), timeZone)}`
+  return `${formatTimeInZone(start.toISOString(), timeZone, hour12)} – ${formatTimeInZone(end.toISOString(), timeZone, hour12)}`
 }
 
 export function timeZoneOptionLabel(timeZone: string): string {

@@ -12,11 +12,13 @@ import { DateStrip } from '@/components/date-strip'
 import { HostInfo } from '@/components/host-info'
 import { MonthCalendar } from '@/components/month-calendar'
 import { SlotGrid } from '@/components/slot-grid'
+import { TimeFormatToggle } from '@/components/time-format-toggle'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
 import { useAvailability } from '@/hooks/use-availability'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { useTimeFormat } from '@/hooks/use-time-format'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { parseDateKey } from '@/utils/dates'
 import { pluralRu } from '@/utils/plural'
@@ -80,6 +82,7 @@ export default function HomePage() {
   const [minNoticeMin, setMinNoticeMin] = useState<number | null>(null)
   const [isMonthOpen, setIsMonthOpen] = useState(false)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { hour12 } = useTimeFormat()
 
   const slotDates = useMemo(
     () => slots.map((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone)),
@@ -336,8 +339,9 @@ export default function HomePage() {
                     labelIcon={
                       <Globe className="size-3.5 text-muted-foreground" strokeWidth={1.8} />
                     }
-                    className="inline-flex h-8 flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px] [&>select]:h-6 [&>select]:w-auto [&>select]:border-0 [&>select]:bg-transparent [&>select]:p-0 [&>select]:text-[13px]"
+                    className="inline-flex h-8 flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px] [&>input]:h-6 [&>input]:w-auto [&>input]:border-0 [&>input]:bg-transparent [&>input]:p-0 [&>input]:text-[13px]"
                   />
+                  <TimeFormatToggle className="h-8" />
                 </div>
               </section>
 
@@ -439,7 +443,7 @@ export default function HomePage() {
       {!isDesktop && !bookedBooking && selectedSlot && activeDate && (
         <BookingBar
           dateTitle={formatDayShortTitle(activeDate)}
-          timeRange={formatTimeRange(selectedSlot, timeZone)}
+          timeRange={formatTimeRange(selectedSlot, timeZone, hour12)}
           onConfirm={() => setIsDialogOpen(true)}
         />
       )}

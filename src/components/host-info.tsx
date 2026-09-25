@@ -1,6 +1,7 @@
 import { Clock, Globe, Hourglass, Video } from 'lucide-react'
 
 import { LocationType, type EventType } from '@/api/generated'
+import { TimeFormatToggle } from '@/components/time-format-toggle'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { host } from '@/config/host'
 import { pluralRu } from '@/utils/plural'
@@ -73,6 +74,10 @@ export function HostInfo({
           labelIcon={<Globe className="size-4 text-muted-foreground" strokeWidth={1.8} />}
         />
         <p className="mt-2 text-xs text-muted-foreground">Определён по вашему браузеру</p>
+        <div className="mt-4">
+          <p className="mb-2 text-xs text-muted-foreground">Формат времени</p>
+          <TimeFormatToggle />
+        </div>
       </div>
     </div>
   )
