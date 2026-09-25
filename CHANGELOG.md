@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.12.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.11.0...v1.12.0) (2026-09-25)
+
+
+### Features
+
+* **api:** split slot buffer into before and after ([4640244](https://github.com/frostiks777/ai-for-developers-project-386/commit/464024413545815cc002c2d24b75b4a317b3193a))
+* **availability:** use separate before and after buffers ([f205bc2](https://github.com/frostiks777/ai-for-developers-project-386/commit/f205bc271ba3e38d29e59b4f3eead80be09605d0))
+* **booking:** add uuid self-service routes and cancel details ([937cbb7](https://github.com/frostiks777/ai-for-developers-project-386/commit/937cbb7b1a8a6c690b28bf60d9d84ea56ea27db0))
+* **dashboard:** add status tabs, search and horizon presets ([c42fc2e](https://github.com/frostiks777/ai-for-developers-project-386/commit/c42fc2e989505d6358ce92da2360b343a7da507d))
+
+
+### Bug Fixes
+
+* **ui:** fix overflow, sidebar scroll and bookings nav link ([66296c5](https://github.com/frostiks777/ai-for-developers-project-386/commit/66296c504b2afd7c98351e122df12bb96f7f6232))
+
 ## [1.11.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.10.0...v1.11.0) (2026-09-25)
 
 
