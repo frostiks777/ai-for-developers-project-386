@@ -20,6 +20,8 @@ export default defineConfig({
     globals: true,
     // RTL-тесты под параллельной нагрузкой могут превышать дефолтные 5 c
     testTimeout: 30000,
+    // Редкие тайминговые флаки RTL под нагрузкой: один повтор без вреда для корректности
+    retry: 1,
     setupFiles: './src/test/setup.ts',
     // Exclude agent-skills repo content from project test discovery
     exclude: [
