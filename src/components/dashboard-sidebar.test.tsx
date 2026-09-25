@@ -8,6 +8,7 @@ function renderSidebar() {
   return render(
     <MemoryRouter>
       <DashboardSidebar bookingCount={2} />
+      <section id="bookings">Встречи</section>
       <section id="availability">Доступность</section>
       <section id="blocks">Блокировки</section>
     </MemoryRouter>,
@@ -15,6 +16,20 @@ function renderSidebar() {
 }
 
 describe('DashboardSidebar', () => {
+  it('скроллит к секции встреч по клику', async () => {
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
+    const user = userEvent.setup()
+    renderSidebar()
+
+    await user.click(screen.getByRole('link', { name: /Встречи/ }))
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+    expect(scrollIntoView.mock.instances[0]).toBe(screen.getByText('Встречи', { selector: 'section' }))
+    expect(window.location.hash).toBe('#bookings')
+
+    scrollIntoView.mockRestore()
+  })
+
   it('скроллит к секции доступности по клику на ссылку', async () => {
     const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
     const user = userEvent.setup()
