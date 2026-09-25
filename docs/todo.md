@@ -157,6 +157,16 @@
 
 - [ ] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): `POST /api/v1/hosts/:slug/bookings` публичный; поле «Гости» принимает произвольные email, а форма — спам/абьюз. Добавить CAPTCHA (напр. Cloudflare Turnstile или hCaptcha) на шаге брони, серверную верификацию токена и rate-limit по IP; показывать/требовать капчу при указании email гостя (или всегда). Выбор провайдера и точки проверки зафиксировать отдельным ADR.
 
+### Backlog: редизайн v2 (`design/`) — [#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)
+
+> Файлы добавлены как задачи, содержимое ещё не изучалось. При старте — пройти скиллом `design/.agents/skills/apply-design-v2/SKILL.md`.
+
+- [ ] **Пакет v2** — [`design/design-v2-README.md`](../design/design-v2-README.md), [`design/implementation-plan (1).md`](../design/implementation-plan%20(1).md): обзор и план.
+- [ ] **Доки v2** — [`design/docs/design/v2/`](../design/docs/design/v2/): `README.md`, `implementation-plan.md`, `design-spec.md`, `test-contract.md`, `ux-cases.md`, `tokens.css`, `tailwind.config.snippet.js`.
+- [ ] **ADRs v2** — [`design/docs/design/v2/adr/`](../design/docs/design/v2/adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone).
+- [ ] **Макеты/скриншоты v2** — `design/docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking).
+- [ ] **Архив v1** — [`design/Old/`](../design/Old/): старый пакет (PROMPT.md, README.md) — при решении о v2 удалить или оставить как справку.
+
 ## Ключевые расхождения со спекой
 
 > Целевое состояние зафиксировано в утверждённой спецификации `docs/spec.md` (Шаг 2). Ниже — расхождения **текущего кода** с этой целью; закрываются на Шаге 3.
