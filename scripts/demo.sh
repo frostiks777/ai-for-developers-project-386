@@ -23,21 +23,25 @@ node -e "const d=JSON.parse(process.argv[1]);console.log('всего слото�
 START="$(node -e "const d=JSON.parse(process.argv[1]);const s=d.slots.find(x=>x.available)||d.slots[0];process.stdout.write(s.startAt)" "$SLOTS")"
 
 say "4. Бронируем слот $START"
-BOOKING="$(curl -s -X POST "$BASE/api/v1/hosts/$HOST/bookings" \
-  -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: demo-$(date +%s)" \
-  -d "{\"eventTypeId\":\"default-consultation\",\"startAt\":\"$START\",\"clientName\":\"Демо Гость\",\"clientEmail\":\"demo@example.com\",\"consentAccepted\":true}")"
+# --data-binary @- вместо -d: на Windows-curl кириллица в inline-теле ломает
+# Content-Length, и Fastify отвечает FST_ERR_CTP_INVALID_CONTENT_LENGTH.
+BOOKING="$(printf '{"eventTypeId":"default-consultation","startAt":"%s","clientName":"Демо Гость","clientEmail":"demo@example.com","consentAccepted":true}' "$START" | \
+  curl -s -X POST "$BASE/api/v1/hosts/$HOST/bookings" \
+    -H 'Content-Type: application/json' \
+    -H "Idempotency-Key: demo-$(date +%s)" \
+    --data-binary @-)"
 echo "$BOOKING"
 ID="$(node -e "process.stdout.write(JSON.parse(process.argv[1]).id)" "$BOOKING")"
 
 say "5. Повторная бронь того же слота отклоняется (409)"
-curl -s -o /dev/null -w 'HTTP %{http_code}\n' -X POST "$BASE/api/v1/hosts/$HOST/bookings" \
-  -H 'Content-Type: application/json' \
-  -d "{\"eventTypeId\":\"default-consultation\",\"startAt\":\"$START\",\"clientName\":\"Второй\",\"clientEmail\":\"second@example.com\",\"consentAccepted\":true}"
+printf '{"eventTypeId":"default-consultation","startAt":"%s","clientName":"Второй","clientEmail":"second@example.com","consentAccepted":true}' "$START" | \
+  curl -s -o /dev/null -w 'HTTP %{http_code}\n' -X POST "$BASE/api/v1/hosts/$HOST/bookings" \
+    -H 'Content-Type: application/json' \
+    --data-binary @-
 
 say "6. Отменяем бронь по публичному id (ссылка отмены)"
-curl -s -X POST "$BASE/api/v1/bookings/$ID/cancel" \
-  -H 'Content-Type: application/json' -d '{"reason":"демо"}'; echo
+printf '%s' '{"reason":"демо"}' | curl -s -X POST "$BASE/api/v1/bookings/$ID/cancel" \
+  -H 'Content-Type: application/json' --data-binary @-; echo
 
 say "7. Слот снова свободен"
 curl -s "$BASE/api/v1/hosts/$HOST/slots" | \
