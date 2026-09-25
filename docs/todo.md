@@ -144,8 +144,8 @@
 ### P0 — Публичный флоу бронирования (§1.1–1.3)
 
 - [x] Маршрут `/book/:slug` (§1.1) — **сделано** (ADR-0010): лендинг `/`, бронь `/book/:slug`
-- [ ] `TimezoneSelector`: поиск по IANA (§1.1) <частично: селект есть (`src/components/timezone-select.tsx`), поиска нет>
-- [ ] Переключатель 12/24-часового формата (§1.1)
+- [x] `TimezoneSelector`: поиск по IANA (§1.1) — **сделано**: `TimeZoneSelect` переделан в combobox (`role="combobox"` + `role="listbox"`), поиск по подстроке (`searchTimeZones` в `src/utils/timezone.ts`, `Intl.supportedValuesOf`), фокус открывает список популярных поясов; unit + RTL-тесты
+- [x] Переключатель 12/24-часового формата (§1.1) — **сделано**: `TimeFormatProvider` + `useTimeFormat` (localStorage `call-calendar-hour12`), `TimeFormatToggle` в `HostInfo` и мобильной шапке; формат учитывают `SlotGrid`, `BookingBar`, `BookingDialog`, `BookingSuccess`; RTL-тест
 - [x] Валидация имени min 2 (§1.2) — **сделано**: `min(2, 'Имя от 2 символов')` в `src/lib/validation.ts` ↔ `server/validation.ts` (legacy `name` и v1 `clientName`), inline-ошибка в диалоге
 - [x] Маска телефона (§1.2) — **сделано**: `src/utils/phone.ts` (`formatPhoneInput`, RU-маска `+7 (900) 000-00-00`, иностранные — цифры с `+`), применяется в диалоге; unit-тесты
 - [x] Лимит `notes` 500 (§1.2) — **сделано**: `max(500)` в зеркалах схем, `maxLength={500}` и счётчик «N / 500» в диалоге
