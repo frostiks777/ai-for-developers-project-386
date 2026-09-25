@@ -123,8 +123,8 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Обсудить архитектуру')).toBeInTheDocument()
 
     expect(await screen.findByRole('button', { name: 'Сохранить' })).toBeEnabled()
-    expect(screen.getByLabelText('Пн')).toBeChecked()
-    expect(screen.getByLabelText('Сб')).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Пн: доступность' })).toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Сб: доступность' })).not.toBeChecked()
   })
 
   it('отменяет бронь и убирает её из списка', async () => {
@@ -155,7 +155,7 @@ describe('DashboardPage', () => {
 
     await screen.findByRole('button', { name: 'Сохранить' })
 
-    const saturday = screen.getByLabelText('Сб')
+    const saturday = screen.getByRole('switch', { name: 'Сб: доступность' })
     await user.click(saturday)
     expect(saturday).toBeChecked()
 
@@ -182,7 +182,7 @@ describe('DashboardPage', () => {
     await screen.findByRole('button', { name: 'Сохранить' })
 
     for (const label of ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']) {
-      await user.click(screen.getByLabelText(label))
+      await user.click(screen.getByRole('switch', { name: `${label}: доступность` }))
     }
 
     expect(screen.getByRole('button', { name: 'Сохранить' })).toBeDisabled()
@@ -236,8 +236,7 @@ describe('DashboardPage', () => {
 
     await screen.findByRole('button', { name: 'Сохранить' })
 
-    const addButtons = await screen.findAllByRole('button', { name: 'Добавить интервал' })
-    await user.click(addButtons[0])
+    await user.click(screen.getByRole('button', { name: 'Добавить интервал: Пн' }))
     await user.click(screen.getByRole('button', { name: 'Сохранить' }))
 
     await waitFor(() => {
@@ -324,6 +323,6 @@ describe('DashboardPage grouping and filter', () => {
     vi.stubGlobal('fetch', mockFetch())
     renderDashboard()
 
-    expect(await screen.findByText('≈ 12 слотов в рабочий день')).toBeInTheDocument()
+    expect(await screen.findByText(/≈ 12 слотов в рабочий день/)).toBeInTheDocument()
   })
 })
