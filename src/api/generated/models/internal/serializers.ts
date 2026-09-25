@@ -369,15 +369,43 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,status: input_.status,cancellationReason: input_.cancellationReason,createdAt: input_.createdAt
+    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,clientGuests: jsonArrayStringToTransportTransform(input_.clientGuests),consentAccepted: input_.consentAccepted,status: input_.status,cancellationReason: input_.cancellationReason,createdAt: input_.createdAt
   }!;
 }export function jsonBookingToApplicationTransform(input_?: any): Booking {
   if(!input_) {
     return input_ as any;
   }
     return {
-    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,status: input_.status,cancellationReason: input_.cancellationReason,createdAt: input_.createdAt
+    id: input_.id,hostSlug: input_.hostSlug,eventTypeId: input_.eventTypeId,startAt: input_.startAt,endAt: input_.endAt,timeZone: input_.timeZone,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,clientGuests: jsonArrayStringToApplicationTransform(input_.clientGuests),consentAccepted: input_.consentAccepted,status: input_.status,cancellationReason: input_.cancellationReason,createdAt: input_.createdAt
   }!;
+}export function jsonArrayStringToTransportTransform(
+  items_?: Array<string> | null,
+): any {
+  if(!items_) {
+    return items_ as any;
+  }
+  const _transformedArray = [];
+
+  for (const item of items_ ?? []) {
+    const transformedItem = item as any;
+    _transformedArray.push(transformedItem);
+  }
+
+  return _transformedArray as any;
+}export function jsonArrayStringToApplicationTransform(
+  items_?: any,
+): Array<string> {
+  if(!items_) {
+    return items_ as any;
+  }
+  const _transformedArray = [];
+
+  for (const item of items_ ?? []) {
+    const transformedItem = item as any;
+    _transformedArray.push(transformedItem);
+  }
+
+  return _transformedArray as any;
 }export function jsonCreateBookingRequestToTransportTransform(
   input_?: CreateBookingRequest | null,
 ): any {
@@ -385,7 +413,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes
+    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,guests: jsonArrayStringToTransportTransform(input_.guests),consentAccepted: input_.consentAccepted
   }!;
 }export function jsonCreateBookingRequestToApplicationTransform(
   input_?: any,
@@ -394,7 +422,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes
+    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,guests: jsonArrayStringToApplicationTransform(input_.guests),consentAccepted: input_.consentAccepted
   }!;
 }export function jsonArrayTimeBlockToTransportTransform(
   items_?: Array<TimeBlock> | null,

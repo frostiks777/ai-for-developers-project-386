@@ -37,7 +37,9 @@ export async function listHostBookings(
   throw createRestError(response);
 }
 ;
-export interface CreateBookingOptions extends OperationOptions {}
+export interface CreateBookingOptions extends OperationOptions {
+  idempotencyKey?: string
+}
 export async function createBooking(
   client: HostBookingsClientContext,
   slug: string,
@@ -48,7 +50,9 @@ export async function createBooking(
     slug: slug
   });
   const httpRequestOptions = {
-    headers: {},body: jsonCreateBookingRequestToTransportTransform(body),
+    headers: {
+      ...(options?.idempotencyKey && {"idempotency-key": options.idempotencyKey})
+    },body: jsonCreateBookingRequestToTransportTransform(body),
   };
   const response = await client.pathUnchecked(path).post(httpRequestOptions);
 

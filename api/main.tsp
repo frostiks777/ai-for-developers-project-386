@@ -172,6 +172,10 @@ model Booking {
   clientEmail: string;
   clientPhone?: string | null;
   clientNotes?: string | null;
+  @doc("Приглашённые участники (email).")
+  clientGuests?: string[] | null;
+  @doc("Согласие на обработку персональных данных.")
+  consentAccepted: boolean;
   status: BookingStatus;
   @doc("Причина отмены, если бронь отменена.")
   cancellationReason?: string | null;
@@ -186,6 +190,10 @@ model CreateBookingRequest {
   clientEmail: string;
   clientPhone?: string;
   clientNotes?: string;
+  @doc("Приглашённые участники (email), необязательно.")
+  guests?: string[];
+  @doc("Согласие на обработку персональных данных (обязательно).")
+  consentAccepted: boolean;
 }
 
 model RescheduleBookingRequest {
@@ -285,6 +293,7 @@ namespace ApiV1 {
     @post
     op createBooking(
       @path slug: HostSlug,
+      @header("Idempotency-Key") idempotencyKey?: string,
       @body body: CreateBookingRequest,
     ): { @statusCode statusCode: 201; @body body: Booking } | ErrorResponse;
   }
