@@ -281,7 +281,8 @@
     - **Deep-link `/admin/*`** (`f6abc4f`): `DashboardPage` принимает `initialSection` — прокрутка к секции на десктопе, стартовый таб на телефоне; маршруты `/admin/{availability,event-types,bookings,blocks}`; 2 RTL-теста.
     - **Basic-auth панели организатора** — [ADR-0017](docs/adr/0017-dashboard-basic-auth.md): `/dashboard` и `/admin/*` под HTTP Basic Auth, пароль из `ADMIN_PASSWORD` (`server/env.ts` + `onRequest`-хук, `timingSafeEqual`); если переменная не задана (dev/тесты/e2e) — гейт выключен. Демо-пароль `call-calendar-admin` — в README, `.env.example`, `render.yaml`. Гейт также закрывает **административные API** (`PUT availability`, мутации `event-types`/`blocks`, легаси `/api/availability`/`/api/bookings`); публичные чтения гостя (`GET availability/event-types/bookings`) остаются открытыми. Фикс: вход в панель из SPA — полной навигацией (`AppHeader` → `<a href>` для `/dashboard`/`/admin/*`). 8 серверных + 3 RTL-теста (`server/admin-auth.test.ts`, `src/components/app-header.test.tsx`).
     - **README синхронизирован**: стек БД (Postgres/Neon + PGlite вместо SQLite), таблица env (`DATABASE_URL`, `ADMIN_PASSWORD` вместо `DATABASE_PATH`), раздел «Доступ организатора».
-    - Проверки: lint 0, typecheck чисто, **199/199 тестов** (33 файла), build ✓.
+    - **Логотип сайдбара** `/dashboard` — ссылка на главную `/` (в мобильной шапке логотип уже вёл на `/`); +1 RTL-тест.
+    - Проверки: lint 0, typecheck чисто, **206/206 тестов** (34 файла), build ✓.
 
 ## Что осталось (следующие шаги)
 
