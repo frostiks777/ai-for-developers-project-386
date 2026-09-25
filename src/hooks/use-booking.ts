@@ -6,22 +6,28 @@ import { toCreatedBooking } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
 import type { CreatedBooking } from '@/types/booking'
 
+export type BookSlotResult =
+  | { ok: true; booking: CreatedBooking }
+  | { ok: false; error: ApiError }
+
 export function useBooking() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const bookSlot = async (
     hostSlug: string,
     body: CreateBookingRequest,
-  ): Promise<CreatedBooking | null> => {
+  ): Promise<BookSlotResult> => {
     setIsSubmitting(true)
 
     try {
       const booking = await call(api.hostBookingsClient.createBooking(hostSlug, body))
       toast.success('Звонок забронирован')
-      return toCreatedBooking(booking)
+      return { ok: true, booking: toCreatedBooking(booking) }
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : 'Не удалось забронировать звонок')
-      return null
+      const apiError =
+        error instanceof ApiError ? error : new ApiError(0, 'Не удалось забронировать звонок')
+      toast.error(apiError.message)
+      return { ok: false, error: apiError }
     } finally {
       setIsSubmitting(false)
     }

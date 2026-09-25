@@ -185,6 +185,14 @@ export function BookingSuccess({
         </Button>
 
         <Button
+          variant="outline"
+          asChild
+          className={cn('w-full', isDesktop ? 'h-11' : 'h-12 rounded-xl')}
+        >
+          <Link to={`/cancel/${booking.cancelToken}`}>Отменить встречу</Link>
+        </Button>
+
+        <Button
           onClick={onReset}
           className={cn('w-full', isDesktop ? 'h-12' : 'h-14 rounded-2xl text-base font-bold')}
         >

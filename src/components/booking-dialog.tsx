@@ -12,6 +12,7 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { createBookingSchema } from '@/lib/validation'
 import { cn } from '@/lib/utils'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
+import { formatPhoneInput } from '@/utils/phone'
 import { formatDialogDate, formatTimeRange, toDateKeyInZone } from '@/utils/timezone'
 
 interface BookingDialogProps {
@@ -39,6 +40,7 @@ export function BookingDialog({
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [comment, setComment] = useState('')
+  const [conflict, setConflict] = useState(false)
   const { isSubmitting, bookSlot } = useBooking()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -49,6 +51,7 @@ export function BookingDialog({
       setPhone('')
       setEmail('')
       setComment('')
+      setConflict(false)
     }
   }, [open])
 
@@ -61,6 +64,8 @@ export function BookingDialog({
   })
   const isFormValid = parseResult.success
   const issues = parseResult.success ? [] : parseResult.error.issues
+  const nameError =
+    name.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'name')?.message ?? null) : null
   const phoneError =
     phone.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'phone')?.message ?? null) : null
   const emailError =
@@ -73,7 +78,9 @@ export function BookingDialog({
       return
     }
 
-    const booking = await bookSlot(hostSlug, {
+    setConflict(false)
+
+    const result = await bookSlot(hostSlug, {
       eventTypeId,
       startAt: slot.startAt,
       clientName: name,
@@ -82,12 +89,18 @@ export function BookingDialog({
       clientNotes: comment.trim() || undefined,
     })
 
-    if (booking) {
-      onBooked(booking)
+    if (result.ok) {
+      onBooked(result.booking)
       onOpenChange(false)
-    } else {
-      onFailed?.()
+      return
     }
+
+    if (result.error.status === 409) {
+      setConflict(true)
+      return
+    }
+
+    onFailed?.()
   }
 
   const handleOpenAutoFocus = (event: Event) => {
@@ -172,8 +185,15 @@ export function BookingDialog({
               onChange={(event) => setName(event.target.value)}
               placeholder="Как к вам обращаться"
               autoComplete="name"
-              className={inputClass}
+              aria-invalid={nameError !== null}
+              aria-describedby={nameError ? 'booking-name-error' : undefined}
+              className={cn(inputClass, nameError && 'border-destructive')}
             />
+            {nameError && (
+              <p id="booking-name-error" className="text-[13px] text-destructive">
+                {nameError}
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -205,7 +225,7 @@ export function BookingDialog({
               id="booking-phone"
               type="tel"
               value={phone}
-              onChange={(event) => setPhone(event.target.value)}
+              onChange={(event) => setPhone(formatPhoneInput(event.target.value))}
               placeholder="+7 900 000-00-00"
               autoComplete="tel"
               aria-invalid={phoneError !== null}
@@ -230,16 +250,22 @@ export function BookingDialog({
               onChange={(event) => setComment(event.target.value)}
               placeholder="Вопрос или тема встречи (необязательно)"
               rows={3}
-              maxLength={1000}
+              maxLength={500}
               aria-describedby="booking-comment-counter"
               className={cn(inputClass, 'min-h-[80px] py-2.5')}
             />
             <div className="flex justify-end">
               <span id="booking-comment-counter" className="text-xs text-muted-foreground">
-                {comment.length} / 1000
+                {comment.length} / 500
               </span>
             </div>
           </div>
+
+          {conflict && (
+            <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+              Этот слот только что заняли. Выберите другое время.
+            </p>
+          )}
 
           {isDesktop ? (
             <DialogFooter>
