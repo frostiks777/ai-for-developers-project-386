@@ -118,8 +118,8 @@
 > Эталон от Gemini — упрощённый (без типов встреч, часового пояса, телефона/комментария, отмены/переноса). Полное выравнивание **отклонено**: сохраняем утверждённый редизайн A/D ([ADR-0007](adr/0007-visual-redesign-and-themes.md)) и API `/api/v1`. Берём только функционально недостающее.
 > Сверка: S1 Landing / S2 Slot Selection / S3 Contact Form / S4 Success — уже есть (наша реализация); S2-панель «Свободно»/«Длительность» покрыта `freeCount`/`durationMin`.
 
-- [ ] **Экран «Предстоящие события» (S5):** публичная страница со списком броней-карточек (имя, email, `Слот: YYYY-MM-DD-HH:mm`, `Создано: DD.MM.YYYY, HH:mm`); маршрут (напр. `/events`) поверх существующего `GET /api/v1/hosts/:slug/bookings`.
-- [ ] **Табы в шапке «Записаться / Предстоящие события»** — навигация к S5 (сейчас в `AppHeader` одна ссылка).
+- [x] **Экран «Предстоящие события» (S5):** публичная страница `src/pages/events-page.tsx` (маршрут `/events`) — карточки броней (имя, email, `Слот: YYYY-MM-DD-HH:mm`, `Создано: DD.MM.YYYY, HH:mm`) поверх `GET /api/v1/hosts/:slug/bookings`; фильтр confirmed + будущие, сортировка, пустое состояние; 2 RTL-теста.
+- [x] **Табы в шапке «Записаться / Предстоящие события»** — `AppHeader` получил проп `tabs` (pill-навигация, `aria-current`), используется на лендинге, `/book/:slug` и `/events`.
 
 ### Low
 
@@ -153,7 +153,7 @@
 - [x] Чекбокс согласия с правилами/ПДн (§1.2) — **сделано**: обязательный `consentAccepted` в контракте/v1-валидации, `bookings.consentAccepted`, чекбокс блокирует submit ([ADR-0015](adr/0015-booking-guests-consent-idempotency.md))
 - [x] Заголовок `Idempotency-Key` (§1.2) — **сделано**: `@header("Idempotency-Key")`, `bookings.idempotencyKey` (UNIQUE), повтор возвращает ту же бронь ([ADR-0015](adr/0015-booking-guests-consent-idempotency.md))
 - [x] Обработка 409 (§1.2) — **сделано**: inline-алерт `role="alert"` «Этот слот только что заняли. Выберите другое время.» (`booking-dialog`), тост + refetch
-- [ ] Экран `/booking/:uuid/confirmed` (§1.3) <частично: `BookingSuccess` на `/` есть (дата/пояс, GCal, .ics, «Перенести»); нет отдельного роута, аватара/названия встречи, ссылки на конференцию>
+- [x] Экран `/booking/:uuid/confirmed` (§1.3) — **сделано**: `src/pages/confirmed-page.tsx` (`GET /api/v1/bookings/:id`), название встречи, аватар/имя организатора, дата/время с поясом, способ связи (`locationType`), GCal/.ics, ссылки «Перенести»/«Отменить»; 2 RTL-теста.
 - [x] Ссылка «Отменить встречу» на экране успеха (§1.3) — **сделано**: прямая кнопка `Link` на `/cancel/:token` в `BookingSuccess`
 
 ### P1 — Self-service (§2.1–2.2)

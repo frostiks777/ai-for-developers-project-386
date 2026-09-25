@@ -259,6 +259,11 @@
     - **B2** ([ADR-0015](docs/adr/0015-booking-guests-consent-idempotency.md)): контракт `api/main.tsp` расширен — `CreateBookingRequest.guests?`, `consentAccepted`, `Booking.clientGuests?`, `@header("Idempotency-Key")`; регенерация `npm run api:generate`. БД: `bookings.guests` (JSON), `consentAccepted`, `idempotencyKey` (UNIQUE), аддитивные `ALTER … IF NOT EXISTS` ([migrate.ts](server/db/migrate.ts)). Сервер: v1 отклоняет без согласия (`422`), повтор по ключу возвращает ту же бронь. Клиент: чипы гостей (Enter), чекбокс согласия, `options.idempotencyKey` в SDK. Тесты: серверные (гости, согласие, идемпотентность) + RTL (гости, согласие, маска).
     - Инфра: `vite.config.ts` → `testTimeout: 15000` (RTL-тесты под параллельной нагрузкой изредка превышали дефолт).
     - Проверки: lint 0, typecheck чисто, **176/176 тестов** (2 прогона зелёные), build ✓. Осталось (B3): S5 `/events` + табы, `/booking/:uuid/confirmed`.
+57. ✅ План `docs/todo.md`, **Фаза B, B3** (2026-09-25): публичная витрина событий и shareable-экран подтверждения.
+    - `src/pages/events-page.tsx` — маршрут `/events` (S5): карточки (имя, email, `Слот: YYYY-MM-DD-HH:mm`, `Создано: DD.MM.YYYY, HH:mm`) из `GET /api/v1/hosts/:slug/bookings`, только `confirmed` + будущие, сортировка, пустое состояние; 2 RTL-теста.
+    - `AppHeader` — проп `tabs` (pill-навигация «Записаться / Предстоящие события», `aria-current`); применён на лендинге, `/book/:slug`, `/events`.
+    - `src/pages/confirmed-page.tsx` — маршрут `/booking/:uuid/confirmed`: `GET /api/v1/bookings/:id`, название типа встречи, аватар/имя организатора, дата/время с поясом, способ связи, GCal/.ics, ссылки «Перенести»/«Отменить»; 2 RTL-теста.
+    - Проверки: lint 0, typecheck чисто, **180/180 тестов** (31 файл), build ✓. Фаза B (B1+B2+B3) завершена.
 
 ## Что осталось (следующие шаги)
 
