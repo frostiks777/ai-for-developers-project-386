@@ -75,6 +75,8 @@
 - [x] **Шаг 2 курса** (проектирование бронирования): карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 (все закрыты); спецификация `docs/spec.md`; TypeSpec-контракт `api/main.tsp`; [ADR-0011](adr/0011-event-types-status-and-availability-ranges.md); генерация одной командой `npm run api:generate` → `docs/openapi/openapi.yaml`, `src/api/generated/` (SDK), `server/generated/api-types.ts`
 - [x] **Шаг 3, T1–T7** (реализация): миграции, типы встреч, диапазоны доступности, слоты по типу/дате, жизненный цикл брони, отмена/перенос по публичному id v1; фронт переведён на сгенерированный SDK ([#25](https://github.com/frostiks777/ai-for-developers-project-386/issues/25)) — ручной `src/api/client.ts` удалён, добавлены `src/api/sdk.ts` (клиент + `call()`/`ApiError`) и `src/api/mappers.ts`
 
+- [x] **«Мои встречи» на устройстве** — [ADR-0019](adr/0019-my-bookings-on-device.md): бронь сохраняется в `localStorage`, страница `/my` с отменой/переносом и удалением; вкладка в шапке на всех публичных страницах. Закрывает сценарий «гость не скопировал ссылку».
+
 ## Осталось
 
 ### Blocker приёмки (шаги курса, [docs/course-steps.md](course-steps.md))

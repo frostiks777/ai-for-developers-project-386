@@ -21,6 +21,7 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { useTimeFormat } from '@/hooks/use-time-format'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { parseDateKey } from '@/utils/dates'
+import { saveMyBooking } from '@/utils/my-bookings'
 import { pluralRu } from '@/utils/plural'
 import {
   defaultTimeZone,
@@ -168,6 +169,16 @@ export default function HomePage() {
     : ''
 
   const handleBooked = (booking: CreatedBooking) => {
+    if (selectedSlot) {
+      saveMyBooking({
+        id: booking.cancelToken,
+        startAt: selectedSlot.startAt,
+        durationMin: selectedSlot.durationMin,
+        eventTypeTitle: selectedType?.title ?? null,
+        hostSlug: slug ?? host.slug,
+      })
+    }
+
     setBookedSlot(selectedSlot)
     setBookedBooking(booking)
     refetch()
@@ -210,6 +221,7 @@ export default function HomePage() {
         tabs={[
           { to: `/book/${slug ?? host.slug}`, label: 'Записаться', active: true },
           { to: '/events', label: 'Предстоящие события', active: false },
+          { to: '/my', label: 'Мои встречи', active: false },
         ]}
       />
 

@@ -8,6 +8,7 @@ import DashboardPage from '@/pages/dashboard-page'
 import EventsPage from '@/pages/events-page'
 import HomePage from '@/pages/home-page'
 import LandingPage from '@/pages/landing-page'
+import MyBookingsPage from '@/pages/my-bookings-page'
 import NotFoundPage from '@/pages/not-found-page'
 import ReschedulePage from '@/pages/reschedule-page'
 
@@ -29,6 +30,7 @@ export function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/book/:slug" element={<BookingRoute />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/my" element={<MyBookingsPage />} />
         <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/admin/availability" element={<DashboardPage initialSection="availability" />} />

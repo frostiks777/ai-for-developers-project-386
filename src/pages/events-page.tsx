@@ -71,6 +71,7 @@ export default function EventsPage() {
         tabs={[
           { to: `/book/${host.slug}`, label: 'Записаться', active: false },
           { to: '/events', label: 'Предстоящие события', active: true },
+          { to: '/my', label: 'Мои встречи', active: false },
         ]}
       />
 
