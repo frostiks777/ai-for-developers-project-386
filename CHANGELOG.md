@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.19.0...v1.19.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **booking:** seed default event type for new hosts so booking button works ([#45](https://github.com/frostiks777/ai-for-developers-project-386/issues/45)) ([c848c02](https://github.com/frostiks777/ai-for-developers-project-386/commit/c848c02f46ff13aad1cf8f300321de8d38f8db0c))
+
 ## [1.19.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.18.0...v1.19.0) (2026-09-25)
 
 
