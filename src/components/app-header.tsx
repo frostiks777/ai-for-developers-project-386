@@ -1,4 +1,4 @@
-import { ArrowRight, Calendar } from 'lucide-react'
+import { ArrowRight, Calendar, LayoutDashboard } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -74,6 +74,14 @@ export function AppHeader({
               </Link>
             )
           )}
+          <Link
+            to="/dashboard"
+            title="Панель организатора"
+            aria-label="Панель организатора"
+            className="inline-flex size-9 items-center justify-center rounded-full border border-input bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <LayoutDashboard className="size-4" strokeWidth={1.8} aria-hidden="true" />
+          </Link>
           <ThemeToggle />
         </div>
       </div>
