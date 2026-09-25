@@ -118,7 +118,10 @@ model AvailabilityRange {
 model AvailabilitySettings {
   timeZone: string;
   slotDurationMin: int32;
-  bufferMin: int32;
+  @doc("Буфер до начала встречи, минуты.")
+  bufferBeforeMin: int32;
+  @doc("Буфер после встречи, минуты.")
+  bufferAfterMin: int32;
   minNoticeMin: int32;
   horizonDays: int32;
   ranges: AvailabilityRange[];
@@ -127,7 +130,8 @@ model AvailabilitySettings {
 model UpdateAvailabilityRequest {
   timeZone?: string;
   slotDurationMin?: int32;
-  bufferMin?: int32;
+  bufferBeforeMin?: int32;
+  bufferAfterMin?: int32;
   minNoticeMin?: int32;
   horizonDays?: int32;
   ranges?: AvailabilityRange[];

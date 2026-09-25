@@ -447,7 +447,8 @@ components:
       required:
         - timeZone
         - slotDurationMin
-        - bufferMin
+        - bufferBeforeMin
+        - bufferAfterMin
         - minNoticeMin
         - horizonDays
         - ranges
@@ -457,9 +458,14 @@ components:
         slotDurationMin:
           type: integer
           format: int32
-        bufferMin:
+        bufferBeforeMin:
           type: integer
           format: int32
+          description: Буфер до начала встречи, минуты.
+        bufferAfterMin:
+          type: integer
+          format: int32
+          description: Буфер после встречи, минуты.
         minNoticeMin:
           type: integer
           format: int32
@@ -734,7 +740,10 @@ components:
         slotDurationMin:
           type: integer
           format: int32
-        bufferMin:
+        bufferBeforeMin:
+          type: integer
+          format: int32
+        bufferAfterMin:
           type: integer
           format: int32
         minNoticeMin:

@@ -85,7 +85,14 @@ export interface UpdateEventTypeRequest {
 export interface AvailabilitySettings {
   timeZone: string;
   slotDurationMin: number;
-  bufferMin: number;
+  /**
+   * Буфер до начала встречи, минуты.
+   */
+  bufferBeforeMin: number;
+  /**
+   * Буфер после встречи, минуты.
+   */
+  bufferAfterMin: number;
   minNoticeMin: number;
   horizonDays: number;
   ranges: Array<AvailabilityRange>;
@@ -104,7 +111,8 @@ export interface AvailabilityRange {
 export interface UpdateAvailabilityRequest {
   timeZone?: string;
   slotDurationMin?: number;
-  bufferMin?: number;
+  bufferBeforeMin?: number;
+  bufferAfterMin?: number;
   minNoticeMin?: number;
   horizonDays?: number;
   ranges?: Array<AvailabilityRange>;
