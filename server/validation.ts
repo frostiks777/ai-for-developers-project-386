@@ -40,7 +40,8 @@ export const availabilityRulesSchema = z
     windowStartHour: z.int().min(0, 'Начало не раньше 0:00').max(23, 'Начало не позже 23:00'),
     windowEndHour: z.int().min(1, 'Конец не раньше 1:00').max(24, 'Конец не позже 24:00'),
     slotDurationMin: z.int().min(5, 'Слот не короче 5 минут').max(480, 'Слот не длиннее 8 часов'),
-    bufferMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
+    bufferBeforeMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
+    bufferAfterMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
     minNoticeMin: z.int().min(0).max(10080, 'Не больше недели'),
     horizonDays: z.int().min(1, 'Горизонт не меньше дня').max(90, 'Горизонт не больше 90 дней'),
   })
@@ -112,7 +113,8 @@ export const availabilityRangeSchema = z
 export const availabilitySettingsSchema = z.object({
   timeZone: z.string().trim().min(1, 'Укажите часовой пояс'),
   slotDurationMin: z.int().min(5, 'Слот не короче 5 минут').max(480, 'Слот не длиннее 8 часов'),
-  bufferMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
+  bufferBeforeMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
+  bufferAfterMin: z.int().min(0, 'Буфер не может быть отрицательным').max(480, 'Буфер не длиннее 8 часов'),
   minNoticeMin: z.int().min(0).max(10080, 'Не больше недели'),
   horizonDays: z.int().min(1, 'Горизонт не меньше дня').max(90, 'Горизонт не больше 90 дней'),
   ranges: z.array(availabilityRangeSchema).min(1, 'Добавьте хотя бы один интервал'),

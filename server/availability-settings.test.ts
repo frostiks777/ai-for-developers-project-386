@@ -17,7 +17,8 @@ afterAll(async () => {
 type Settings = {
   timeZone: string
   slotDurationMin: number
-  bufferMin: number
+  bufferBeforeMin: number
+  bufferAfterMin: number
   minNoticeMin: number
   horizonDays: number
   ranges: { weekday: number; startMinute: number; endMinute: number }[]
@@ -52,7 +53,8 @@ describe('PUT /api/v1/hosts/:slug/availability', () => {
     const payload: Settings = {
       timeZone: 'UTC',
       slotDurationMin: 30,
-      bufferMin: 0,
+      bufferBeforeMin: 0,
+      bufferAfterMin: 0,
       minNoticeMin: 0,
       horizonDays: 14,
       ranges: [
@@ -103,7 +105,8 @@ describe('PUT /api/v1/hosts/:slug/availability', () => {
       payload: {
         timeZone: 'UTC',
         slotDurationMin: 30,
-        bufferMin: 0,
+        bufferBeforeMin: 0,
+      bufferAfterMin: 0,
         minNoticeMin: 0,
         horizonDays: 14,
         ranges: [{ weekday: 2, startMinute: 600, endMinute: 540 }],

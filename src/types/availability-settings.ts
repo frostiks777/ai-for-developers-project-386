@@ -7,7 +7,8 @@ export interface AvailabilityRange {
 export interface AvailabilitySettings {
   timeZone: string
   slotDurationMin: number
-  bufferMin: number
+  bufferBeforeMin: number
+  bufferAfterMin: number
   minNoticeMin: number
   horizonDays: number
   ranges: AvailabilityRange[]

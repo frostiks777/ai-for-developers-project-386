@@ -29,7 +29,8 @@ const booking: BookingWithSlot = {
 const defaultSettings: AvailabilitySettings = {
   timeZone: 'UTC',
   slotDurationMin: 30,
-  bufferMin: 10,
+  bufferBeforeMin: 0,
+  bufferAfterMin: 10,
   minNoticeMin: 120,
   horizonDays: 14,
   ranges: [
