@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.12.0...v1.13.0) (2026-09-25)
+
+
+### Features
+
+* **ui:** add temporary dashboard access button to header ([b52352d](https://github.com/frostiks777/ai-for-developers-project-386/commit/b52352d8e3f844b79e1cd4e197ddf3c3346ff682))
+
 ## [1.12.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.11.0...v1.12.0) (2026-09-25)
 
 
