@@ -2,6 +2,53 @@
  * A sequence of textual characters.
  */
 export type String = string;
+/**
+ * Организатор (хост) в мульти-хост-модели.
+ */
+export interface Host {
+  /**
+   * Стабильный UUID хоста (используется в публичных ссылках /book/:id).
+   */
+  id: string;
+  slug: string;
+  name: string;
+  /**
+   * IANA-пояс хоста.
+   */
+  timeZone: string;
+}
+/**
+ * Тело ответа с ошибкой: конверт `{ error: ApiError }`.
+ */
+export interface ErrorResponse {
+  error: ApiError;
+}
+/**
+ * Единая модель ошибки для всех не-2xx ответов.
+ */
+export interface ApiError {
+  /**
+   * Код ошибки для программной обработки.
+   */
+  code: ErrorCode;
+  /**
+   * Человекочитаемое сообщение.
+   */
+  message: string;
+  /**
+   * Дополнительные детали (например, ошибки полей).
+   */
+  details?: Record<string, unknown>;
+}
+export type ErrorCode = "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT";
+export interface CreateHostRequest {
+  slug: string;
+  name: string;
+  /**
+   * Необязательный IANA-пояс; по умолчанию UTC.
+   */
+  timeZone?: string;
+}
 export interface EventType {
   id: string;
   slug: string;
@@ -43,30 +90,6 @@ export enum LocationType {
  * Boolean with `true` and `false` values.
  */
 export type Boolean = boolean;
-/**
- * Тело ответа с ошибкой: конверт `{ error: ApiError }`.
- */
-export interface ErrorResponse {
-  error: ApiError;
-}
-/**
- * Единая модель ошибки для всех не-2xx ответов.
- */
-export interface ApiError {
-  /**
-   * Код ошибки для программной обработки.
-   */
-  code: ErrorCode;
-  /**
-   * Человекочитаемое сообщение.
-   */
-  message: string;
-  /**
-   * Дополнительные детали (например, ошибки полей).
-   */
-  details?: Record<string, unknown>;
-}
-export type ErrorCode = "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT";
 export interface CreateEventTypeRequest {
   slug: string;
   title: string;

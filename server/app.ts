@@ -108,9 +108,9 @@ const requiresAdminAuth = (method: string, url: string): boolean => {
     return true
   }
 
-  // Список и создание хостов — админские (ADR-0018)
+  // Список хостов — публичное чтение; создание — админское (ADR-0018/0021)
   if (pathname === '/api/v1/hosts') {
-    return true
+    return method !== 'GET'
   }
 
   const v1 = pathname.match(/^\/api\/v1\/hosts\/[^/]+\/(.+)$/)

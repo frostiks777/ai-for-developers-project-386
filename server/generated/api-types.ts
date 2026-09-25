@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/hosts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Hosts_listHosts"];
+        put?: never;
+        post: operations["Hosts_createHost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/hosts/{slug}/availability": {
         parameters: {
             query?: never;
@@ -284,6 +300,12 @@ export interface components {
             locationType: components["schemas"]["LocationType"];
             isActive?: boolean;
         };
+        CreateHostRequest: {
+            slug: string;
+            name: string;
+            /** @description Необязательный IANA-пояс; по умолчанию UTC. */
+            timeZone?: string;
+        };
         CreateTimeBlockRequest: {
             startAt: components["schemas"]["UtcDateTime"];
             endAt: components["schemas"]["UtcDateTime"];
@@ -308,6 +330,15 @@ export interface components {
             locationType: components["schemas"]["LocationType"];
             /** @description Активен ли тип для записи гостем. */
             isActive: boolean;
+        };
+        /** @description Организатор (хост) в мульти-хост-модели. */
+        Host: {
+            /** @description Стабильный UUID хоста (используется в публичных ссылках /book/:id). */
+            id: string;
+            slug: string;
+            name: string;
+            /** @description IANA-пояс хоста. */
+            timeZone: string;
         };
         /** @description Публичные настройки организатора по slug. */
         HostSettings: {
@@ -457,6 +488,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Booking"] | components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    Hosts_listHosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"][] | components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    Hosts_createHost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateHostRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Host"];
                 };
             };
         };

@@ -64,6 +64,23 @@ model HostSettings {
   timeZone: string;
 }
 
+/** Организатор (хост) в мульти-хост-модели. */
+model Host {
+  @doc("Стабильный UUID хоста (используется в публичных ссылках /book/:id).")
+  id: string;
+  slug: string;
+  name: string;
+  @doc("IANA-пояс хоста.")
+  timeZone: string;
+}
+
+model CreateHostRequest {
+  slug: string;
+  name: string;
+  @doc("Необязательный IANA-пояс; по умолчанию UTC.")
+  timeZone?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Типы встреч
 // ---------------------------------------------------------------------------
@@ -238,6 +255,17 @@ model CreateTimeBlockRequest {
 
 @route("/api/v1")
 namespace ApiV1 {
+  @route("/hosts")
+  namespace Hosts {
+    @get
+    op listHosts(): Host[] | ErrorResponse;
+
+    @post
+    op createHost(
+      @body body: CreateHostRequest,
+    ): { @statusCode statusCode: 201; @body body: Host } | ErrorResponse;
+  }
+
   @route("/hosts/{slug}/settings")
   @get
   op getHostSettings(@path slug: HostSlug): HostSettings | ErrorResponse;
