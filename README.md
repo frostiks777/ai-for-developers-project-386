@@ -21,8 +21,17 @@
 
 ## Демо
 
-<!-- TODO: записать asciinema и заменить ссылку: asciinema rec demo.cast -->
+<!-- TODO(автор): записать asciinema и заменить ссылку/бейдж ниже. Сценарий — scripts/demo.sh -->
 [![asciinema](https://asciinema.org/a/placeholder.svg)](https://asciinema.org/a/placeholder)
+
+Запись каста (нужен [asciinema](https://asciinema.org)): сначала поднять сервер (`npm run start`), затем
+
+```bash
+asciinema rec demo.cast -c "bash scripts/demo.sh"
+asciinema upload demo.cast
+```
+
+`scripts/demo.sh` проигрывает сквозной путь гостя через API: health → настройки хоста → слоты → бронь → конфликт `409` → отмена → слот снова свободен. Затем вставьте полученную ссылку в бейдж выше.
 
 Живое демо (Render, free-план — сервис засыпает после простоя): https://calendar-slots-app.onrender.com
 

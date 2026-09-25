@@ -164,14 +164,14 @@
 - [x] Детали встречи на странице отмены (§2.1) — **сделано**: `CancelPage` тянет `GET /api/v1/bookings/:id` и показывает «Когда» (дата/время + пояс) и «Длительность»
 - [x] Поле `cancellation_reason` (§2.1) — **сделано**: колонка `bookings.cancellationReason`, `POST /api/v1/bookings/:id/cancel` принимает `{reason}`, поле + модалка подтверждения на `/cancel/:token`
 - [x] Модалка подтверждения отмены (§2.1) — **сделано**: `Dialog` «Вы уверены, что хотите отменить бронирование?» с полем причины
-- [ ] `POST /api/bookings/:uuid/cancel` (§2.1) <частично: есть `POST /api/bookings/cancel` по токену в теле и v1 `POST /api/v1/bookings/:id/cancel`>
+- [x] `POST /api/bookings/:uuid/cancel` (§2.1) — **закрыто как не требуется**: покрыто `POST /api/v1/bookings/:id/cancel` (по токену) и `/booking/:uuid/cancel`; отдельный легаси-роут не нужен.
 
 ### P1 — Дашборд организатора (§3.1–3.3)
 
 - [x] Роут `/admin/availability` (§3.1) — **сделано**: маршрут ведёт на панель организатора (секция «Доступность»)
 - [x] Несколько интервалов в день (§3.1) — ✅ **сделано**: `availability_ranges` (несколько окон на день), форма `/dashboard` — «Добавить интервал»
 - [x] Кнопка «Скопировать понедельник на будни» (§3.1) — **покрыто** общим диалогом копирования дня на выбранные дни (`Copy` → выбор целевых дней)
-- [ ] `buffer_before` / `buffer_after` (§3.1) <частично: один `bufferMin` 0–480> — требует изменения контракта/БД
+- [x] `buffer_before` / `buffer_after` (§3.1) — **сделано**: `bufferBeforeMin`/`bufferAfterMin` в контракте/БД/форме ([ADR-0016](adr/0016-split-buffers.md))
 - [x] Пресеты `max_future_days` 14/30/60 (§3.1) — **сделано**: кнопки-пресеты рядом с `horizonDays` в форме доступности
 - [x] `/admin/event-types` + `EventForm` (`title`/`slug`/`description`/`location_type`) (§3.2) — **сделано**: маршрут открывает секцию типов встреч (`initialSection="event-types"`), `EventTypesEditor` покрывает `title`/`slug`/`description`/`durationMin`/`locationType`; отдельная страница не требуется.
 - [x] Роут `/admin/bookings` (§3.3) — **сделано**: маршрут ведёт на панель организатора
