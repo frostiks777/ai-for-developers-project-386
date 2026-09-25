@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.15.0...v1.16.0) (2026-09-25)
+
+
+### Features
+
+* **server:** add multi-host model for slots and bookings ([bcd67f2](https://github.com/frostiks777/ai-for-developers-project-386/commit/bcd67f23369689125bd96da5b326427a8e0a743f))
+
 ## [1.15.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.14.0...v1.15.0) (2026-09-25)
 
 
