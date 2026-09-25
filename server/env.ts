@@ -21,6 +21,13 @@ const envSchema = z.object({
       (value) => value === undefined || /^postgres(ql)?:\/\//.test(value),
       'DATABASE_URL должен быть строкой подключения Postgres',
     ),
+  // Пароль для Basic-auth на /dashboard и /admin/*. Если не задан — панель открыта
+  // (в продакшене обязательно задавать; см. README).
+  ADMIN_PASSWORD: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
 })
 
 export const env = envSchema.parse(process.env)

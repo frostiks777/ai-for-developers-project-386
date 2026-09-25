@@ -49,3 +49,4 @@
 | [0014](0014-time-blocks.md) | Ручные блокировки времени (`time_blocks`) | Accepted | 2026-09-24 |
 | [0015](0015-booking-guests-consent-idempotency.md) | Гости, согласие ПДн и идемпотентность брони | Accepted | 2026-09-25 |
 | [0016](0016-split-buffers.md) | Раздельные буферы до и после встречи | Accepted | 2026-09-25 |
+| [0017](0017-dashboard-basic-auth.md) | Парольный доступ (Basic Auth) к панели организатора | Accepted | 2026-09-25 |
