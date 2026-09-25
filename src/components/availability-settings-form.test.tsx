@@ -120,4 +120,13 @@ describe('AvailabilitySettingsForm', () => {
 
     expect(screen.getAllByText('Интервалы пересекаются')).toHaveLength(2)
   })
+
+  it('применяет пресет горизонта 30 дней', async () => {
+    const user = userEvent.setup()
+    render(<AvailabilitySettingsForm settings={settings} isSaving={false} onSave={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: '30' }))
+
+    expect(screen.getByLabelText('Открыто на, дней')).toHaveValue(30)
+  })
 })

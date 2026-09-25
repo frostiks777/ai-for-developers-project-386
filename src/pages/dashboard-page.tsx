@@ -10,39 +10,39 @@ import { BookingFilter, type BookingFilterValue } from '@/components/booking-fil
 import { BookingsList } from '@/components/bookings-list'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { EventTypesEditor } from '@/components/event-types-editor'
+import { Input } from '@/components/ui/input'
 import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
-import { defaultTimeZone, toDateKeyInZone } from '@/utils/timezone'
 import { cn } from '@/lib/utils'
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000
-
-function applyFilter(
+function applySelection(
   bookings: BookingWithSlot[],
   filter: BookingFilterValue,
-  now: Date,
+  search: string,
+  now: number,
 ): BookingWithSlot[] {
-  if (filter === 'today') {
-    const todayKey = toDateKeyInZone(now, defaultTimeZone)
+  const matchesTab = (booking: BookingWithSlot) => {
+    if (filter === 'canceled') {
+      return booking.status === 'cancelled'
+    }
 
-    return bookings.filter(
-      (booking) => toDateKeyInZone(new Date(booking.startAt), defaultTimeZone) === todayKey,
-    )
+    if (booking.status !== 'confirmed') {
+      return false
+    }
+
+    const start = Date.parse(booking.startAt)
+    return filter === 'past' ? start < now : start >= now
   }
 
-  if (filter === 'week') {
-    const from = now.getTime()
-    const to = from + WEEK_MS
+  const normalized = search.trim().toLowerCase()
+  const matchesSearch = (booking: BookingWithSlot) =>
+    normalized === '' ||
+    booking.name.toLowerCase().includes(normalized) ||
+    booking.email.toLowerCase().includes(normalized)
 
-    return bookings.filter((booking) => {
-      const start = new Date(booking.startAt).getTime()
-      return start >= from && start <= to
-    })
-  }
-
-  return bookings
+  return bookings.filter((booking) => matchesTab(booking) && matchesSearch(booking))
 }
 
 export default function DashboardPage() {
@@ -55,7 +55,8 @@ export default function DashboardPage() {
   const [isSavingRules, setIsSavingRules] = useState(false)
   const [rulesError, setRulesError] = useState<string | null>(null)
 
-  const [filter, setFilter] = useState<BookingFilterValue>('all')
+  const [filter, setFilter] = useState<BookingFilterValue>('upcoming')
+  const [search, setSearch] = useState('')
   const [mobileTab, setMobileTab] = useState<'bookings' | 'availability' | 'event-types' | 'blocks'>(
     'bookings',
   )
@@ -117,27 +118,44 @@ export default function DashboardPage() {
     }
   }
 
-  const activeBookings = bookings.filter((booking) => booking.status === 'confirmed')
-  const filteredBookings = applyFilter(activeBookings, filter, new Date())
+  const now = Date.now()
+  const upcomingCount = bookings.filter(
+    (booking) => booking.status === 'confirmed' && Date.parse(booking.startAt) >= now,
+  ).length
+  const filteredBookings = applySelection(bookings, filter, search, now)
 
   if (isDesktop) {
     return (
       <div className="flex min-h-screen bg-background">
-        <DashboardSidebar bookingCount={activeBookings.length} />
+        <DashboardSidebar bookingCount={upcomingCount} />
         <main className="flex min-w-0 flex-1 gap-8 p-10">
           <div className="flex min-w-0 flex-1 flex-col gap-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h2 className="font-serif text-[32px] font-semibold leading-tight">Встречи</h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">Предстоящие брони по дням</p>
+                <p className="mt-1.5 text-sm text-muted-foreground">Брони по статусу и дню</p>
               </div>
-              <BookingFilter value={filter} onChange={setFilter} />
+              <div className="flex flex-wrap items-center gap-3">
+                <Input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Поиск по имени и email"
+                  aria-label="Поиск по имени и email"
+                  className="h-9 w-[240px]"
+                />
+                <BookingFilter value={filter} onChange={setFilter} />
+              </div>
             </div>
 
             {isLoadingBookings && <p>Загрузка броней…</p>}
             {bookingsError && <p className="text-destructive">{bookingsError}</p>}
             {!isLoadingBookings && !bookingsError && (
-              <BookingsList bookings={filteredBookings} onCancel={handleCancel} />
+              <BookingsList
+                bookings={filteredBookings}
+                onCancel={handleCancel}
+                showCancel={filter === 'upcoming'}
+              />
             )}
 
             <section id="event-types" className="rounded-[18px] border bg-card p-6">
@@ -204,7 +222,7 @@ export default function DashboardPage() {
                 : 'text-muted-foreground',
             )}
           >
-            Встречи · {activeBookings.length}
+            Встречи · {upcomingCount}
           </button>
           <button
             type="button"
@@ -252,11 +270,23 @@ export default function DashboardPage() {
 
         {mobileTab === 'bookings' && (
           <div className="mt-4 flex flex-col gap-4">
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Поиск по имени и email"
+              aria-label="Поиск по имени и email"
+              className="h-11"
+            />
             <BookingFilter value={filter} onChange={setFilter} />
             {isLoadingBookings && <p>Загрузка броней…</p>}
             {bookingsError && <p className="text-destructive">{bookingsError}</p>}
             {!isLoadingBookings && !bookingsError && (
-              <BookingsList bookings={filteredBookings} onCancel={handleCancel} />
+              <BookingsList
+                bookings={filteredBookings}
+                onCancel={handleCancel}
+                showCancel={filter === 'upcoming'}
+              />
             )}
           </div>
         )}

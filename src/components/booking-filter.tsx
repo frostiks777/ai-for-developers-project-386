@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export type BookingFilterValue = 'all' | 'week' | 'today'
+export type BookingFilterValue = 'upcoming' | 'past' | 'canceled'
 
 interface BookingFilterProps {
   value: BookingFilterValue
@@ -8,14 +8,14 @@ interface BookingFilterProps {
 }
 
 const options: Array<{ value: BookingFilterValue; label: string }> = [
-  { value: 'all', label: 'Все' },
-  { value: 'week', label: 'Неделя' },
-  { value: 'today', label: 'Сегодня' },
+  { value: 'upcoming', label: 'Предстоящие' },
+  { value: 'past', label: 'Прошедшие' },
+  { value: 'canceled', label: 'Отменённые' },
 ]
 
 export function BookingFilter({ value, onChange }: BookingFilterProps) {
   return (
-    <div role="tablist" aria-label="Период" className="inline-flex rounded-lg bg-secondary p-0.5">
+    <div role="tablist" aria-label="Статус" className="inline-flex rounded-lg bg-secondary p-0.5">
       {options.map((option) => {
         const isActive = option.value === value
 

@@ -13,6 +13,7 @@ import {
 interface BookingsListProps {
   bookings: BookingWithSlot[]
   onCancel: (booking: BookingWithSlot) => void
+  showCancel?: boolean
 }
 
 function endTimeIso(booking: BookingWithSlot): string {
@@ -44,7 +45,7 @@ function groupByDay(bookings: BookingWithSlot[]): Array<{ dateKey: string; items
     }))
 }
 
-export function BookingsList({ bookings, onCancel }: BookingsListProps) {
+export function BookingsList({ bookings, onCancel, showCancel = true }: BookingsListProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   if (bookings.length === 0) {
@@ -114,14 +115,16 @@ export function BookingsList({ bookings, onCancel }: BookingsListProps) {
                       </div>
                     )}
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => onCancel(booking)}
-                  >
-                    Отменить
-                  </Button>
+                  {showCancel && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={() => onCancel(booking)}
+                    >
+                      Отменить
+                    </Button>
+                  )}
                 </li>
               ) : (
                 <li
@@ -150,14 +153,16 @@ export function BookingsList({ bookings, onCancel }: BookingsListProps) {
                   {booking.comment && (
                     <div className="text-sm">«{booking.comment}»</div>
                   )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-1.5 h-11 w-full rounded-xl border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    onClick={() => onCancel(booking)}
-                  >
-                    Отменить
-                  </Button>
+                  {showCancel && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-1.5 h-11 w-full rounded-xl border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      onClick={() => onCancel(booking)}
+                    >
+                      Отменить
+                    </Button>
+                  )}
                 </li>
               ),
             )}
