@@ -279,7 +279,7 @@
 60. ✅ Хвосты P1 + Фаза 4 (2026-09-25):
     - **Раздельные буферы** `bufferBeforeMin`/`bufferAfterMin` — [ADR-0016](docs/adr/0016-split-buffers.md) (коммиты `4640244`, `f205bc2`).
     - **Deep-link `/admin/*`** (`f6abc4f`): `DashboardPage` принимает `initialSection` — прокрутка к секции на десктопе, стартовый таб на телефоне; маршруты `/admin/{availability,event-types,bookings,blocks}`; 2 RTL-теста.
-    - **Basic-auth панели организатора** — [ADR-0017](docs/adr/0017-dashboard-basic-auth.md): `/dashboard` и `/admin/*` под HTTP Basic Auth, пароль из `ADMIN_PASSWORD` (`server/env.ts` + `onRequest`-хук, `timingSafeEqual`); если переменная не задана (dev/тесты/e2e) — гейт выключен. Демо-пароль `call-calendar-admin` — в README, `.env.example`, `render.yaml`. Легаси-код `server/index.ts` async. 5 серверных тестов (`server/admin-auth.test.ts`).
+    - **Basic-auth панели организатора** — [ADR-0017](docs/adr/0017-dashboard-basic-auth.md): `/dashboard` и `/admin/*` под HTTP Basic Auth, пароль из `ADMIN_PASSWORD` (`server/env.ts` + `onRequest`-хук, `timingSafeEqual`); если переменная не задана (dev/тесты/e2e) — гейт выключен. Демо-пароль `call-calendar-admin` — в README, `.env.example`, `render.yaml`. Фикс: вход в панель из SPA — полной навигацией (`AppHeader` → `<a href>` для `/dashboard`/`/admin/*`), иначе `<Link>` не идёт на сервер и Basic-запрос не показывается. 5 серверных + 3 RTL-теста (`server/admin-auth.test.ts`, `src/components/app-header.test.tsx`).
     - **README синхронизирован**: стек БД (Postgres/Neon + PGlite вместо SQLite), таблица env (`DATABASE_URL`, `ADMIN_PASSWORD` вместо `DATABASE_PATH`), раздел «Доступ организатора».
     - Проверки: lint 0, typecheck чисто, **199/199 тестов** (33 файла), build ✓.
 
