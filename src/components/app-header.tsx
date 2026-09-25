@@ -11,6 +11,11 @@ interface AppHeaderProps {
   tabs?: { to: string; label: string; active: boolean }[]
 }
 
+// Панель организатора закрыта серверным Basic-auth. Переход в неё должен быть
+// полной навигацией (обычный <a>), иначе SPA-роутинг обойдёт запрос пароля.
+const isAdminRoute = (to: string) =>
+  to === '/dashboard' || to === '/admin' || to.startsWith('/admin/')
+
 export function AppHeader({
   linkTo,
   linkLabel,
@@ -64,7 +69,16 @@ export function AppHeader({
             </nav>
           ) : (
             linkTo &&
-            linkLabel && (
+            linkLabel &&
+            (isAdminRoute(linkTo) ? (
+              <a
+                href={linkTo}
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+              >
+                {linkLabel}
+                {!isMobile && <ArrowRight className="size-4" strokeWidth={1.8} aria-hidden="true" />}
+              </a>
+            ) : (
               <Link
                 to={linkTo}
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
@@ -72,16 +86,16 @@ export function AppHeader({
                 {linkLabel}
                 {!isMobile && <ArrowRight className="size-4" strokeWidth={1.8} aria-hidden="true" />}
               </Link>
-            )
+            ))
           )}
-          <Link
-            to="/dashboard"
+          <a
+            href="/dashboard"
             title="Панель организатора"
             aria-label="Панель организатора"
             className="inline-flex size-9 items-center justify-center rounded-full border border-input bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <LayoutDashboard className="size-4" strokeWidth={1.8} aria-hidden="true" />
-          </Link>
+          </a>
           <ThemeToggle />
         </div>
       </div>
