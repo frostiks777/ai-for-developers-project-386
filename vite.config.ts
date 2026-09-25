@@ -18,6 +18,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // RTL-тесты под параллельной нагрузкой могут превышать дефолтные 5 c
+    testTimeout: 15000,
     setupFiles: './src/test/setup.ts',
     // Exclude agent-skills repo content from project test discovery
     exclude: [
