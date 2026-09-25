@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { useTimeFormat } from '@/hooks/use-time-format'
 import { cn } from '@/lib/utils'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { buildIcs, downloadIcs, googleCalendarUrl } from '@/utils/calendar'
@@ -18,14 +19,14 @@ interface BookingSuccessProps {
   onReset: () => void
 }
 
-const endTimeFormatter = (timeZone: string) =>
-  new Intl.DateTimeFormat('ru-RU', { timeZone, hour: '2-digit', minute: '2-digit' })
+const endTimeFormatter = (timeZone: string, hour12: boolean) =>
+  new Intl.DateTimeFormat('ru-RU', { timeZone, hour: '2-digit', minute: '2-digit', hour12 })
 
-function formatTimeRange(slot: TimeSlot, timeZone: string): string {
+function formatTimeRange(slot: TimeSlot, timeZone: string, hour12: boolean): string {
   const start = new Date(slot.startAt)
   const end = new Date(start.getTime() + slot.durationMin * 60 * 1000)
-  const startLabel = formatDateTimeInZone(slot.startAt, timeZone)
-  const endLabel = endTimeFormatter(timeZone).format(end)
+  const startLabel = formatDateTimeInZone(slot.startAt, timeZone, hour12)
+  const endLabel = endTimeFormatter(timeZone, hour12).format(end)
 
   return `${startLabel} — ${endLabel}`
 }
@@ -38,6 +39,7 @@ export function BookingSuccess({
   onReset,
 }: BookingSuccessProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { hour12 } = useTimeFormat()
   const cancelUrl = `${window.location.origin}/cancel/${booking.cancelToken}`
   const calendarOptions = eventTypeTitle ? { title: eventTypeTitle } : undefined
   const googleUrl = googleCalendarUrl(booking, slot, calendarOptions)
@@ -120,7 +122,7 @@ export function BookingSuccess({
           )}
         >
           <dt className="text-muted-foreground">Когда</dt>
-          <dd className="text-right font-semibold">{formatTimeRange(slot, timeZone)}</dd>
+          <dd className="text-right font-semibold">{formatTimeRange(slot, timeZone, hour12)}</dd>
         </div>
         <div className="flex justify-between gap-4 border-t border-border py-3">
           <dt className="text-muted-foreground">Длительность</dt>

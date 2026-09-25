@@ -189,7 +189,8 @@ describe('HomePage: экран успеха', () => {
 
     await screen.findByRole('button', { name: 'Забронировать' })
 
-    await user.selectOptions(screen.getByLabelText('Часовой пояс'), 'UTC')
+    await user.click(screen.getByLabelText('Часовой пояс'))
+    await user.click(screen.getByRole('option', { name: /^UTC/ }))
 
     expect(screen.getByText(/07:00/)).toBeInTheDocument()
   })

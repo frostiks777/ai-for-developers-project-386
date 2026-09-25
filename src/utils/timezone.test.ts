@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatDateTimeInZone, toDateKeyInZone } from './timezone'
+import { formatDateTimeInZone, searchTimeZones, toDateKeyInZone } from './timezone'
 
 describe('toDateKeyInZone', () => {
   it('возвращает дату в UTC', () => {
@@ -21,5 +21,29 @@ describe('formatDateTimeInZone', () => {
 
   it('пересчитывает время при другом поясе', () => {
     expect(formatDateTimeInZone('2026-09-24T07:00:00.000Z', 'Europe/Moscow')).toContain('10:00')
+  })
+
+  it('без hour12 использует 24-часовой формат', () => {
+    expect(formatDateTimeInZone('2026-09-24T19:00:00.000Z', 'UTC')).toContain('19:00')
+  })
+})
+
+describe('searchTimeZones', () => {
+  it('без запроса отдаёт популярные пояса', () => {
+    const options = searchTimeZones('')
+
+    expect(options).toContain('UTC')
+    expect(options).toContain('Europe/Moscow')
+  })
+
+  it('фильтрует по подстроке', () => {
+    const options = searchTimeZones('berlin')
+
+    expect(options).toContain('Europe/Berlin')
+    expect(options).not.toContain('Europe/Moscow')
+  })
+
+  it('возвращает пустой список без совпадений', () => {
+    expect(searchTimeZones('not-a-timezone')).toEqual([])
   })
 })

@@ -1,5 +1,6 @@
 import { Route, Routes, useParams } from 'react-router-dom'
 
+import { TimeFormatProvider } from '@/components/time-format-provider'
 import { host } from '@/config/host'
 import CancelPage from '@/pages/cancel-page'
 import ConfirmedPage from '@/pages/confirmed-page'
@@ -18,15 +19,17 @@ function BookingRoute() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/book/:slug" element={<BookingRoute />} />
-      <Route path="/events" element={<EventsPage />} />
-      <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/cancel/:token" element={<CancelPage />} />
-      <Route path="/reschedule/:token" element={<ReschedulePage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <TimeFormatProvider>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/book/:slug" element={<BookingRoute />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/cancel/:token" element={<CancelPage />} />
+        <Route path="/reschedule/:token" element={<ReschedulePage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </TimeFormatProvider>
   )
 }
