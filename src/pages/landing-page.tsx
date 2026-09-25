@@ -59,9 +59,11 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader
-        linkTo="/dashboard"
-        linkLabel={isDesktop ? 'Панель организатора' : 'Организатору'}
         variant={isDesktop ? 'desktop' : 'mobile'}
+        tabs={[
+          { to: `/book/${host.slug}`, label: 'Записаться', active: false },
+          { to: '/events', label: 'Предстоящие события', active: false },
+        ]}
       />
 
       <main className="mx-auto w-full max-w-[1140px] flex-1 px-4 py-10 lg:px-6 lg:py-16">

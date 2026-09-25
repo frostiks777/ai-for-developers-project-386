@@ -203,9 +203,11 @@ export default function HomePage() {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <AppHeader
-        linkTo="/dashboard"
-        linkLabel={isDesktop ? 'Панель организатора' : 'Организатору'}
         variant={isDesktop ? 'desktop' : 'mobile'}
+        tabs={[
+          { to: `/book/${slug ?? host.slug}`, label: 'Записаться', active: true },
+          { to: '/events', label: 'Предстоящие события', active: false },
+        ]}
       />
 
       {isDesktop ? (
