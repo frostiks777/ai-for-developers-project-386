@@ -23,6 +23,7 @@ test('гость проходит сквозной сценарий: тип → 
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Имя').fill('Гость E2E')
   await dialog.getByLabel('Email').fill('guest@example.com')
+  await dialog.getByLabel('Согласие на обработку персональных данных').check()
   await dialog.getByRole('button', { name: 'Забронировать' }).click()
 
   await expect(page.getByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeVisible()
@@ -47,6 +48,7 @@ test('повторная бронь занятого слота отклоняе
     startAt: slot?.startAt,
     clientName: 'Конфликт E2E',
     clientEmail: 'conflict@example.com',
+    consentAccepted: true,
   }
 
   const first = await request.post(`/api/v1/hosts/${HOST}/bookings`, { data: payload })

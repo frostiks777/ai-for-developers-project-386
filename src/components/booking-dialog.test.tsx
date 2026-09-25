@@ -56,6 +56,7 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Имя'), 'Иван')
   await user.type(screen.getByLabelText('Телефон'), '+79000000000')
   await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+  await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
 }
 
 describe('BookingDialog', () => {
@@ -85,7 +86,20 @@ describe('BookingDialog', () => {
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
 
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+
+    await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeEnabled()
+  })
+
+  it('не даёт отправить форму без согласия на обработку данных', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
   })
 
   it('не даёт отправить форму с невалидным email', async () => {
@@ -141,6 +155,7 @@ describe('BookingDialog', () => {
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+    await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -212,6 +227,26 @@ describe('BookingDialog', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Этот слот только что заняли. Выберите другое время.')
     expect(onBooked).not.toHaveBeenCalled()
     expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it('добавляет гостя по Enter и отправляет его в теле запроса', async () => {
+    const fetchMock = vi.fn(async () => v1BookingResponse())
+    vi.stubGlobal('fetch', fetchMock)
+
+    const user = userEvent.setup()
+    renderDialog()
+
+    await fillValidForm(user)
+    await user.type(screen.getByLabelText('Гости'), 'guest@example.com{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/hosts/default/bookings'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"guests":["guest@example.com"]'),
+      }),
+    )
   })
 
   it('обновляет счётчик комментария при вводе', async () => {

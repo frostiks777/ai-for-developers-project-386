@@ -26,6 +26,16 @@ interface BookingDialogProps {
   onFailed?: () => void
 }
 
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+function createIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 export function BookingDialog({
   slot,
   hostSlug,
@@ -40,20 +50,52 @@ export function BookingDialog({
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [comment, setComment] = useState('')
+  const [guests, setGuests] = useState<string[]>([])
+  const [guestInput, setGuestInput] = useState('')
+  const [guestError, setGuestError] = useState<string | null>(null)
+  const [consent, setConsent] = useState(false)
+  const [idempotencyKey, setIdempotencyKey] = useState('')
   const [conflict, setConflict] = useState(false)
   const { isSubmitting, bookSlot } = useBooking()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (!open) {
-      setName('')
-      setPhone('')
-      setEmail('')
-      setComment('')
-      setConflict(false)
+    if (open) {
+      setIdempotencyKey(createIdempotencyKey())
+      return
     }
+
+    setName('')
+    setPhone('')
+    setEmail('')
+    setComment('')
+    setGuests([])
+    setGuestInput('')
+    setGuestError(null)
+    setConsent(false)
+    setConflict(false)
   }, [open])
+
+  const addGuest = () => {
+    const value = guestInput.trim()
+
+    if (value === '') {
+      return
+    }
+
+    if (!EMAIL_PATTERN.test(value)) {
+      setGuestError('Неверный email гостя')
+      return
+    }
+
+    if (!guests.includes(value)) {
+      setGuests((prev) => [...prev, value])
+    }
+
+    setGuestInput('')
+    setGuestError(null)
+  }
 
   const parseResult = createBookingSchema.safeParse({
     slotId: slot?.id ?? 0,
@@ -61,6 +103,8 @@ export function BookingDialog({
     phone,
     email,
     comment,
+    guests,
+    consentAccepted: consent,
   })
   const isFormValid = parseResult.success
   const issues = parseResult.success ? [] : parseResult.error.issues
@@ -80,14 +124,20 @@ export function BookingDialog({
 
     setConflict(false)
 
-    const result = await bookSlot(hostSlug, {
-      eventTypeId,
-      startAt: slot.startAt,
-      clientName: name,
-      clientEmail: email,
-      clientPhone: phone.trim() || undefined,
-      clientNotes: comment.trim() || undefined,
-    })
+    const result = await bookSlot(
+      hostSlug,
+      {
+        eventTypeId,
+        startAt: slot.startAt,
+        clientName: name,
+        clientEmail: email,
+        clientPhone: phone.trim() || undefined,
+        clientNotes: comment.trim() || undefined,
+        guests: guests.length > 0 ? guests : undefined,
+        consentAccepted: consent,
+      },
+      { idempotencyKey },
+    )
 
     if (result.ok) {
       onBooked(result.booking)
@@ -260,6 +310,66 @@ export function BookingDialog({
               </span>
             </div>
           </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="booking-guests">Гости</Label>
+              <span className="text-xs text-muted-foreground">необязательно</span>
+            </div>
+            {guests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {guests.map((guest) => (
+                  <span
+                    key={guest}
+                    className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[13px] text-accent-foreground"
+                  >
+                    {guest}
+                    <button
+                      type="button"
+                      aria-label={`Убрать гостя: ${guest}`}
+                      onClick={() => setGuests((prev) => prev.filter((item) => item !== guest))}
+                      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <X className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <Input
+              id="booking-guests"
+              type="email"
+              value={guestInput}
+              onChange={(event) => setGuestInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  addGuest()
+                }
+              }}
+              onBlur={addGuest}
+              placeholder="Email гостя и Enter"
+              aria-invalid={guestError !== null}
+              aria-describedby={guestError ? 'booking-guests-error' : undefined}
+              className={cn(inputClass, guestError && 'border-destructive')}
+            />
+            {guestError && (
+              <p id="booking-guests-error" className="text-[13px] text-destructive">
+                {guestError}
+              </p>
+            )}
+          </div>
+
+          <label className="flex items-start gap-2 text-[13px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(event) => setConsent(event.target.checked)}
+              aria-label="Согласие на обработку персональных данных"
+              className="mt-0.5 size-4 shrink-0 rounded border-input"
+            />
+            <span>Я согласен с обработкой персональных данных</span>
+          </label>
 
           {conflict && (
             <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">

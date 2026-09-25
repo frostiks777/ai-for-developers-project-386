@@ -41,6 +41,9 @@ const statements = [
     phone TEXT,
     email TEXT NOT NULL,
     comment TEXT,
+    guests TEXT,
+    "consentAccepted" BOOLEAN NOT NULL DEFAULT false,
+    "idempotencyKey" TEXT,
     status TEXT NOT NULL DEFAULT 'confirmed',
     "cancellationReason" TEXT,
     "startAt" TEXT NOT NULL,
@@ -78,6 +81,11 @@ const statements = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "bookings_slotId_active_unique"
      ON bookings("slotId") WHERE status <> 'cancelled'`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "bookings_cancelToken_unique" ON bookings("cancelToken")`,
+  // ADD COLUMN IF NOT EXISTS — идемпотентно для БД, созданных до появления колонок
+  `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS guests TEXT`,
+  `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "consentAccepted" BOOLEAN NOT NULL DEFAULT false`,
+  `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "idempotencyKey" TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "bookings_idempotencyKey_unique" ON bookings("idempotencyKey")`,
 ]
 
 /** Гарантирует наличие дефолтного хоста и возвращает его id. */

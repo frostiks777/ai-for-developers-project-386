@@ -14,10 +14,25 @@ export type CreateBookingInput = {
   clientEmail: string
   clientPhone?: string
   clientNotes?: string
+  guests?: string[]
+  consentAccepted?: boolean
+  idempotencyKey?: string
 }
 
 export async function findSlotByStartAt(startAt: string): Promise<SlotRow | undefined> {
   const rows = await db.select().from(slots).where(eq(slots.startAt, startAt)).limit(1)
+
+  return rows[0]
+}
+
+export async function findBookingByIdempotencyKey(
+  idempotencyKey: string,
+): Promise<BookingRow | undefined> {
+  const rows = await db
+    .select()
+    .from(bookings)
+    .where(eq(bookings.idempotencyKey, idempotencyKey))
+    .limit(1)
 
   return rows[0]
 }
@@ -55,6 +70,9 @@ export async function createBookingV1(
       email: input.clientEmail,
       phone: input.clientPhone ?? null,
       comment: input.clientNotes ?? null,
+      guests: input.guests ? JSON.stringify(input.guests) : null,
+      consentAccepted: input.consentAccepted ?? false,
+      idempotencyKey: input.idempotencyKey ?? null,
       status: 'confirmed',
       startAt,
       endAt,
