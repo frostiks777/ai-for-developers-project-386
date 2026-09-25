@@ -132,7 +132,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 228/228 passed (40 файлов: фронтенд RTL + server/*)
+✅ test: 230/230 passed (40 файлов: фронтенд RTL + server/*)
 ✅ e2e: playwright — 2/2 (сквозной сценарий гостя + конфликт слотов), собранное приложение на :3100, DATABASE_PATH=:memory:
 ✅ build: vite v6.4.3 — 439.64 kB JS (gzip 134.53), 43.15 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
@@ -306,6 +306,12 @@
     - Весь фронт на `activeSlug`: `src/config/host.ts` без `slug` (только брендинг); `App` (`/book/:slug` — хост известен, если есть в списке), лендинг, `/events`, `/my`, confirmed/cancel/reschedule, панель.
     - Панель: `HostSelect` в шапке, секция «Организаторы» (`HostsEditor`) + маршрут `/admin/hosts`, мобильный таб «Хосты»; все секции перезагружаются при смене хоста.
     - Тесты: `host-select.test.tsx` (2), `hosts-editor.test.tsx` (3), обновлён `App.test.tsx`, `server/admin-auth.test.ts` (GET hosts публичный / POST 401). Проверки: lint 0, typecheck чисто, **228/228 тестов**, build ✓, e2e 2/2.
+66. ✅ **Фикс: кнопка «Забронировать» не работала для хоста без типов встреч** (2026-09-25) — [#45](https://github.com/frostiks777/ai-for-developers-project-386/issues/45):
+    - Причина: `POST /api/v1/hosts` сидировал только правила доступности, без типа встречи; `BookingDialog` требовал `eventTypeId`, которого не было, и `handleSubmit` молча выходил (кнопка выглядела активной).
+    - Фикс: `POST /api/v1/hosts` создаёт дефолтный тип (`consultation`); при старте хостам без типов сидируется дефолтный (идемпотентный бэкфилл в `server/db/index.ts`); `BookingDialog` блокирует submit без `eventTypeId`/слота и показывает сообщение.
+    - Тесты: `server/multi-host.test.ts`, `src/components/booking-dialog.test.tsx`. Проверки: lint 0, typecheck чисто, **230/230 тестов**, build ✓.
+67. 📌 **Backlog: защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): публичный `POST .../bookings` + поле «Гости» (произвольные email) → CAPTCHA, серверная верификация и rate-limit по IP; выбор провайдера — отдельным ADR. Зафиксировано в `docs/todo.md` (Backlog).
+68. ✅ **AGENTS.md:** добавлен обязательный пункт «задачи и баги — только через GitHub Issue» (метка `bug` для багов, номер в коммите, закрытие после пуша).
 
 ## Что осталось (следующие шаги)
 
