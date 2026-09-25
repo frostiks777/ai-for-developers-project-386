@@ -1,9 +1,18 @@
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { Copy, Globe, Plus, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 import type { AvailabilityRange, AvailabilitySettings } from '@/types/availability-settings'
 
 const WEEKDAYS: { value: number; label: string }[] = [
@@ -18,12 +27,60 @@ const WEEKDAYS: { value: number; label: string }[] = [
 
 const DEFAULT_INTERVAL: AvailabilityRange = { weekday: 0, startMinute: 600, endMinute: 1080 }
 
+const PRESETS: { label: string; weekdays: number[]; startMinute: number; endMinute: number }[] = [
+  { label: 'Пн–Пт, 10:00–18:00', weekdays: [1, 2, 3, 4, 5], startMinute: 600, endMinute: 1080 },
+  { label: 'Пн–Пт, 09:00–18:00', weekdays: [1, 2, 3, 4, 5], startMinute: 540, endMinute: 1080 },
+  { label: 'Каждый день, 10:00–20:00', weekdays: [1, 2, 3, 4, 5, 6, 7], startMinute: 600, endMinute: 1200 },
+]
+
 const minuteToTime = (minute: number): string =>
   `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
 
 const timeToMinute = (value: string): number => {
   const [hours, minutes] = value.split(':').map(Number)
   return hours * 60 + minutes
+}
+
+interface PositionedRange {
+  index: number
+  range: AvailabilityRange
+}
+
+function sortedDayRanges(ranges: AvailabilityRange[], weekday: number): PositionedRange[] {
+  return ranges
+    .map((range, index) => ({ index, range }))
+    .filter((item) => item.range.weekday === weekday)
+    .sort((a, b) => a.range.startMinute - b.range.startMinute)
+}
+
+function computeErrors(ranges: AvailabilityRange[], slotDurationMin: number): Map<string, string> {
+  const errors = new Map<string, string>()
+
+  for (const { value: weekday } of WEEKDAYS) {
+    const dayRanges = ranges
+      .filter((range) => range.weekday === weekday)
+      .sort((a, b) => a.startMinute - b.startMinute)
+
+    dayRanges.forEach((range, position) => {
+      if (range.endMinute <= range.startMinute) {
+        errors.set(`${weekday}:${position}:end`, 'Время окончания должно быть позже времени начала')
+        return
+      }
+
+      if (range.endMinute - range.startMinute < slotDurationMin) {
+        errors.set(`${weekday}:${position}:end`, `Интервал не короче ${slotDurationMin} мин`)
+      }
+    })
+
+    for (let position = 1; position < dayRanges.length; position += 1) {
+      if (dayRanges[position].startMinute < dayRanges[position - 1].endMinute) {
+        errors.set(`${weekday}:${position}:start`, 'Интервалы пересекаются')
+        errors.set(`${weekday}:${position - 1}:end`, 'Интервалы пересекаются')
+      }
+    }
+  }
+
+  return errors
 }
 
 interface AvailabilitySettingsFormProps {
@@ -38,11 +95,16 @@ export function AvailabilitySettingsForm({
   onSave,
 }: AvailabilitySettingsFormProps) {
   const [draft, setDraft] = useState<AvailabilitySettings>(settings)
+  const [copySource, setCopySource] = useState<number | null>(null)
+  const [copyTargets, setCopyTargets] = useState<number[]>([])
 
   const rangesFor = (weekday: number) =>
     draft.ranges
       .filter((range) => range.weekday === weekday)
       .sort((a, b) => a.startMinute - b.startMinute)
+
+  const errors = computeErrors(draft.ranges, draft.slotDurationMin)
+  const hasErrors = errors.size > 0
 
   const toggleDay = (weekday: number) => {
     setDraft((prev) => {
@@ -58,46 +120,95 @@ export function AvailabilitySettingsForm({
   }
 
   const addInterval = (weekday: number) => {
-    setDraft((prev) => ({
-      ...prev,
-      ranges: [...prev.ranges, { ...DEFAULT_INTERVAL, weekday }],
-    }))
-  }
-
-  const updateInterval = (weekday: number, position: number, patch: Partial<AvailabilityRange>) => {
     setDraft((prev) => {
-      let seen = -1
+      const dayRanges = prev.ranges.filter((range) => range.weekday === weekday)
+      const lastEnd = dayRanges.length
+        ? Math.max(...dayRanges.map((range) => range.endMinute))
+        : DEFAULT_INTERVAL.startMinute
+      const lengthMin = 60
+      const startMinute = Math.min(lastEnd, 24 * 60 - lengthMin)
+      const endMinute = Math.min(startMinute + lengthMin, 24 * 60)
 
       return {
         ...prev,
-        ranges: prev.ranges.map((range) => {
-          if (range.weekday !== weekday) {
-            return range
-          }
+        ranges: [...prev.ranges, { weekday, startMinute, endMinute }],
+      }
+    })
+  }
 
-          seen += 1
-          return seen === position ? { ...range, ...patch } : range
-        }),
+  const updateInterval = (
+    weekday: number,
+    position: number,
+    patch: Partial<AvailabilityRange>,
+  ) => {
+    setDraft((prev) => {
+      const target = sortedDayRanges(prev.ranges, weekday)[position]
+
+      if (!target) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        ranges: prev.ranges.map((range, index) =>
+          index === target.index ? { ...range, ...patch } : range,
+        ),
       }
     })
   }
 
   const removeInterval = (weekday: number, position: number) => {
     setDraft((prev) => {
-      let seen = -1
+      const target = sortedDayRanges(prev.ranges, weekday)[position]
+
+      if (!target) {
+        return prev
+      }
 
       return {
         ...prev,
-        ranges: prev.ranges.filter((range) => {
-          if (range.weekday !== weekday) {
-            return true
-          }
-
-          seen += 1
-          return seen !== position
-        }),
+        ranges: prev.ranges.filter((_, index) => index !== target.index),
       }
     })
+  }
+
+  const applyPreset = (weekdays: number[], startMinute: number, endMinute: number) => {
+    const previous = draft
+    setDraft((prev) => ({
+      ...prev,
+      ranges: weekdays.map((weekday) => ({ weekday, startMinute, endMinute })),
+    }))
+    toast.success('Пресет применён', {
+      action: { label: 'Отменить', onClick: () => setDraft(previous) },
+    })
+  }
+
+  const openCopy = (weekday: number) => {
+    setCopySource(weekday)
+    setCopyTargets([])
+  }
+
+  const toggleCopyTarget = (weekday: number) => {
+    setCopyTargets((prev) =>
+      prev.includes(weekday) ? prev.filter((value) => value !== weekday) : [...prev, weekday],
+    )
+  }
+
+  const applyCopy = () => {
+    if (copySource === null || copyTargets.length === 0) {
+      return
+    }
+
+    const source = draft.ranges.filter((range) => range.weekday === copySource)
+
+    setDraft((prev) => ({
+      ...prev,
+      ranges: [
+        ...prev.ranges.filter((range) => !copyTargets.includes(range.weekday)),
+        ...copyTargets.flatMap((weekday) => source.map((range) => ({ ...range, weekday }))),
+      ],
+    }))
+    setCopySource(null)
   }
 
   const hasAnyDay = draft.ranges.length > 0
@@ -118,81 +229,165 @@ export function AvailabilitySettingsForm({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
-    if (!hasAnyDay) {
+    if (!hasAnyDay || hasErrors) {
       return
     }
 
     await onSave(draft)
   }
 
+  const copySourceLabel = WEEKDAYS.find(({ value }) => value === copySource)?.label
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
+      <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+        <Globe className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+        Часовой пояс: {draft.timeZone}
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {PRESETS.map((preset) => (
+          <Button
+            key={preset.label}
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => applyPreset(preset.weekdays, preset.startMinute, preset.endMinute)}
+          >
+            {preset.label}
+          </Button>
+        ))}
+        <Button type="button" variant="outline" size="sm" onClick={() => applyPreset([], 0, 0)}>
+          Очистить всё
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-3">
         {WEEKDAYS.map(({ value, label }) => {
           const ranges = rangesFor(value)
           const isEnabled = ranges.length > 0
 
           return (
             <div key={value} className="flex flex-col gap-2">
-              <label className="flex items-center gap-2 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  checked={isEnabled}
-                  onChange={() => toggleDay(value)}
-                  className="size-4 rounded border-input"
-                />
-                {label}
-              </label>
-
-              {ranges.map((range, position) => (
-                <div key={position} className="ml-6 flex items-center gap-2">
-                  <input
-                    type="time"
-                    aria-label={`${label}: начало ${position + 1}`}
-                    value={minuteToTime(range.startMinute)}
-                    onChange={(event) =>
-                      updateInterval(value, position, {
-                        startMinute: timeToMinute(event.target.value),
-                      })
-                    }
-                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-sm"
-                  />
-                  <span className="text-muted-foreground">–</span>
-                  <input
-                    type="time"
-                    aria-label={`${label}: конец ${position + 1}`}
-                    value={minuteToTime(range.endMinute)}
-                    onChange={(event) =>
-                      updateInterval(value, position, {
-                        endMinute: timeToMinute(event.target.value),
-                      })
-                    }
-                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Убрать интервал: ${label} ${position + 1}`}
-                    onClick={() => removeInterval(value, position)}
-                    className="shrink-0"
-                  >
-                    <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                  </Button>
-                </div>
-              ))}
-
-              {isEnabled && (
-                <Button
+              <div className="flex items-center gap-1.5">
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ml-6 self-start"
-                  onClick={() => addInterval(value)}
+                  role="switch"
+                  aria-checked={isEnabled}
+                  aria-label={`${label}: доступность`}
+                  onClick={() => toggleDay(value)}
+                  className={cn(
+                    'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                    isEnabled ? 'bg-primary' : 'bg-input',
+                  )}
                 >
-                  Добавить интервал
-                </Button>
-              )}
+                  <span
+                    className={cn(
+                      'inline-block size-4 rounded-full bg-background shadow transition-transform',
+                      isEnabled ? 'translate-x-4' : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
+                <span
+                  className={cn(
+                    'w-7 shrink-0 text-sm font-semibold',
+                    !isEnabled && 'text-muted-foreground/60',
+                  )}
+                >
+                  {label}
+                </span>
+
+                {!isEnabled && <span className="text-sm text-muted-foreground">Недоступен</span>}
+              </div>
+
+              {ranges.map((range, position) => {
+                const startError = errors.get(`${value}:${position}:start`)
+                const endError = errors.get(`${value}:${position}:end`)
+
+                return (
+                  <div key={`${value}-${position}`} className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 pl-10">
+                      <input
+                        type="time"
+                        aria-label={`${label}: начало ${position + 1}`}
+                        value={minuteToTime(range.startMinute)}
+                        onChange={(event) => {
+                          if (!event.target.value) {
+                            return
+                          }
+                          updateInterval(value, position, {
+                            startMinute: timeToMinute(event.target.value),
+                          })
+                        }}
+                        className={cn(
+                          'h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm',
+                          startError ? 'border-destructive' : 'border-input',
+                        )}
+                      />
+                      <span className="text-muted-foreground">–</span>
+                      <input
+                        type="time"
+                        aria-label={`${label}: конец ${position + 1}`}
+                        value={minuteToTime(range.endMinute)}
+                        onChange={(event) => {
+                          if (!event.target.value) {
+                            return
+                          }
+                          updateInterval(value, position, {
+                            endMinute: timeToMinute(event.target.value),
+                          })
+                        }}
+                        className={cn(
+                          'h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm',
+                          endError ? 'border-destructive' : 'border-input',
+                        )}
+                      />
+
+                      {position === 0 && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Добавить интервал: ${label}`}
+                            onClick={() => addInterval(value)}
+                            className="h-7 w-7 shrink-0"
+                          >
+                            <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Скопировать интервал: ${label}`}
+                            onClick={() => openCopy(value)}
+                            className="h-7 w-7 shrink-0"
+                          >
+                            <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                          </Button>
+                        </>
+                      )}
+
+                      {ranges.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Убрать интервал: ${label} ${position + 1}`}
+                          onClick={() => removeInterval(value, position)}
+                          className="h-7 w-7 shrink-0"
+                        >
+                          <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {(startError || endError) && (
+                      <p className="pl-10 text-xs text-destructive">{startError ?? endError}</p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )
         })}
@@ -257,14 +452,48 @@ export function AvailabilitySettingsForm({
       </div>
 
       <p className="text-[13px] text-muted-foreground">
-        ≈ {slotsPerDay} слотов в рабочий день
+        ≈ {slotsPerDay} слотов в рабочий день. Интервалы одного дня не должны пересекаться.
       </p>
 
       {!hasAnyDay && <p className="text-destructive">Выберите хотя бы один рабочий день</p>}
 
-      <Button type="submit" disabled={isSaving || !hasAnyDay}>
+      <Button type="submit" disabled={isSaving || !hasAnyDay || hasErrors}>
         Сохранить
       </Button>
+
+      <Dialog
+        open={copySource !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCopySource(null)
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Скопировать «{copySourceLabel}» на дни</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            {WEEKDAYS.filter(({ value }) => value !== copySource).map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  aria-label={label}
+                  checked={copyTargets.includes(value)}
+                  onChange={() => toggleCopyTarget(value)}
+                  className="size-4 rounded border-input"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="button" disabled={copyTargets.length === 0} onClick={applyCopy}>
+              Скопировать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   )
 }
