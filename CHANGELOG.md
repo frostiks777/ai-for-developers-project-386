@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.16.0...v1.17.0) (2026-09-25)
+
+
+### Features
+
+* **booking:** add on-device my-bookings page ([1392278](https://github.com/frostiks777/ai-for-developers-project-386/commit/1392278df983f66358e4b7c83cf354636477f0b4))
+
 ## [1.16.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.15.0...v1.16.0) (2026-09-25)
 
 
