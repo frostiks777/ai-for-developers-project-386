@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.13.0...v1.13.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **ui:** use full navigation for dashboard links (basic auth prompt) ([6699656](https://github.com/frostiks777/ai-for-developers-project-386/commit/6699656c10e8fbff5344e6a2ab87a772cf9bc5ad))
+
 ## [1.13.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.12.0...v1.13.0) (2026-09-25)
 
 
