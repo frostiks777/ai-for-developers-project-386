@@ -58,6 +58,13 @@ describe('DashboardSidebar', () => {
     scrollIntoView.mockRestore()
   })
 
+  it('логотип ведёт на главную страницу', () => {
+    renderSidebar()
+
+    const logo = screen.getByRole('link', { name: 'На главную' })
+    expect(logo).toHaveAttribute('href', '/')
+  })
+
   it('не ломается, если целевой секции нет', async () => {
     const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
     const user = userEvent.setup()

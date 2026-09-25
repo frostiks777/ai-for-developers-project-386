@@ -32,12 +32,16 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
       aria-label="Панель организатора"
       className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-1.5 self-start overflow-hidden border-r bg-surface p-4"
     >
-      <div className="flex items-center gap-2.5 px-2 pb-5 pt-2">
+      <Link
+        to="/"
+        aria-label="На главную"
+        className="flex items-center gap-2.5 rounded-lg px-2 pb-5 pt-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
         <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Calendar className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <h1 className="text-[15px] font-semibold">Календарь звонков</h1>
-      </div>
+      </Link>
 
       <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
         <a
