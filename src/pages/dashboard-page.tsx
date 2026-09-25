@@ -45,7 +45,13 @@ function applySelection(
   return bookings.filter((booking) => matchesTab(booking) && matchesSearch(booking))
 }
 
-export default function DashboardPage() {
+export type DashboardSection = 'bookings' | 'event-types' | 'availability' | 'blocks'
+
+interface DashboardPageProps {
+  initialSection?: DashboardSection
+}
+
+export default function DashboardPage({ initialSection }: DashboardPageProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const [bookings, setBookings] = useState<BookingWithSlot[]>([])
   const [isLoadingBookings, setIsLoadingBookings] = useState(true)
@@ -57,9 +63,7 @@ export default function DashboardPage() {
 
   const [filter, setFilter] = useState<BookingFilterValue>('upcoming')
   const [search, setSearch] = useState('')
-  const [mobileTab, setMobileTab] = useState<'bookings' | 'availability' | 'event-types' | 'blocks'>(
-    'bookings',
-  )
+  const [mobileTab, setMobileTab] = useState<DashboardSection>(initialSection ?? 'bookings')
 
   const loadBookings = useCallback(async () => {
     setIsLoadingBookings(true)
@@ -91,6 +95,16 @@ export default function DashboardPage() {
       }
     })()
   }, [loadBookings])
+
+  useEffect(() => {
+    if (!initialSection) {
+      return
+    }
+
+    document
+      .getElementById(initialSection)
+      ?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  }, [initialSection])
 
   const handleCancel = async (booking: BookingWithSlot) => {
     try {
