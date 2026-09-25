@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.17.0...v1.17.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **demo:** send curl bodies via --data-binary to keep cyrillic Content-Length ([9e9d0b9](https://github.com/frostiks777/ai-for-developers-project-386/commit/9e9d0b9435a31801310b598e111daf425aecce9d))
+
 ## [1.17.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.16.0...v1.17.0) (2026-09-25)
 
 
