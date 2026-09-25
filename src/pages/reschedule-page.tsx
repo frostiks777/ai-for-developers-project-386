@@ -4,10 +4,10 @@ import { toast } from 'sonner'
 
 import { toBookingWithSlot, toTimeSlot } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { MonthCalendar } from '@/components/month-calendar'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { Button } from '@/components/ui/button'
-import { host } from '@/config/host'
 import type { BookingWithSlot, TimeSlot } from '@/types/booking'
 import { defaultTimeZone, formatDateTimeInZone, toDateKeyInZone } from '@/utils/timezone'
 
@@ -24,6 +24,7 @@ export default function ReschedulePage() {
   const [timeZone, setTimeZone] = useState(defaultTimeZone)
   const [reschedulingId, setReschedulingId] = useState<number | null>(null)
   const [result, setResult] = useState<BookingWithSlot | null>(null)
+  const { activeSlug } = useActiveHost()
 
   const load = useCallback(async () => {
     if (!token) {
@@ -87,7 +88,7 @@ export default function ReschedulePage() {
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Перенос встречи</h1>
         <Link
-          to={`/book/${host.slug}`}
+          to={`/book/${activeSlug}`}
           className="text-sm text-primary underline-offset-4 hover:underline"
         >
           К странице бронирования
@@ -105,7 +106,7 @@ export default function ReschedulePage() {
             Новое время: {formatDateTimeInZone(result.startAt, timeZone)} ({result.durationMin} мин)
           </p>
           <Button className="mt-6" asChild>
-            <Link to={`/book/${host.slug}`}>К списку слотов</Link>
+            <Link to={`/book/${activeSlug}`}>К списку слотов</Link>
           </Button>
         </section>
       )}

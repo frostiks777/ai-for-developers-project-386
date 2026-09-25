@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -29,6 +30,7 @@ const STEPS = [
 
 export default function LandingPage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { activeSlug } = useActiveHost()
   const [hostName, setHostName] = useState(host.name)
   const [durationMin, setDurationMin] = useState<number | null>(null)
 
@@ -36,8 +38,8 @@ export default function LandingPage() {
     let isActive = true
 
     Promise.all([
-      call(api.getHostSettings(host.slug)),
-      call(api.availabilityClient.getAvailability(host.slug)),
+      call(api.getHostSettings(activeSlug)),
+      call(api.availabilityClient.getAvailability(activeSlug)),
     ])
       .then(([settings, availability]) => {
         if (!isActive) {
@@ -54,14 +56,14 @@ export default function LandingPage() {
     return () => {
       isActive = false
     }
-  }, [])
+  }, [activeSlug])
 
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
-          { to: `/book/${host.slug}`, label: 'Записаться', active: false },
+          { to: `/book/${activeSlug}`, label: 'Записаться', active: false },
           { to: '/events', label: 'Предстоящие события', active: false },
           { to: '/my', label: 'Мои встречи', active: false },
         ]}
@@ -84,7 +86,7 @@ export default function LandingPage() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button className="h-12 px-6 text-[15px]" asChild>
-                <Link to={`/book/${host.slug}`}>
+                <Link to={`/book/${activeSlug}`}>
                   Выбрать время
                   <ArrowRight className="size-4" strokeWidth={1.8} aria-hidden="true" />
                 </Link>
@@ -149,7 +151,7 @@ export default function LandingPage() {
             </p>
           </div>
           <Button className="h-12 px-6 text-[15px]" asChild>
-            <Link to={`/book/${host.slug}`}>Записаться на звонок</Link>
+            <Link to={`/book/${activeSlug}`}>Записаться на звонок</Link>
           </Button>
         </section>
       </main>

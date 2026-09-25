@@ -10,8 +10,10 @@ import { BookingFilter, type BookingFilterValue } from '@/components/booking-fil
 import { BookingsList } from '@/components/bookings-list'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { EventTypesEditor } from '@/components/event-types-editor'
+import { HostSelect } from '@/components/host-select'
+import { useActiveHost } from '@/hooks/use-active-host'
+import { HostsEditor } from '@/components/hosts-editor'
 import { Input } from '@/components/ui/input'
-import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
@@ -45,7 +47,12 @@ function applySelection(
   return bookings.filter((booking) => matchesTab(booking) && matchesSearch(booking))
 }
 
-export type DashboardSection = 'bookings' | 'event-types' | 'availability' | 'blocks'
+export type DashboardSection =
+  | 'bookings'
+  | 'event-types'
+  | 'availability'
+  | 'blocks'
+  | 'hosts'
 
 interface DashboardPageProps {
   initialSection?: DashboardSection
@@ -53,6 +60,7 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ initialSection }: DashboardPageProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { activeSlug } = useActiveHost()
   const [bookings, setBookings] = useState<BookingWithSlot[]>([])
   const [isLoadingBookings, setIsLoadingBookings] = useState(true)
   const [bookingsError, setBookingsError] = useState<string | null>(null)
@@ -70,8 +78,8 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
     try {
       const [rows, types] = await Promise.all([
-        call(api.hostBookingsClient.listHostBookings(host.slug)),
-        call(api.eventTypesClient.listEventTypes(host.slug)).catch(() => []),
+        call(api.hostBookingsClient.listHostBookings(activeSlug)),
+        call(api.eventTypesClient.listEventTypes(activeSlug)).catch(() => []),
       ])
       const titleById = new Map(types.map((type) => [type.id, type.title]))
 
@@ -82,19 +90,20 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
     } finally {
       setIsLoadingBookings(false)
     }
-  }, [])
+  }, [activeSlug])
 
   useEffect(() => {
+    setSettings(null)
     void loadBookings()
     void (async () => {
       try {
-        setSettings(await call(api.availabilityClient.getAvailability(host.slug)))
+        setSettings(await call(api.availabilityClient.getAvailability(activeSlug)))
         setRulesError(null)
       } catch {
         setRulesError('Не удалось загрузить настройки доступности')
       }
     })()
-  }, [loadBookings])
+  }, [loadBookings, activeSlug])
 
   useEffect(() => {
     if (!initialSection) {
@@ -120,7 +129,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
     setIsSavingRules(true)
 
     try {
-      const saved = await call(api.availabilityClient.updateAvailability(host.slug, next))
+      const saved = await call(api.availabilityClient.updateAvailability(activeSlug, next))
       setSettings(saved)
       toast.success('Настройки сохранены')
       return true
@@ -142,7 +151,15 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
     return (
       <div className="flex min-h-screen bg-background">
         <DashboardSidebar bookingCount={upcomingCount} />
-        <main className="flex min-w-0 flex-1 gap-8 p-10">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 p-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="font-serif text-[28px] font-semibold leading-tight">
+              Панель организатора
+            </h1>
+            <HostSelect />
+          </div>
+
+          <div className="flex min-w-0 flex-1 gap-8">
           <div className="flex min-w-0 flex-1 flex-col gap-6">
             <div id="bookings" className="flex scroll-mt-4 flex-wrap items-end justify-between gap-4">
               <div>
@@ -179,7 +196,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
                   Что может выбрать гость при записи
                 </p>
               </div>
-              <EventTypesEditor slug={host.slug} />
+              <EventTypesEditor slug={activeSlug} />
             </section>
 
             <section id="blocks" className="rounded-[18px] border bg-card p-6">
@@ -189,7 +206,17 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
                   Отпуск и личные дела — гости не увидят эти слоты
                 </p>
               </div>
-              <BlocksEditor slug={host.slug} />
+              <BlocksEditor slug={activeSlug} />
+            </section>
+
+            <section id="hosts" className="scroll-mt-4 rounded-[18px] border bg-card p-6">
+              <div className="mb-5">
+                <h2 className="text-xl font-semibold">Организаторы</h2>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  Отдельные расписания и брони для каждого организатора
+                </p>
+              </div>
+              <HostsEditor />
             </section>
           </div>
 
@@ -210,6 +237,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
               <AvailabilitySettingsForm settings={settings} isSaving={isSavingRules} onSave={handleSaveRules} />
             )}
           </section>
+          </div>
         </main>
       </div>
     )
@@ -217,13 +245,16 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader linkTo={`/book/${host.slug}`} linkLabel="Бронирование" variant="mobile" />
+      <AppHeader linkTo={`/book/${activeSlug}`} linkLabel="Бронирование" variant="mobile" />
       <main className="mx-auto w-full max-w-md px-4 py-4">
-        <h2 className="font-serif text-[28px] font-semibold leading-tight">
-          Панель организатора
-        </h2>
+        <div className="flex flex-col gap-3">
+          <h2 className="font-serif text-[28px] font-semibold leading-tight">
+            Панель организатора
+          </h2>
+          <HostSelect />
+        </div>
 
-        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-4 gap-1 rounded-xl bg-secondary p-0.5">
+        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-5 gap-1 rounded-xl bg-secondary p-0.5">
           <button
             type="button"
             role="tab"
@@ -280,6 +311,20 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
           >
             Блокировки
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mobileTab === 'hosts'}
+            onClick={() => setMobileTab('hosts')}
+            className={cn(
+              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              mobileTab === 'hosts'
+                ? 'bg-segment-active font-semibold shadow-sm'
+                : 'text-muted-foreground',
+            )}
+          >
+            Хосты
+          </button>
         </div>
 
         {mobileTab === 'bookings' && (
@@ -307,7 +352,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
         {mobileTab === 'event-types' && (
           <section className="mt-4 rounded-[18px] border bg-card p-5">
-            <EventTypesEditor slug={host.slug} />
+            <EventTypesEditor slug={activeSlug} />
           </section>
         )}
 
@@ -323,7 +368,13 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
         {mobileTab === 'blocks' && (
           <section className="mt-4 rounded-[18px] border bg-card p-5">
-            <BlocksEditor slug={host.slug} />
+            <BlocksEditor slug={activeSlug} />
+          </section>
+        )}
+
+        {mobileTab === 'hosts' && (
+          <section className="mt-4 rounded-[18px] border bg-card p-5">
+            <HostsEditor />
           </section>
         )}
       </main>

@@ -1,8 +1,8 @@
-import { Calendar, CalendarOff, ExternalLink, List, ListChecks, SlidersHorizontal } from 'lucide-react'
+import { Building2, Calendar, CalendarOff, ExternalLink, List, ListChecks, SlidersHorizontal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { useActiveHost } from '@/hooks/use-active-host'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { host } from '@/config/host'
 import { defaultTimeZone } from '@/utils/timezone'
 
 interface DashboardSidebarProps {
@@ -13,6 +13,7 @@ const AVAILABILITY_SECTION_ID = 'availability'
 const EVENT_TYPES_SECTION_ID = 'event-types'
 const BLOCKS_SECTION_ID = 'blocks'
 const BOOKINGS_SECTION_ID = 'bookings'
+const HOSTS_SECTION_ID = 'hosts'
 
 function scrollToSection(event: React.MouseEvent<HTMLAnchorElement>, id: string) {
   const section = document.getElementById(id)
@@ -27,6 +28,8 @@ function scrollToSection(event: React.MouseEvent<HTMLAnchorElement>, id: string)
 }
 
 export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
+  const { activeSlug } = useActiveHost()
+
   return (
     <nav
       aria-label="Панель организатора"
@@ -80,11 +83,19 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
           <CalendarOff className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
           Блокировки
         </a>
+        <a
+          href={`#${HOSTS_SECTION_ID}`}
+          onClick={(event) => scrollToSection(event, HOSTS_SECTION_ID)}
+          className="flex h-11 items-center gap-2.5 rounded-lg px-3 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Building2 className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
+          Организаторы
+        </a>
       </div>
 
       <div className="flex shrink-0 flex-col gap-3 border-t pt-4">
         <Link
-          to={`/book/${host.slug}`}
+          to={`/book/${activeSlug}`}
           className="flex min-h-11 items-center gap-2 px-3 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <ExternalLink className="size-4" strokeWidth={1.8} aria-hidden="true" />

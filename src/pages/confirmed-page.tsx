@@ -6,6 +6,7 @@ import type { Booking as ApiBooking, EventType } from '@/api/generated'
 import { toCreatedBooking } from '@/api/mappers'
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -26,6 +27,7 @@ function durationMinutes(startAt: string, endAt: string): number {
 export default function ConfirmedPage() {
   const { uuid } = useParams<{ uuid: string }>()
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { activeSlug } = useActiveHost()
   const [booking, setBooking] = useState<ApiBooking | null>(null)
   const [hostName, setHostName] = useState(host.name)
   const [eventTypes, setEventTypes] = useState<EventType[]>([])
@@ -43,8 +45,8 @@ export default function ConfirmedPage() {
 
     Promise.all([
       call(api.bookingsClient.getBooking(uuid)),
-      call(api.getHostSettings(host.slug)).catch(() => null),
-      call(api.eventTypesClient.listEventTypes(host.slug)).catch(() => []),
+      call(api.getHostSettings(activeSlug)).catch(() => null),
+      call(api.eventTypesClient.listEventTypes(activeSlug)).catch(() => []),
     ])
       .then(([found, settings, types]) => {
         if (!isActive) {
@@ -72,14 +74,14 @@ export default function ConfirmedPage() {
     return () => {
       isActive = false
     }
-  }, [uuid])
+  }, [uuid, activeSlug])
 
   const eventType = booking
     ? (eventTypes.find((type) => type.id === booking.eventTypeId) ?? null)
     : null
 
   const tabs = [
-    { to: `/book/${host.slug}`, label: 'Записаться', active: false },
+    { to: `/book/${activeSlug}`, label: 'Записаться', active: false },
     { to: '/events', label: 'Предстоящие события', active: false },
     { to: '/my', label: 'Мои встречи', active: false },
   ]

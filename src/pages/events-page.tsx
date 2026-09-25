@@ -4,7 +4,7 @@ import { CalendarClock } from 'lucide-react'
 import type { Booking } from '@/api/generated'
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
-import { host } from '@/config/host'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { defaultTimeZone, formatTimeInZone, toDateKeyInZone } from '@/utils/timezone'
 
@@ -27,6 +27,7 @@ function createdLabel(booking: Booking): string {
 
 export default function EventsPage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { activeSlug } = useActiveHost()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +35,7 @@ export default function EventsPage() {
   useEffect(() => {
     let isActive = true
 
-    call(api.hostBookingsClient.listHostBookings(host.slug))
+    call(api.hostBookingsClient.listHostBookings(activeSlug))
       .then((rows) => {
         if (!isActive) {
           return
@@ -62,14 +63,14 @@ export default function EventsPage() {
     return () => {
       isActive = false
     }
-  }, [])
+  }, [activeSlug])
 
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
-          { to: `/book/${host.slug}`, label: 'Записаться', active: false },
+          { to: `/book/${activeSlug}`, label: 'Записаться', active: false },
           { to: '/events', label: 'Предстоящие события', active: true },
           { to: '/my', label: 'Мои встречи', active: false },
         ]}

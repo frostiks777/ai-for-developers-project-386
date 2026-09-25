@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import type { Booking as ApiBooking } from '@/api/generated'
 import { ApiError, api, call } from '@/api/sdk'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { host } from '@/config/host'
 import { defaultTimeZone, formatDateTimeInZone } from '@/utils/timezone'
 
 type Status = 'idle' | 'cancelling' | 'done' | 'error'
@@ -21,11 +21,13 @@ type Status = 'idle' | 'cancelling' | 'done' | 'error'
 export default function CancelPage() {
   const params = useParams<{ token?: string; uuid?: string }>()
   const token = params.token ?? params.uuid
+  const { activeSlug } = useActiveHost()
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [booking, setBooking] = useState<ApiBooking | null>(null)
+  const bookSlug = booking?.hostSlug ?? activeSlug
 
   useEffect(() => {
     if (!token) {
@@ -96,7 +98,7 @@ export default function CancelPage() {
               Слот снова свободен. Вы можете записаться на другое время.
             </p>
             <Button className="mt-6" asChild>
-              <Link to={`/book/${host.slug}`}>К списку слотов</Link>
+              <Link to={`/book/${bookSlug}`}>К списку слотов</Link>
             </Button>
           </>
         ) : (
@@ -141,7 +143,7 @@ export default function CancelPage() {
                 Отменить встречу
               </Button>
               <Button variant="outline" asChild>
-                <Link to={`/book/${host.slug}`}>Не отменять</Link>
+                <Link to={`/book/${bookSlug}`}>Не отменять</Link>
               </Button>
             </div>
           </>
