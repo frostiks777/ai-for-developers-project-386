@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.13.1...v1.14.0) (2026-09-25)
+
+
+### Features
+
+* **server:** require auth for admin api mutations ([6fab0bd](https://github.com/frostiks777/ai-for-developers-project-386/commit/6fab0bd156b06f27c6db7977c0505b8af567e177))
+
 ## [1.13.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.13.0...v1.13.1) (2026-09-25)
 
 
