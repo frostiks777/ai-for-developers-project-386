@@ -10,23 +10,28 @@ import {
 import { db } from './db'
 import { availabilityRules, bookings, slots } from './db/schema'
 
-// MVP: один организатор — правила хранятся одной строкой с фиксированным id
-const RULES_ID = 1
-
-export async function loadAvailabilityRules(): Promise<AvailabilityRules> {
-  const rows = await db.select().from(availabilityRules).where(eq(availabilityRules.id, RULES_ID)).limit(1)
+// Правила доступности хранятся по одной строке на хоста (ADR-0018)
+export async function loadAvailabilityRules(hostId: string): Promise<AvailabilityRules> {
+  const rows = await db
+    .select()
+    .from(availabilityRules)
+    .where(eq(availabilityRules.hostId, hostId))
+    .limit(1)
   const row = rows[0]
 
   return row ? rulesFromRow(row) : defaultAvailabilityRules
 }
 
-export async function saveAvailabilityRules(rules: AvailabilityRules): Promise<void> {
+export async function saveAvailabilityRules(
+  hostId: string,
+  rules: AvailabilityRules,
+): Promise<void> {
   const row = rulesToRow(rules)
 
   await db
     .insert(availabilityRules)
-    .values({ id: RULES_ID, ...row })
-    .onConflictDoUpdate({ target: availabilityRules.id, set: row })
+    .values({ hostId, ...row })
+    .onConflictDoUpdate({ target: availabilityRules.hostId, set: row })
 }
 
 // Пересобирает будущие слоты хоста под новые правила, не трогая занятые слоты:

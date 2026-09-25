@@ -54,7 +54,6 @@ const statements = [
     "createdAt" TEXT NOT NULL DEFAULT (now()::text)
   )`,
   `CREATE TABLE IF NOT EXISTS availability_rules (
-    id INTEGER PRIMARY KEY,
     "hostId" TEXT REFERENCES hosts(id),
     weekdays TEXT NOT NULL,
     "windowStartHour" INTEGER NOT NULL,
@@ -97,6 +96,9 @@ const statements = [
   `ALTER TABLE availability_rules ADD COLUMN IF NOT EXISTS "bufferAfterMin" INTEGER NOT NULL DEFAULT 0`,
   `UPDATE availability_rules SET "bufferAfterMin" = "bufferMin"
      WHERE "bufferAfterMin" = 0 AND "bufferMin" <> 0`,
+  // Правила стали per-host (ADR-0018): убираем глобальный id у старых БД
+  `ALTER TABLE availability_rules DROP CONSTRAINT IF EXISTS availability_rules_pkey`,
+  `ALTER TABLE availability_rules DROP COLUMN IF EXISTS id`,
 ]
 
 /** Гарантирует наличие дефолтного хоста и возвращает его id. */
@@ -152,6 +154,10 @@ export async function runMigrations(db: Db): Promise<string> {
     `UPDATE bookings SET "hostId" = '${hostId}' WHERE "hostId" IS NULL`,
     `ALTER TABLE bookings ALTER COLUMN "hostId" SET NOT NULL`,
     `CREATE INDEX IF NOT EXISTS bookings_hostId_idx ON bookings("hostId")`,
+    // Правила доступности — одна строка на хоста (ADR-0018): бэкфилл, NOT NULL, UNIQUE
+    `UPDATE availability_rules SET "hostId" = '${hostId}' WHERE "hostId" IS NULL`,
+    `ALTER TABLE availability_rules ALTER COLUMN "hostId" SET NOT NULL`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "availability_rules_hostId_unique" ON availability_rules("hostId")`,
   ]
 
   for (const statement of hostScopedStatements) {

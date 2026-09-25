@@ -73,20 +73,25 @@ export const bookings = pgTable('bookings', {
     .default(sql`(now()::text)`),
 })
 
-// Правила доступности организатора - одна строка на хоста (MVP: одна строка id=1)
-export const availabilityRules = pgTable('availability_rules', {
-  id: integer('id').primaryKey(),
-  hostId: text('hostId').references(() => hosts.id),
-  // Дни недели из JS (0 - вс .. 6 - сб), JSON-массив
-  weekdays: text('weekdays').notNull(),
-  windowStartHour: integer('windowStartHour').notNull(),
-  windowEndHour: integer('windowEndHour').notNull(),
-  slotDurationMin: integer('slotDurationMin').notNull(),
-  bufferBeforeMin: integer('bufferBeforeMin').notNull().default(0),
-  bufferAfterMin: integer('bufferAfterMin').notNull().default(0),
-  minNoticeMin: integer('minNoticeMin').notNull(),
-  horizonDays: integer('horizonDays').notNull(),
-})
+// Правила доступности организатора — одна строка на хоста (ADR-0018)
+export const availabilityRules = pgTable(
+  'availability_rules',
+  {
+    hostId: text('hostId')
+      .notNull()
+      .references(() => hosts.id),
+    // Дни недели из JS (0 - вс .. 6 - сб), JSON-массив
+    weekdays: text('weekdays').notNull(),
+    windowStartHour: integer('windowStartHour').notNull(),
+    windowEndHour: integer('windowEndHour').notNull(),
+    slotDurationMin: integer('slotDurationMin').notNull(),
+    bufferBeforeMin: integer('bufferBeforeMin').notNull().default(0),
+    bufferAfterMin: integer('bufferAfterMin').notNull().default(0),
+    minNoticeMin: integer('minNoticeMin').notNull(),
+    horizonDays: integer('horizonDays').notNull(),
+  },
+  (table) => [uniqueIndex('availability_rules_hostId_unique').on(table.hostId)],
+)
 
 // Диапазоны доступности по дням недели: несколько интервалов на день (ADR-0011)
 export const availabilityRanges = pgTable('availability_ranges', {
