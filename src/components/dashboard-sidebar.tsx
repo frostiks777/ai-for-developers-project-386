@@ -1,4 +1,4 @@
-import { Calendar, ExternalLink, List, ListChecks, SlidersHorizontal } from 'lucide-react'
+import { Calendar, CalendarOff, ExternalLink, List, ListChecks, SlidersHorizontal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -11,6 +11,7 @@ interface DashboardSidebarProps {
 
 const AVAILABILITY_SECTION_ID = 'availability'
 const EVENT_TYPES_SECTION_ID = 'event-types'
+const BLOCKS_SECTION_ID = 'blocks'
 
 function scrollToSection(event: React.MouseEvent<HTMLAnchorElement>, id: string) {
   const section = document.getElementById(id)
@@ -63,6 +64,14 @@ export function DashboardSidebar({ bookingCount }: DashboardSidebarProps) {
       >
         <SlidersHorizontal className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
         Доступность
+      </a>
+      <a
+        href={`#${BLOCKS_SECTION_ID}`}
+        onClick={(event) => scrollToSection(event, BLOCKS_SECTION_ID)}
+        className="flex h-11 items-center gap-2.5 rounded-lg px-3 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        <CalendarOff className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
+        Блокировки
       </a>
 
       <div className="mt-auto flex flex-col gap-3 border-t pt-4">
