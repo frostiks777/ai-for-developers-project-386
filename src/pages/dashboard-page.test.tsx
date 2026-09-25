@@ -102,10 +102,10 @@ function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
   })
 }
 
-function renderDashboard() {
+function renderDashboard(initialSection?: 'bookings' | 'event-types' | 'availability' | 'blocks') {
   return render(
     <MemoryRouter>
-      <DashboardPage />
+      <DashboardPage initialSection={initialSection} />
     </MemoryRouter>,
   )
 }
@@ -345,5 +345,54 @@ describe('DashboardPage grouping and filter', () => {
     renderDashboard()
 
     expect(await screen.findByText(/≈ 12 слотов в рабочий день/)).toBeInTheDocument()
+  })
+})
+
+describe('DashboardPage deep-link admin-маршрутов', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('на десктопе прокручивает к запрошенной секции', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
+
+    renderDashboard('availability')
+
+    await screen.findByRole('button', { name: 'Сохранить' })
+    expect(scrollIntoView).toHaveBeenCalled()
+    expect(scrollIntoView.mock.instances[0]).toBe(
+      document.getElementById('availability'),
+    )
+
+    scrollIntoView.mockRestore()
+  })
+
+  it('на телефоне открывает запрошенный таб', async () => {
+    const originalMatchMedia = window.matchMedia
+    window.matchMedia = (() =>
+      ({
+        matches: false,
+        media: '(min-width: 1024px)',
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia
+
+    try {
+      vi.stubGlobal('fetch', mockFetch())
+      renderDashboard('event-types')
+
+      expect(await screen.findByRole('tab', { name: 'Типы' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+      expect(screen.getByRole('button', { name: 'Добавить тип' })).toBeInTheDocument()
+    } finally {
+      window.matchMedia = originalMatchMedia
+    }
   })
 })

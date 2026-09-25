@@ -26,9 +26,10 @@ export function App() {
         <Route path="/events" element={<EventsPage />} />
         <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/admin/availability" element={<DashboardPage />} />
-      <Route path="/admin/event-types" element={<DashboardPage />} />
-      <Route path="/admin/bookings" element={<DashboardPage />} />
+      <Route path="/admin/availability" element={<DashboardPage initialSection="availability" />} />
+      <Route path="/admin/event-types" element={<DashboardPage initialSection="event-types" />} />
+      <Route path="/admin/bookings" element={<DashboardPage initialSection="bookings" />} />
+      <Route path="/admin/blocks" element={<DashboardPage initialSection="blocks" />} />
       <Route path="/cancel/:token" element={<CancelPage />} />
       <Route path="/reschedule/:token" element={<ReschedulePage />} />
       <Route path="/booking/:uuid/cancel" element={<CancelPage />} />
