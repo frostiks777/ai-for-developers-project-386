@@ -95,6 +95,7 @@ describe('POST/GET/DELETE /api/v1/hosts/:slug/blocks', () => {
         startAt: slot!.startAt,
         clientName: 'Иван',
         clientEmail: 'ivan@example.com',
+        consentAccepted: true,
       },
     })
 

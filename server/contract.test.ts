@@ -157,6 +157,7 @@ describe('Контракт: ключевые ответы валидны по Op
         startAt: freeSlot?.startAt,
         clientName: 'Контрактный тест',
         clientEmail: 'contract@example.com',
+        consentAccepted: true,
       },
     })
 

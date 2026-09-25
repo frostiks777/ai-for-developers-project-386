@@ -19,6 +19,7 @@ const booking: ApiBooking = {
   status: BookingStatus.Confirmed,
   clientName: 'Иван',
   clientEmail: 'ivan@example.com',
+  consentAccepted: true,
   createdAt: '2099-09-23T07:00:00.000Z',
 }
 

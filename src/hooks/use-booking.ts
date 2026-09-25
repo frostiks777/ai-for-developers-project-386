@@ -16,11 +16,16 @@ export function useBooking() {
   const bookSlot = async (
     hostSlug: string,
     body: CreateBookingRequest,
+    options?: { idempotencyKey?: string },
   ): Promise<BookSlotResult> => {
     setIsSubmitting(true)
 
     try {
-      const booking = await call(api.hostBookingsClient.createBooking(hostSlug, body))
+      const booking = await call(
+        api.hostBookingsClient.createBooking(hostSlug, body, {
+          idempotencyKey: options?.idempotencyKey,
+        }),
+      )
       toast.success('Звонок забронирован')
       return { ok: true, booking: toCreatedBooking(booking) }
     } catch (error) {

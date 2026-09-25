@@ -25,6 +25,12 @@ export const createBookingSchema = z.object({
     .max(500, 'Комментарий слишком длинный')
     .optional()
     .transform((value) => value || undefined),
+  guests: z
+    .array(z.string().trim().pipe(z.email('Неверный email гостя')))
+    .max(20, 'Слишком много гостей')
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
+  consentAccepted: z.boolean().optional(),
 })
 
 // Правила доступности организатора (одна строка, см. server/rules.ts)
@@ -129,6 +135,14 @@ export const v1CreateBookingSchema = z.object({
     .max(500, 'Комментарий слишком длинный')
     .optional()
     .transform((value) => value || undefined),
+  guests: z
+    .array(z.string().trim().pipe(z.email('Неверный email гостя')))
+    .max(20, 'Слишком много гостей')
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
+  consentAccepted: z
+    .boolean()
+    .refine((value) => value === true, 'Нужно согласие на обработку персональных данных'),
 })
 
 export const v1RescheduleBookingSchema = z.object({

@@ -99,6 +99,7 @@ async function bookSlot(user: ReturnType<typeof userEvent.setup>) {
   await user.type(within(dialog).getByLabelText('Имя'), 'Иван')
   await user.type(within(dialog).getByLabelText('Телефон'), '+79000000000')
   await user.type(within(dialog).getByLabelText('Email'), 'ivan@example.com')
+  await user.click(within(dialog).getByLabelText('Согласие на обработку персональных данных'))
   await user.click(within(dialog).getByRole('button', { name: 'Забронировать' }))
 }
 

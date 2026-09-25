@@ -47,6 +47,12 @@ export const bookings = pgTable('bookings', {
   phone: text('phone'),
   email: text('email').notNull(),
   comment: text('comment'),
+  // Приглашённые участники — JSON-массив email (nullable)
+  guests: text('guests'),
+  // Согласие на обработку персональных данных
+  consentAccepted: boolean('consentAccepted').notNull().default(false),
+  // Ключ идемпотентности создания брони (защита от повторной отправки)
+  idempotencyKey: text('idempotencyKey').unique(),
   // Статус брони: активная занимает слот, отменённая — нет (ADR-0011)
   status: text('status').notNull().default('confirmed'),
   // Причина отмены, если бронь отменена (гостем или организатором)

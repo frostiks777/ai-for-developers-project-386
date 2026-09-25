@@ -21,6 +21,7 @@ type Booking = {
   startAt: string
   eventTypeId: string
   cancellationReason?: string | null
+  clientGuests?: string[] | null
 }
 
 async function freeSlot(): Promise<Slot> {
@@ -40,6 +41,7 @@ const payload = (slot: Slot, email: string) => ({
   startAt: slot.startAt,
   clientName: 'Иван',
   clientEmail: email,
+  consentAccepted: true,
 })
 
 describe('POST /api/v1/hosts/:slug/bookings', () => {
@@ -86,6 +88,55 @@ describe('POST /api/v1/hosts/:slug/bookings', () => {
     })
 
     expect(response.statusCode).toBe(404)
+  })
+
+  it('отвечает 422 без согласия на обработку данных', async () => {
+    const slot = await freeSlot()
+    const withoutConsent = { ...payload(slot, 'guest-consent@example.com') }
+    delete (withoutConsent as { consentAccepted?: boolean }).consentAccepted
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts/default/bookings',
+      payload: withoutConsent,
+    })
+
+    expect(response.statusCode).toBe(422)
+  })
+
+  it('сохраняет и возвращает гостей брони', async () => {
+    const slot = await freeSlot()
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts/default/bookings',
+      payload: { ...payload(slot, 'guest-guests@example.com'), guests: ['a@example.com', 'b@example.com'] },
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json<Booking>().clientGuests).toEqual(['a@example.com', 'b@example.com'])
+  })
+
+  it('по Idempotency-Key не создаёт вторую бронь', async () => {
+    const slot = await freeSlot()
+    const key = 'idem-test-1'
+
+    const first = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts/default/bookings',
+      headers: { 'idempotency-key': key },
+      payload: payload(slot, 'guest-idem@example.com'),
+    })
+    expect(first.statusCode).toBe(201)
+
+    const second = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts/default/bookings',
+      headers: { 'idempotency-key': key },
+      payload: payload(slot, 'guest-idem@example.com'),
+    })
+
+    expect(second.statusCode).toBe(201)
+    expect(second.json<Booking>().id).toBe(first.json<Booking>().id)
   })
 })
 

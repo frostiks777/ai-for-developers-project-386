@@ -11,6 +11,7 @@ import {
   cancelBookingV1,
   createBookingV1,
   findActiveBookingForSlot,
+  findBookingByIdempotencyKey,
   findBookingByPublicId,
   findOtherActiveBooking,
   findSlotByStartAt,
@@ -362,6 +363,8 @@ export async function buildApp(): Promise<FastifyInstance> {
     clientEmail: row.email,
     clientPhone: row.phone,
     clientNotes: row.comment,
+    clientGuests: row.guests ? (JSON.parse(row.guests) as string[]) : null,
+    consentAccepted: row.consentAccepted,
     cancellationReason: row.cancellationReason,
     createdAt: row.createdAt,
   })
@@ -553,6 +556,19 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
     }
 
+    const idempotencyKey =
+      typeof request.headers['idempotency-key'] === 'string'
+        ? request.headers['idempotency-key']
+        : undefined
+
+    if (idempotencyKey) {
+      const existing = await findBookingByIdempotencyKey(idempotencyKey)
+
+      if (existing) {
+        return reply.code(201).send(toBooking(existing, host.slug, host.timezone))
+      }
+    }
+
     const parsed = v1CreateBookingSchema.safeParse(request.body)
     if (!parsed.success) {
       const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
@@ -592,7 +608,11 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(409).send(v1Error('CONFLICT', 'Время заблокировано организатором'))
     }
 
-    const created = await createBookingV1(parsed.data, slot, eventType.durationMin)
+    const created = await createBookingV1(
+      { ...parsed.data, idempotencyKey },
+      slot,
+      eventType.durationMin,
+    )
 
     return reply.code(201).send(toBooking(created, host.slug, host.timezone))
   })
