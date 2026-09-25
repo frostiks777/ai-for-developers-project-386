@@ -83,4 +83,20 @@ describe('Мульти-хост (ADR-0018)', () => {
     ).json<{ slots: unknown[] }>()
     expect(emptySlots.slots).toHaveLength(0)
   })
+
+  it('новому хосту сидирует дефолтный тип встречи (кнопка «Забронировать» работает)', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts',
+      payload: { slug: 'seeded-type', name: 'С типом' },
+    })
+    const host = created.json<HostDto>()
+
+    const types = (
+      await app.inject({ method: 'GET', url: `/api/v1/hosts/${host.id}/event-types` })
+    ).json<{ slug: string; title: string; isActive: boolean }[]>()
+
+    expect(types).toHaveLength(1)
+    expect(types[0]).toMatchObject({ slug: 'consultation', isActive: true })
+  })
 })
