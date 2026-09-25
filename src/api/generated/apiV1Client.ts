@@ -60,6 +60,17 @@ import {
   type ListHostBookingsOptions,
 } from "./api/hostBookingsClient/hostBookingsClientOperations.js";
 import {
+  createHostsClientContext,
+  type HostsClientContext,
+  type HostsClientOptions,
+} from "./api/hostsClient/hostsClientContext.js";
+import {
+  createHost,
+  type CreateHostOptions,
+  listHosts,
+  type ListHostsOptions,
+} from "./api/hostsClient/hostsClientOperations.js";
+import {
   createTimeBlocksClientContext,
   type TimeBlocksClientContext,
   type TimeBlocksClientOptions,
@@ -75,6 +86,7 @@ import {
 import type {
   CreateBookingRequest,
   CreateEventTypeRequest,
+  CreateHostRequest,
   CreateTimeBlockRequest,
   RescheduleBookingRequest,
   UpdateAvailabilityRequest,
@@ -83,6 +95,7 @@ import type {
 
 export class ApiV1Client {
   #context: ApiV1ClientContext
+  hostsClient: HostsClient;
   eventTypesClient: EventTypesClient;
   availabilityClient: AvailabilityClient;
   hostBookingsClient: HostBookingsClient;
@@ -90,7 +103,8 @@ export class ApiV1Client {
   bookingsClient: BookingsClient
   constructor(options?: ApiV1ClientOptions) {
     this.#context = createApiV1ClientContext(options);
-    this.eventTypesClient = new EventTypesClient(options);;this
+    this.hostsClient = new HostsClient(options);;this
+      .eventTypesClient = new EventTypesClient(options);;this
       .availabilityClient = new AvailabilityClient(options);;this
       .hostBookingsClient = new HostBookingsClient(options);;this
       .timeBlocksClient = new TimeBlocksClient(options);;this
@@ -211,5 +225,18 @@ export class EventTypesClient {
     options?: DeleteEventTypeOptions,
   ) {
     return deleteEventType(this.#context, slug, eventTypeId, options);
+  }
+}
+export class HostsClient {
+  #context: HostsClientContext
+  constructor(options?: HostsClientOptions) {
+    this.#context = createHostsClientContext(options);
+
+  }
+  async listHosts(options?: ListHostsOptions) {
+    return listHosts(this.#context, options);
+  };
+  async createHost(body: CreateHostRequest, options?: CreateHostOptions) {
+    return createHost(this.#context, body, options);
   }
 }

@@ -7,10 +7,12 @@ import type {
   CancelBookingRequest,
   CreateBookingRequest,
   CreateEventTypeRequest,
+  CreateHostRequest,
   CreateTimeBlockRequest,
   ErrorCode,
   ErrorResponse,
   EventType,
+  Host,
   HostSettings,
   RescheduleBookingRequest,
   Slot,
@@ -100,8 +102,10 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   payload: UpdateEventTypeRequest,
 ) {
   return jsonUpdateEventTypeRequestToTransportTransform(payload)!;
-}export function jsonArrayEventTypeToTransportTransform(
-  items_?: Array<EventType> | null,
+}export function createHostPayloadToTransport(payload: CreateHostRequest) {
+  return jsonCreateHostRequestToTransportTransform(payload)!;
+}export function jsonArrayHostToTransportTransform(
+  items_?: Array<Host> | null,
 ): any {
   if(!items_) {
     return items_ as any;
@@ -109,40 +113,38 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   const _transformedArray = [];
 
   for (const item of items_ ?? []) {
-    const transformedItem = jsonEventTypeToTransportTransform(item as any);
+    const transformedItem = jsonHostToTransportTransform(item as any);
     _transformedArray.push(transformedItem);
   }
 
   return _transformedArray as any;
-}export function jsonArrayEventTypeToApplicationTransform(
+}export function jsonArrayHostToApplicationTransform(
   items_?: any,
-): Array<EventType> {
+): Array<Host> {
   if(!items_) {
     return items_ as any;
   }
   const _transformedArray = [];
 
   for (const item of items_ ?? []) {
-    const transformedItem = jsonEventTypeToApplicationTransform(item as any);
+    const transformedItem = jsonHostToApplicationTransform(item as any);
     _transformedArray.push(transformedItem);
   }
 
   return _transformedArray as any;
-}export function jsonEventTypeToTransportTransform(
-  input_?: EventType | null,
-): any {
+}export function jsonHostToTransportTransform(input_?: Host | null): any {
   if(!input_) {
     return input_ as any;
   }
     return {
-    id: input_.id,slug: input_.slug,title: input_.title,description: input_.description,durationMin: input_.durationMin,locationType: input_.locationType,isActive: input_.isActive
+    id: input_.id,slug: input_.slug,name: input_.name,timeZone: input_.timeZone
   }!;
-}export function jsonEventTypeToApplicationTransform(input_?: any): EventType {
+}export function jsonHostToApplicationTransform(input_?: any): Host {
   if(!input_) {
     return input_ as any;
   }
     return {
-    id: input_.id,slug: input_.slug,title: input_.title,description: input_.description,durationMin: input_.durationMin,locationType: input_.locationType,isActive: input_.isActive
+    id: input_.id,slug: input_.slug,name: input_.name,timeZone: input_.timeZone
   }!;
 }export function jsonErrorResponseToTransportTransform(
   input_?: ErrorResponse | null,
@@ -218,6 +220,68 @@ export function decodeBase64(value: string): Uint8Array | undefined {
   }
 
   return _transformedRecord;
+}export function jsonCreateHostRequestToTransportTransform(
+  input_?: CreateHostRequest | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    slug: input_.slug,name: input_.name,timeZone: input_.timeZone
+  }!;
+}export function jsonCreateHostRequestToApplicationTransform(
+  input_?: any,
+): CreateHostRequest {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    slug: input_.slug,name: input_.name,timeZone: input_.timeZone
+  }!;
+}export function jsonArrayEventTypeToTransportTransform(
+  items_?: Array<EventType> | null,
+): any {
+  if(!items_) {
+    return items_ as any;
+  }
+  const _transformedArray = [];
+
+  for (const item of items_ ?? []) {
+    const transformedItem = jsonEventTypeToTransportTransform(item as any);
+    _transformedArray.push(transformedItem);
+  }
+
+  return _transformedArray as any;
+}export function jsonArrayEventTypeToApplicationTransform(
+  items_?: any,
+): Array<EventType> {
+  if(!items_) {
+    return items_ as any;
+  }
+  const _transformedArray = [];
+
+  for (const item of items_ ?? []) {
+    const transformedItem = jsonEventTypeToApplicationTransform(item as any);
+    _transformedArray.push(transformedItem);
+  }
+
+  return _transformedArray as any;
+}export function jsonEventTypeToTransportTransform(
+  input_?: EventType | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    id: input_.id,slug: input_.slug,title: input_.title,description: input_.description,durationMin: input_.durationMin,locationType: input_.locationType,isActive: input_.isActive
+  }!;
+}export function jsonEventTypeToApplicationTransform(input_?: any): EventType {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    id: input_.id,slug: input_.slug,title: input_.title,description: input_.description,durationMin: input_.durationMin,locationType: input_.locationType,isActive: input_.isActive
+  }!;
 }export function jsonCreateEventTypeRequestToTransportTransform(
   input_?: CreateEventTypeRequest | null,
 ): any {

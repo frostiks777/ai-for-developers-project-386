@@ -80,6 +80,7 @@ describe('Basic-auth административных API', () => {
       { method: 'GET' as const, url: '/api/v1/hosts/default/blocks' },
       { method: 'PUT' as const, url: '/api/availability', payload: {} },
       { method: 'GET' as const, url: '/api/bookings' },
+      { method: 'POST' as const, url: '/api/v1/hosts', payload: {} },
     ]
 
     for (const request of requests) {
@@ -102,6 +103,7 @@ describe('Basic-auth административных API', () => {
 
   it('не закрывает публичные чтения гостя', async () => {
     const publicRequests = [
+      { method: 'GET' as const, url: '/api/v1/hosts' },
       { method: 'GET' as const, url: '/api/v1/hosts/default/availability' },
       { method: 'GET' as const, url: '/api/v1/hosts/default/event-types' },
       { method: 'GET' as const, url: '/api/v1/hosts/default/bookings' },

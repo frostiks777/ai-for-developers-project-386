@@ -70,6 +70,43 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RescheduleBookingRequest'
+  /api/v1/hosts:
+    get:
+      operationId: Hosts_listHosts
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Host'
+                  - $ref: '#/components/schemas/ErrorResponse'
+    post:
+      operationId: Hosts_createHost
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHostRequest'
   /api/v1/hosts/{slug}/availability:
     get:
       operationId: Availability_getAvailability
@@ -596,6 +633,19 @@ components:
           $ref: '#/components/schemas/LocationType'
         isActive:
           type: boolean
+    CreateHostRequest:
+      type: object
+      required:
+        - slug
+        - name
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+        timeZone:
+          type: string
+          description: Необязательный IANA-пояс; по умолчанию UTC.
     CreateTimeBlockRequest:
       type: object
       required:
@@ -651,6 +701,25 @@ components:
         isActive:
           type: boolean
           description: Активен ли тип для записи гостем.
+    Host:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - timeZone
+      properties:
+        id:
+          type: string
+          description: Стабильный UUID хоста (используется в публичных ссылках /book/:id).
+        slug:
+          type: string
+        name:
+          type: string
+        timeZone:
+          type: string
+          description: IANA-пояс хоста.
+      description: Организатор (хост) в мульти-хост-модели.
     HostSettings:
       type: object
       required:
