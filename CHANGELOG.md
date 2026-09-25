@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.14.0...v1.15.0) (2026-09-25)
+
+
+### Features
+
+* **dashboard:** make sidebar logo link to home ([eb30abd](https://github.com/frostiks777/ai-for-developers-project-386/commit/eb30abd1f1767357999f97f3c2c9839d4f0851b1))
+
 ## [1.14.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.13.1...v1.14.0) (2026-09-25)
 
 
