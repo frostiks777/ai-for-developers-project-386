@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.19.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.18.0...v1.19.0) (2026-09-25)
+
+
+### Features
+
+* **api:** add hosts CRUD to contract and make list public ([#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)) ([172a7dd](https://github.com/frostiks777/ai-for-developers-project-386/commit/172a7dd8a2c4d4fedb9379237fd4e3212b0b9294))
+* **web:** scope whole frontend to active host and add hosts UI ([#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)) ([f5b2c43](https://github.com/frostiks777/ai-for-developers-project-386/commit/f5b2c43ecd25e6e82b065c9455588f5cfebe3365))
+
 ## [1.18.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.17.1...v1.18.0) (2026-09-25)
 
 
