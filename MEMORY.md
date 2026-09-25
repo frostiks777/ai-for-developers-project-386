@@ -254,6 +254,11 @@
     - **Фаза D** (`src/components/availability-settings-form.tsx`): тоггл дня `role="switch"` вместо чекбокса; иконка `+` (`Добавить интервал: <день>`, новый интервал ставится после последнего без пересечения); копирование дня на другие дни (`Copy` + `Dialog`); пресеты `Пн–Пт 10–18`, `Пн–Пт 9–18`, `Каждый день 10–20`, `Очистить всё` с Undo-toast; индикатор «Часовой пояс: <IANA>»; real-time валидация (хронология, пересечение, мин. длительность по `slotDurationMin`) с блокировкой «Сохранить»; подсказка о пересечении. Тесты `availability-settings-form.test.tsx` (9) + обновлены `dashboard-page.test.tsx`.
     - **Фаза A**: сайдбар `/dashboard` — ссылка «Блокировки» `#blocks` (`CalendarOff`, `BLOCKS_SECTION_ID`); аудит меню (все секции скроллят, при отсутствии — тихий выход; мобилка на табах); фикс обрезки слотов верифицирован (`home-page.tsx:249-292`, коммиты `4e4ddb6`/`edb3dc7`). Тесты `dashboard-sidebar.test.tsx` (3). `docs/todo.md` синхронизирован.
     - Проверки: lint 0, typecheck чисто, **165/165 тестов**, build ✓.
+56. ✅ План `docs/todo.md`, **Фаза B, B1+B2** (2026-09-25): P0-пункты публичного флоу.
+    - **B1** (`495f7a9`): имя `min 2`; `comment`/`notes` `max 500`; маска телефона (`src/utils/phone.ts`, RU `+7 (900) 000-00-00`, иностранные — цифры с `+`); 409 → inline-алерт `role="alert"` в диалоге (`BookSlotResult` в `use-booking`); прямая кнопка «Отменить встречу» в `BookingSuccess`.
+    - **B2** ([ADR-0015](docs/adr/0015-booking-guests-consent-idempotency.md)): контракт `api/main.tsp` расширен — `CreateBookingRequest.guests?`, `consentAccepted`, `Booking.clientGuests?`, `@header("Idempotency-Key")`; регенерация `npm run api:generate`. БД: `bookings.guests` (JSON), `consentAccepted`, `idempotencyKey` (UNIQUE), аддитивные `ALTER … IF NOT EXISTS` ([migrate.ts](server/db/migrate.ts)). Сервер: v1 отклоняет без согласия (`422`), повтор по ключу возвращает ту же бронь. Клиент: чипы гостей (Enter), чекбокс согласия, `options.idempotencyKey` в SDK. Тесты: серверные (гости, согласие, идемпотентность) + RTL (гости, согласие, маска).
+    - Инфра: `vite.config.ts` → `testTimeout: 15000` (RTL-тесты под параллельной нагрузкой изредка превышали дефолт).
+    - Проверки: lint 0, typecheck чисто, **176/176 тестов** (2 прогона зелёные), build ✓. Осталось (B3): S5 `/events` + табы, `/booking/:uuid/confirmed`.
 
 ## Что осталось (следующие шаги)
 
