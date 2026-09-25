@@ -239,6 +239,10 @@ export interface components {
             clientEmail: string;
             clientPhone?: string | null;
             clientNotes?: string | null;
+            /** @description Приглашённые участники (email). */
+            clientGuests?: string[] | null;
+            /** @description Согласие на обработку персональных данных. */
+            consentAccepted: boolean;
             status: components["schemas"]["BookingStatus"];
             /** @description Причина отмены, если бронь отменена. */
             cancellationReason?: string | null;
@@ -258,6 +262,10 @@ export interface components {
             clientEmail: string;
             clientPhone?: string;
             clientNotes?: string;
+            /** @description Приглашённые участники (email), необязательно. */
+            guests?: string[];
+            /** @description Согласие на обработку персональных данных (обязательно). */
+            consentAccepted: boolean;
         };
         CreateEventTypeRequest: {
             slug: string;
@@ -603,7 +611,9 @@ export interface operations {
     HostBookings_createBooking: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
             path: {
                 slug: string;
             };

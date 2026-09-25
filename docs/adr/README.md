@@ -47,3 +47,4 @@
 | [0012](0012-contract-tests-and-e2e.md) | Контракт-тесты (ajv) и e2e Playwright как отдельный гейт | Accepted | 2026-09-24 |
 | [0013](0013-postgres-migration.md) | Миграция БД с SQLite на PostgreSQL (Neon) | Accepted | 2026-09-24 |
 | [0014](0014-time-blocks.md) | Ручные блокировки времени (`time_blocks`) | Accepted | 2026-09-24 |
+| [0015](0015-booking-guests-consent-idempotency.md) | Гости, согласие ПДн и идемпотентность брони | Accepted | 2026-09-25 |

@@ -126,6 +126,14 @@ export interface Booking {
   clientEmail: string;
   clientPhone?: string | null;
   clientNotes?: string | null;
+  /**
+   * Приглашённые участники (email).
+   */
+  clientGuests?: Array<string> | null;
+  /**
+   * Согласие на обработку персональных данных.
+   */
+  consentAccepted: boolean;
   status: BookingStatus;
   /**
    * Причина отмены, если бронь отменена.
@@ -151,6 +159,14 @@ export interface CreateBookingRequest {
   clientEmail: string;
   clientPhone?: string;
   clientNotes?: string;
+  /**
+   * Приглашённые участники (email), необязательно.
+   */
+  guests?: Array<string>;
+  /**
+   * Согласие на обработку персональных данных (обязательно).
+   */
+  consentAccepted: boolean;
 }
 /**
  * Интервал, в который организатор не принимает записи.

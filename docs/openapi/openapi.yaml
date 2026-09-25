@@ -209,6 +209,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: The request has succeeded.
@@ -476,6 +481,7 @@ components:
         - timeZone
         - clientName
         - clientEmail
+        - consentAccepted
         - status
         - createdAt
       properties:
@@ -504,6 +510,15 @@ components:
         clientNotes:
           type: string
           nullable: true
+        clientGuests:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Приглашённые участники (email).
+        consentAccepted:
+          type: boolean
+          description: Согласие на обработку персональных данных.
         status:
           $ref: '#/components/schemas/BookingStatus'
         cancellationReason:
@@ -530,6 +545,7 @@ components:
         - startAt
         - clientName
         - clientEmail
+        - consentAccepted
       properties:
         eventTypeId:
           type: string
@@ -545,6 +561,14 @@ components:
           type: string
         clientNotes:
           type: string
+        guests:
+          type: array
+          items:
+            type: string
+          description: Приглашённые участники (email), необязательно.
+        consentAccepted:
+          type: boolean
+          description: Согласие на обработку персональных данных (обязательно).
     CreateEventTypeRequest:
       type: object
       required:
