@@ -269,6 +269,13 @@
     - `src/hooks/use-time-format.ts` (context) + `src/components/time-format-provider.tsx` + `src/components/time-format-toggle.tsx` (24 ч / 12 ч, localStorage `call-calendar-hour12`); `App` обёрнут в провайдер; тоггл в `HostInfo` и мобильной шапке. Формат времени учитывают `SlotGrid`, `BookingBar`, `BookingDialog`, `BookingSuccess`.
     - Инфра: `vite.config.ts` → `testTimeout: 30000` (стабильность параллельных RTL-прогонов).
     - Проверки: lint 0, typecheck чисто, **187/187 тестов** (32 файла), build ✓. Дальше — Фаза C (P1 self-service/dashboard).
+59. ✅ План `docs/todo.md`, **Фаза C, часть 1** (2026-09-25): self-service маршруты и дашборд.
+    - Маршруты-алиасы `/booking/:uuid/cancel` и `/booking/:uuid/reschedule` (старые `/cancel/:token`, `/reschedule/:token` сохранены); `CancelPage`/`ReschedulePage` читают `token ?? uuid`. Страница отмены показывает детали встречи (`GET /api/v1/bookings/:id`).
+    - `/admin/{availability,event-types,bookings}` — маршруты ведут на панель организатора.
+    - Дашборд: `BookingFilter` → табы «Предстоящие / Прошедшие / Отменённые» (отмена только для предстоящих), поиск по имени/email (`applySelection`), счётчик «Встречи · N» = будущие подтверждённые.
+    - Доступность: пресеты горизонта 14/30/60 рядом с `horizonDays`.
+    - Инфра: `vite.config.ts` → `retry: 1` (редкие тайминговые флаки RTL под нагрузкой).
+    - Проверки: lint 0, typecheck чисто, **190/190 тестов**, build ✓. Осталось в C: `buffer_before/after` (контракт/БД), отдельный `EventForm` с `description`.
 
 ## Что осталось (следующие шаги)
 

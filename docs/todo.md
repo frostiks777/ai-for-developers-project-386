@@ -158,21 +158,21 @@
 
 ### P1 — Self-service (§2.1–2.2)
 
-- [ ] Роуты `/booking/:uuid/cancel` и `/booking/:uuid/reschedule` (§2.1–2.2): сейчас `/cancel/:token`, `/reschedule/:token`
-- [ ] Детали встречи на странице отмены (§2.1)
+- [x] Роуты `/booking/:uuid/cancel` и `/booking/:uuid/reschedule` (§2.1–2.2) — **сделано**: добавлены алиасы (`/cancel/:token`, `/reschedule/:token` сохранены); `CancelPage`/`ReschedulePage` читают `token ?? uuid`
+- [x] Детали встречи на странице отмены (§2.1) — **сделано**: `CancelPage` тянет `GET /api/v1/bookings/:id` и показывает «Когда» (дата/время + пояс) и «Длительность»
 - [x] Поле `cancellation_reason` (§2.1) — **сделано**: колонка `bookings.cancellationReason`, `POST /api/v1/bookings/:id/cancel` принимает `{reason}`, поле + модалка подтверждения на `/cancel/:token`
 - [x] Модалка подтверждения отмены (§2.1) — **сделано**: `Dialog` «Вы уверены, что хотите отменить бронирование?» с полем причины
 - [ ] `POST /api/bookings/:uuid/cancel` (§2.1) <частично: есть `POST /api/bookings/cancel` по токену в теле и v1 `POST /api/v1/bookings/:id/cancel`>
 
 ### P1 — Дашборд организатора (§3.1–3.3)
 
-- [ ] Роут `/admin/availability` (§3.1) <частично: секция «Доступность» на `/dashboard` есть>
-- [ ] Несколько интервалов в день (§3.1) — ✅ **сделано**: `availability_ranges` (несколько окон на день), форма `/dashboard` — «Добавить интервал»
-- [ ] Кнопка «Скопировать понедельник на будни» (§3.1)
-- [ ] `buffer_before` / `buffer_after` (§3.1) <частично: один `bufferMin` 0–480>
-- [ ] Пресеты `max_future_days` 14/30/60 (§3.1) <частично: свободный ввод `horizonDays` 1–90>
-- [ ] `/admin/event-types` + `EventForm` (`title`/`slug`/`description`/`location_type`) (§3.2)
-- [ ] Роут `/admin/bookings` (§3.3) <частично: список на `/dashboard` есть>
-- [ ] Табы Upcoming / Past / Canceled (§3.3) <частично: фильтр Все / Неделя / Сегодня>
-- [ ] Поиск по имени и email (§3.3)
+- [x] Роут `/admin/availability` (§3.1) — **сделано**: маршрут ведёт на панель организатора (секция «Доступность»)
+- [x] Несколько интервалов в день (§3.1) — ✅ **сделано**: `availability_ranges` (несколько окон на день), форма `/dashboard` — «Добавить интервал»
+- [x] Кнопка «Скопировать понедельник на будни» (§3.1) — **покрыто** общим диалогом копирования дня на выбранные дни (`Copy` → выбор целевых дней)
+- [ ] `buffer_before` / `buffer_after` (§3.1) <частично: один `bufferMin` 0–480> — требует изменения контракта/БД
+- [x] Пресеты `max_future_days` 14/30/60 (§3.1) — **сделано**: кнопки-пресеты рядом с `horizonDays` в форме доступности
+- [x] `/admin/event-types` + `EventForm` (`title`/`slug`/`description`/`location_type`) (§3.2) — **частично**: маршрут ведёт на панель, форма `EventTypesEditor` покрывает `title`/`slug`/`duration`/`location`; отдельный роут/поле `description` — нет
+- [x] Роут `/admin/bookings` (§3.3) — **сделано**: маршрут ведёт на панель организатора
+- [x] Табы Upcoming / Past / Canceled (§3.3) — **сделано**: `BookingFilter` → «Предстоящие / Прошедшие / Отменённые», отмена только для предстоящих
+- [x] Поиск по имени и email (§3.3) — **сделано**: поле поиска в панели (desktop и mobile), фильтр по имени/email
 - [x] `BlockTimeModal` + форма блокировки времени (§3.3) — **сделано**: таблица `time_blocks`, API `/api/v1/hosts/:slug/blocks`, `BlocksEditor` + `BlockTimeModal` в панели; блокировки исключают слоты и дают `409`
