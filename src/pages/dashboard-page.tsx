@@ -130,7 +130,7 @@ export default function DashboardPage() {
         <DashboardSidebar bookingCount={upcomingCount} />
         <main className="flex min-w-0 flex-1 gap-8 p-10">
           <div className="flex min-w-0 flex-1 flex-col gap-6">
-            <div className="flex flex-wrap items-end justify-between gap-4">
+            <div id="bookings" className="flex scroll-mt-4 flex-wrap items-end justify-between gap-4">
               <div>
                 <h2 className="font-serif text-[32px] font-semibold leading-tight">Встречи</h2>
                 <p className="mt-1.5 text-sm text-muted-foreground">Брони по статусу и дню</p>

@@ -217,16 +217,18 @@ export default function HomePage() {
         <main className="mx-auto flex w-full max-w-[1140px] flex-1 min-h-0 flex-col px-4 py-6 lg:px-6 lg:py-8">
           {!bookedBooking && typePicker}
           {bookedBooking && bookedSlot ? (
-            <BookingSuccess
-              booking={bookedBooking}
-              slot={bookedSlot}
-              timeZone={timeZone}
-              eventTypeTitle={selectedType?.title ?? null}
-              onReset={handleReset}
-            />
+            <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
+              <BookingSuccess
+                booking={bookedBooking}
+                slot={bookedSlot}
+                timeZone={timeZone}
+                eventTypeTitle={selectedType?.title ?? null}
+                onReset={handleReset}
+              />
+            </div>
           ) : (
             <div className="grid min-h-0 flex-1 overflow-hidden rounded-card border bg-card text-card-foreground shadow-soft lg:grid-cols-[300px_460px_minmax(0,1fr)]">
-              <div className="scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
+              <div className="min-w-0 scrollbar-thin min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 <HostInfo
                   eventType={selectedType}
                   durationMin={slots[0]?.durationMin ?? null}
@@ -236,7 +238,7 @@ export default function HomePage() {
                 />
               </div>
 
-              <div className="scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
+              <div className="min-w-0 scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
                 {isLoading ? (
                   <CalendarSkeleton />
                 ) : (
@@ -302,13 +304,15 @@ export default function HomePage() {
         <main className="mx-auto w-full max-w-md px-4 py-4 pb-32">
           {!bookedBooking && typePicker}
           {bookedBooking && bookedSlot ? (
-            <BookingSuccess
-              booking={bookedBooking}
-              slot={bookedSlot}
-              timeZone={timeZone}
-              eventTypeTitle={selectedType?.title ?? null}
-              onReset={handleReset}
-            />
+            <div className="flex flex-col">
+              <BookingSuccess
+                booking={bookedBooking}
+                slot={bookedSlot}
+                timeZone={timeZone}
+                eventTypeTitle={selectedType?.title ?? null}
+                onReset={handleReset}
+              />
+            </div>
           ) : (
             <div className="flex flex-col gap-5">
               <section>

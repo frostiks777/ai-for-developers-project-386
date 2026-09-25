@@ -41,12 +41,14 @@ export function HostInfo({
   const format = eventType ? LOCATION_FORMATS[eventType.locationType] : host.format
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-w-0 flex-col">
       <div className="flex size-14 items-center justify-center rounded-full bg-accent text-lg font-semibold text-accent-foreground">
         {host.initials}
       </div>
       <p className="mt-4 text-sm text-muted-foreground">{host.name}</p>
-      <h2 className="mt-1 font-serif text-[30px] font-semibold leading-tight">{meetingTitle}</h2>
+      <h2 className="mt-1 break-words font-serif text-[30px] font-semibold leading-tight">
+        {meetingTitle}
+      </h2>
 
       <ul className="mt-5 grid gap-3 text-sm">
         {durationMin !== null && (
@@ -73,11 +75,11 @@ export function HostInfo({
           onChange={onTimeZoneChange}
           labelIcon={<Globe className="size-4 text-muted-foreground" strokeWidth={1.8} />}
         />
-        <p className="mt-2 text-xs text-muted-foreground">Определён по вашему браузеру</p>
-        <div className="mt-4">
-          <p className="mb-2 text-xs text-muted-foreground">Формат времени</p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs text-muted-foreground">Формат: 24 ч / 12 ч</span>
           <TimeFormatToggle />
         </div>
+        <p className="mt-2 text-xs text-muted-foreground">Пояс определён по вашему браузеру</p>
       </div>
     </div>
   )
