@@ -292,31 +292,51 @@ describe('DashboardPage grouping and filter', () => {
     expect(screen.getByRole('heading', { name: secondHeading })).toBeInTheDocument()
   })
 
-  it('фильтр «Сегодня» скрывает завтрашнюю бронь', async () => {
-    const now = new Date()
-    const todayBooking: BookingWithSlot = {
+  it('таб «Прошедшие» показывает прошедшую бронь и скрывает предстоящую', async () => {
+    const now = Date.now()
+    const pastBooking: BookingWithSlot = {
       ...booking,
       id: 'token-3',
-      name: 'Сегодняшний',
-      startAt: now.toISOString(),
+      name: 'Прошедший',
+      startAt: new Date(now - 60 * 60 * 1000).toISOString(),
     }
-    const tomorrowBooking: BookingWithSlot = {
+    const upcomingBooking: BookingWithSlot = {
       ...booking,
       id: 'token-4',
-      name: 'Завтрашний',
-      startAt: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      name: 'Будущий',
+      startAt: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
     }
-    vi.stubGlobal('fetch', mockFetch([todayBooking, tomorrowBooking]))
+    vi.stubGlobal('fetch', mockFetch([pastBooking, upcomingBooking]))
     renderDashboard()
 
     const user = userEvent.setup()
-    expect(await screen.findByText('Сегодняшний')).toBeInTheDocument()
-    expect(screen.getByText('Завтрашний')).toBeInTheDocument()
+    expect(await screen.findByText('Будущий')).toBeInTheDocument()
+    expect(screen.queryByText('Прошедший')).toBeNull()
 
-    await user.click(screen.getByRole('tab', { name: 'Сегодня' }))
+    await user.click(screen.getByRole('tab', { name: 'Прошедшие' }))
 
-    await waitFor(() => expect(screen.queryByText('Завтрашний')).toBeNull())
-    expect(screen.getByText('Сегодняшний')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Будущий')).toBeNull())
+    expect(screen.getByText('Прошедший')).toBeInTheDocument()
+  })
+
+  it('поиск фильтрует брони по имени и email', async () => {
+    const second: BookingWithSlot = {
+      ...booking,
+      id: 'token-5',
+      name: 'Мария',
+      email: 'maria@example.com',
+      startAt: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+    }
+    vi.stubGlobal('fetch', mockFetch([booking, second]))
+    renderDashboard()
+
+    const user = userEvent.setup()
+    expect(await screen.findByText('Иван')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Поиск по имени и email'), 'maria')
+
+    await waitFor(() => expect(screen.queryByText('Иван')).toBeNull())
+    expect(screen.getByText('Мария')).toBeInTheDocument()
   })
 
   it('показывает подсказку о числе слотов', async () => {

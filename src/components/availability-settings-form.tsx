@@ -473,6 +473,21 @@ export function AvailabilitySettingsForm({
               setDraft((prev) => ({ ...prev, horizonDays: Number(event.target.value) }))
             }
           />
+          <div className="flex gap-1">
+            {[14, 30, 60].map((days) => (
+              <Button
+                key={days}
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-pressed={draft.horizonDays === days}
+                onClick={() => setDraft((prev) => ({ ...prev, horizonDays: days }))}
+                className="h-7 px-2 text-xs"
+              >
+                {days}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
