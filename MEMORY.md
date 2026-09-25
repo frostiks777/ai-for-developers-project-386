@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-25 (per-host скаляры расписания закрыты — [ADR-0020](docs/adr/0020-per-host-availability-rules.md), #41; открыт только UI управления хостами — #42)
+> Дата последнего обновления: 2026-09-25 (per-host скаляры закрыты — [ADR-0020](docs/adr/0020-per-host-availability-rules.md), #41; UI управления хостами и активный организатор на всём фронте — [ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md), #42. Открытого бэклога нет)
 
 ## Текущее состояние
 
@@ -132,7 +132,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 141/141 passed (25 файлов: фронтенд RTL + server/app, server/dashboard, server/hosts, server/availability, server/event-types, server/availability-settings, server/bookings-v1, server/db/migrate, server/contract)
+✅ test: 228/228 passed (40 файлов: фронтенд RTL + server/*)
 ✅ e2e: playwright — 2/2 (сквозной сценарий гостя + конфликт слотов), собранное приложение на :3100, DATABASE_PATH=:memory:
 ✅ build: vite v6.4.3 — 439.64 kB JS (gzip 134.53), 43.15 kB CSS
 ✅ smoke (prod): PORT=3100 + DATABASE_PATH=temp, /health 200, / 200 (index.html), SPA fallback 200,
@@ -300,6 +300,12 @@
     - `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` (upsert по `hostId`); `availability-settings.ts` прокидывает `hostId`; сид слотов в `db/index.ts` — по правилам дефолтного хоста; `minNoticeMs(hostId)` во всех проверках слотов; легаси `/api/availability` — на дефолтном хосте; `POST /api/v1/hosts` сидирует новому хосту `defaultAvailabilityRules`.
     - Тесты: `server/host-availability.test.ts` (4). Проверки: lint 0, typecheck чисто, **223/223 тестов** (38 файлов), build ✓.
     - **Осталось (отдельная задача [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание, скоупинг секций, динамический `host.slug`.
+65. ✅ **Активный организатор на клиенте + UI управления хостами** (2026-09-25) — [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42), [ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md):
+    - Контракт: `api/main.tsp` + `Host`/`CreateHostRequest`, `GET/POST /api/v1/hosts`; регенерация `npm run api:generate`. `GET /api/v1/hosts` — публичное чтение, `POST` — Basic-auth.
+    - `HostProvider` (`src/components/host-provider.tsx`) тянет список хостов, хранит `activeSlug` в `localStorage` (`call-calendar-active-host`); хук `useActiveHost` (`src/hooks/use-active-host.ts`) — с дефолтом для тестов без провайдера.
+    - Весь фронт на `activeSlug`: `src/config/host.ts` без `slug` (только брендинг); `App` (`/book/:slug` — хост известен, если есть в списке), лендинг, `/events`, `/my`, confirmed/cancel/reschedule, панель.
+    - Панель: `HostSelect` в шапке, секция «Организаторы» (`HostsEditor`) + маршрут `/admin/hosts`, мобильный таб «Хосты»; все секции перезагружаются при смене хоста.
+    - Тесты: `host-select.test.tsx` (2), `hosts-editor.test.tsx` (3), обновлён `App.test.tsx`, `server/admin-auth.test.ts` (GET hosts публичный / POST 401). Проверки: lint 0, typecheck чисто, **228/228 тестов**, build ✓, e2e 2/2.
 
 ## Что осталось (следующие шаги)
 
@@ -313,7 +319,7 @@
 - [x] **Фаза 2 — P0 публичный флоу** ✅ **выполнено 2026-09-25** (пункты 56, 57): имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`; поиск по IANA и формат 12/24 — пункт 58.
 - [x] **Фаза 3 — P1 self-service/dashboard** ✅ **выполнено 2026-09-25** (пункты 59, 60): роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
 - [x] **Фаза 4 — Low/архитектура** ✅ **выполнено 2026-09-25**: авторизация `/dashboard` ([ADR-0017](docs/adr/0017-dashboard-basic-auth.md), пункт 60) и мульти-хост-модель ([ADR-0018](docs/adr/0018-multi-host-model.md), пункт 61) — `hostId` в `slots`/`bookings`, `/book/:uuid`.
-- [x] **Остаток Low из [ADR-0018](docs/adr/0018-multi-host-model.md)** — ✅ **выполнено 2026-09-25**: per-host скаляры расписания ([ADR-0020](docs/adr/0020-per-host-availability-rules.md), [#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41)). Остался только UI управления хостами ([#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)).
+- [x] **Остаток Low из [ADR-0018](docs/adr/0018-multi-host-model.md)** — ✅ **выполнено 2026-09-25**: per-host скаляры расписания ([ADR-0020](docs/adr/0020-per-host-availability-rules.md), [#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41)) и UI управления хостами + активный организатор на всём фронте ([ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md), [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)). Открытого бэклога нет.
 
 ## Ключевые решения
 
@@ -367,6 +373,7 @@
 | Доступ к панели | HTTP Basic Auth на `/dashboard`, `/admin/*` и админские мутации API (`ADMIN_PASSWORD`, нет переменной → открыто); демо-пароль в README | [ADR-0017](docs/adr/0017-dashboard-basic-auth.md); наставнику нужен доступ, полноценные сессии/аккаунты избыточны для MVP; публичные чтения гостя не трогаем |
 | Мульти-хост | `slots`/`bookings` привязаны к `hostId`; `findHost` по slug или UUID; `GET/POST /api/v1/hosts` (Basic-auth); `/book/:uuid` | [ADR-0018](docs/adr/0018-multi-host-model.md); изоляция расписаний без ломки slug-флоу; скаляры расписания пока общие |
 | Per-host скаляры расписания | `availability_rules` — одна строка на `hostId` (UNIQUE, украли `id`); `load/saveAvailabilityRules(hostId)`; миграция бэкфиллит дефолтный хост | [ADR-0020](docs/adr/0020-per-host-availability-rules.md); изоляция `minNotice`/горизонтов/буферов по организаторам |
+| Активный организатор | `HostProvider` + `useActiveHost`; `activeSlug` в `localStorage` (`call-calendar-active-host`), фолбэк — первый хост; весь фронт на активном хосте; `GET /api/v1/hosts` публичный, `POST` — Basic-auth | [ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md); UI управления хостами (селектор + секция «Организаторы» + `/admin/hosts`) |
 | Отмена без ссылки | «Мои встречи» на устройстве: бронь в `localStorage`, страница `/my` с отменой/переносом | [ADR-0019](docs/adr/0019-my-bookings-on-device.md); capability-токен не утекает, нет перечисления по email; ограничение — только тот же браузер |
 
 ## Окружение

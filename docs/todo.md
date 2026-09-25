@@ -151,7 +151,7 @@
 - [x] Тесты изоляции: `server/host-availability.test.ts` (4) — горизонт/minNotice per-host, изменение одного хоста не трогает другой, сид дефолтов, легаси-роут.
 - [x] `npm run lint` + `typecheck` + `test` (223/223) + `build`.
 
-**Отложено (следующий-следующий заход):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание хостов, скоупинг всех секций панели по выбранному хосту, `host.slug` из конфига → динамический. — [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)
+**Сделано (2026-09-25, [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42), [ADR-0021](adr/0021-active-host-and-hosts-ui.md)):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание хостов (секция «Организаторы» + `/admin/hosts`), скоупинг всех секций панели по выбранному хосту, `host.slug` из конфига → динамический (весь фронт через `useActiveHost`).
 
 ## Ключевые расхождения со спекой
 
