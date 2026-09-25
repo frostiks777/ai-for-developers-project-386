@@ -129,10 +129,10 @@
 - [x] **Авторизация `/dashboard`** — [ADR-0017](adr/0017-dashboard-basic-auth.md): Basic-auth на `/dashboard` и `/admin/*` через `ADMIN_PASSWORD` (если не задан — панель открыта, для dev/тестов); демо-пароль для наставника — в README. Административные API пока публичны (учебный MVP).
 - [x] **Баг:** ссылка «Доступность» в сайдбаре `/dashboard` не скроллила к секции — исправлено: `onClick` + `scrollIntoView({behavior:'smooth'})` + `history.replaceState('#availability')` в `src/components/dashboard-sidebar.tsx`; тест `src/components/dashboard-sidebar.test.tsx`
 
-### Остаток Low из [ADR-0018](adr/0018-multi-host-model.md) — per-host скаляры расписания (следующий заход)
+### Остаток Low из [ADR-0018](adr/0018-multi-host-model.md) — per-host скаляры расписания — [#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41) ✅
 
-> Решения приняты 2026-09-25 (интервью). **В этот заход — только скаляры, без UI хостов.**
-> Проблема: `availability_rules` — одна глобальная строка (`id=1`), `loadAvailabilityRules()`/`saveAvailabilityRules()` игнорируют `hostId` (см. `server/rules.ts:13-30`). Поэтому `minNoticeMin`, `bufferBefore/AfterMin`, `horizonDays`, `slotDurationMin` общие для всех хостов, хотя `availability_ranges` (диапазоны дней) уже per-host.
+> Решения приняты 2026-09-25 (интервью). **В этот заход — только скаляры, без UI хостов.** ✅ выполнено 2026-09-25, [ADR-0020](adr/0020-per-host-availability-rules.md).
+> Проблема: `availability_rules` — одна глобальная строка (`id=1`), `loadAvailabilityRules()`/`saveAvailabilityRules()` игнорируют `hostId`. Поэтому `minNoticeMin`, `bufferBefore/AfterMin`, `horizonDays`, `slotDurationMin` были общими для всех хостов, хотя `availability_ranges` (диапазоны дней) уже per-host.
 
 **Решения (интервью):**
 - **Объём этого захода:** только per-host скаляры. UI управления хостами (селектор/список/создание) — отдельным заходом.
@@ -141,17 +141,17 @@
 - **Критерий «готово»:** API-тесты на изоляцию правил по хостам + `npm run lint` / `typecheck` / `test` / `build` зелёные.
 
 **Чек-лист:**
-- [ ] `server/db/schema.ts`: `UNIQUE(hostId)` на `availability_rules` (индекс `availability_rules_hostId_unique`).
-- [ ] `server/db/migrate.ts`: `ADD COLUMN IF NOT EXISTS hostId` (уже есть) → бэкфилл `UPDATE availability_rules SET hostId=<defaultHostId> WHERE hostId IS NULL` → `CREATE UNIQUE INDEX IF NOT EXISTS`.
-- [ ] `server/rules.ts`: убрать `RULES_ID`; `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` через upsert по `hostId`.
-- [ ] `server/availability-settings.ts`: прокинуть `hostId` в load/save правил (сейчас скаляры читаются глобально).
-- [ ] `server/db/index.ts`: сид будущих слотов дефолтного хоста — по его правилам.
-- [ ] `server/app.ts`: легаси `GET/PUT /api/availability` и v1 `GET/PUT /api/v1/hosts/:slug/availability` — по `host.id`.
-- [ ] `POST /api/v1/hosts` (создание хоста): сидировать `availability_rules` дефолтами.
-- [ ] Тесты: два хоста с разными `minNoticeMin`/`horizonDays`/буферами → разные наборы слотов; бэкфилл/`UNIQUE(hostId)`.
-- [ ] `npm run lint` + `typecheck` + `test` + `build`.
+- [x] `server/db/schema.ts`: `UNIQUE(hostId)` на `availability_rules` (индекс `availability_rules_hostId_unique`).
+- [x] `server/db/migrate.ts`: бэкфилл `hostId` на дефолтный хост → `SET NOT NULL` → `CREATE UNIQUE INDEX IF NOT EXISTS`; удаление legacy-колонки `id`.
+- [x] `server/rules.ts`: убран `RULES_ID`; `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` через upsert по `hostId`.
+- [x] `server/availability-settings.ts`: `hostId` прокинут в load/save правил.
+- [x] `server/db/index.ts`: сид будущих слотов дефолтного хоста — по его правилам.
+- [x] `server/app.ts`: `minNoticeMs(hostId)` во всех проверках слотов; легаси `GET/PUT /api/availability` работают с правилами дефолтного хоста.
+- [x] `POST /api/v1/hosts`: новому хосту сидируются `defaultAvailabilityRules`.
+- [x] Тесты изоляции: `server/host-availability.test.ts` (4) — горизонт/minNotice per-host, изменение одного хоста не трогает другой, сид дефолтов, легаси-роут.
+- [x] `npm run lint` + `typecheck` + `test` (223/223) + `build`.
 
-**Отложено (следующий-следующий заход):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание хостов, скоупинг всех секций панели по выбранному хосту, `host.slug` из конфига → динамический.
+**Отложено (следующий-следующий заход):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание хостов, скоупинг всех секций панели по выбранному хосту, `host.slug` из конфига → динамический. — [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)
 
 ## Ключевые расхождения со спекой
 
