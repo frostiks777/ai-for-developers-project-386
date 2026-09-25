@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto'
 import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { and, eq, gte } from 'drizzle-orm'
+import { and, eq, gte, isNull } from 'drizzle-orm'
 import { Pool } from 'pg'
 import { defaultAvailabilityRules, generateSlotStarts, rulesFromRow } from '../availability'
 import { env } from '../env'
@@ -27,6 +28,29 @@ async function createDb(): Promise<Db> {
 export const db = await createDb()
 
 const defaultHostId = await runMigrations(db)
+
+// Хостам без единого типа встречи заводим дефолтный: без него гость не может
+// завершить бронь (eventTypeId обязателен). Идемпотентно — при каждом старте.
+const hostsWithoutEventTypes = await db
+  .select({ id: schema.hosts.id })
+  .from(schema.hosts)
+  .leftJoin(schema.eventTypes, eq(schema.eventTypes.hostId, schema.hosts.id))
+  .where(isNull(schema.eventTypes.id))
+
+if (hostsWithoutEventTypes.length > 0) {
+  await db.insert(schema.eventTypes).values(
+    hostsWithoutEventTypes.map((host) => ({
+      id: randomUUID(),
+      hostId: host.id,
+      slug: 'consultation',
+      title: 'Звонок-консультация',
+      description: null,
+      durationMin: 30,
+      locationType: 'online',
+      isActive: true,
+    })),
+  )
+}
 
 // Сидирование дефолтного хоста и типа встречи выполняет runMigrations;
 // здесь гарантируем наличие будущих слотов по сохранённым правилам доступности.

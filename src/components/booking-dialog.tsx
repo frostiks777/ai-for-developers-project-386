@@ -109,6 +109,7 @@ export function BookingDialog({
     consentAccepted: consent,
   })
   const isFormValid = parseResult.success
+  const canSubmit = isFormValid && slot !== null && eventTypeId !== null
   const issues = parseResult.success ? [] : parseResult.error.issues
   const nameError =
     name.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'name')?.message ?? null) : null
@@ -373,6 +374,12 @@ export function BookingDialog({
             <span>Я согласен с обработкой персональных данных</span>
           </label>
 
+          {!eventTypeId && (
+            <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+              Для этого организатора не настроены типы встреч — бронирование недоступно.
+            </p>
+          )}
+
           {conflict && (
             <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
               Этот слот только что заняли. Выберите другое время.
@@ -390,14 +397,14 @@ export function BookingDialog({
               >
                 Отмена
               </Button>
-              <Button type="submit" disabled={!isFormValid || isSubmitting} className="h-11">
+              <Button type="submit" disabled={!canSubmit || isSubmitting} className="h-11">
                 {isSubmitting ? 'Отправка…' : 'Забронировать'}
               </Button>
             </DialogFooter>
           ) : (
             <Button
               type="submit"
-              disabled={!isFormValid || isSubmitting}
+              disabled={!canSubmit || isSubmitting}
               className="mt-auto h-14 w-full rounded-xl text-base"
             >
               {isSubmitting ? 'Отправка…' : 'Забронировать'}

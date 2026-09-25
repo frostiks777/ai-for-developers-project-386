@@ -527,8 +527,16 @@ export async function buildApp(): Promise<FastifyInstance> {
           .returning()
       )[0]
 
-      // Новому хосту — стартовые правила расписания (ADR-0018)
+      // Новому хосту — стартовые правила расписания (ADR-0018) и тип встречи,
+      // иначе гостю нечего бронировать (eventTypeId обязателен в v1).
       await saveAvailabilityRules(created.id, defaultAvailabilityRules)
+      await createEventType(created.id, {
+        slug: 'consultation',
+        title: 'Звонок-консультация',
+        durationMin: 30,
+        locationType: 'online',
+        isActive: true,
+      })
 
       return reply.code(201).send(toHost(created))
     } catch (error) {

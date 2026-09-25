@@ -19,12 +19,12 @@ const slot: TimeSlot = {
 const onOpenChange = vi.fn()
 const onBooked = vi.fn()
 
-function renderDialog() {
+function renderDialog(eventTypeId: string | null = 'type-1') {
   return render(
     <BookingDialog
       slot={slot}
       hostSlug="default"
-      eventTypeId="type-1"
+      eventTypeId={eventTypeId}
       timeZone="UTC"
       open
       onOpenChange={onOpenChange}
@@ -247,6 +247,16 @@ describe('BookingDialog', () => {
         body: expect.stringContaining('"guests":["guest@example.com"]'),
       }),
     )
+  })
+
+  it('блокирует отправку и показывает сообщение без типа встречи', async () => {
+    const user = userEvent.setup()
+    renderDialog(null)
+
+    await fillValidForm(user)
+
+    expect(screen.getByRole('alert')).toHaveTextContent('не настроены типы встреч')
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
   })
 
   it('обновляет счётчик комментария при вводе', async () => {
