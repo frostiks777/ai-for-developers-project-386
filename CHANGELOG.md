@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.11.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.10.0...v1.11.0) (2026-09-25)
+
+
+### Features
+
+* **api:** add guests, consent and idempotency key to booking contract ([407bf0d](https://github.com/frostiks777/ai-for-developers-project-386/commit/407bf0d4064dfbdf74a44f2101090f951d2b3024))
+* **availability:** redesign settings form with switch, presets and validation ([d44ab9d](https://github.com/frostiks777/ai-for-developers-project-386/commit/d44ab9d5d5792b1f2a3217efadda565630fb80b2))
+* **booking:** add cancellation reason and confirmation modal ([bcd7f15](https://github.com/frostiks777/ai-for-developers-project-386/commit/bcd7f158f6fb98283e49f633dd576f968b340c42))
+* **booking:** add phone mask, stricter name, 409 alert and direct cancel ([495f7a9](https://github.com/frostiks777/ai-for-developers-project-386/commit/495f7a978edb471cab114343294a718035081be9))
+* **booking:** add timezone search and 12/24 hour format toggle ([500f134](https://github.com/frostiks777/ai-for-developers-project-386/commit/500f134458d31881b6ae51b6f10113cf6d425bcf))
+* **booking:** require consent, collect guests and dedupe by idempotency key ([af4133a](https://github.com/frostiks777/ai-for-developers-project-386/commit/af4133aaf5ebdbafa953db49036fffb8cb8bc588))
+* **dashboard:** add time blocks link to sidebar ([00b551c](https://github.com/frostiks777/ai-for-developers-project-386/commit/00b551c9f43a8fbf28435ee3e172a05b75f93045))
+* **db:** migrate from SQLite to PostgreSQL (Neon) with PGlite tests ([f1f43c5](https://github.com/frostiks777/ai-for-developers-project-386/commit/f1f43c50e446bccbc65f7254689c4c76ebda07e8))
+* **events:** add upcoming events page and confirmed booking route ([9f39d5a](https://github.com/frostiks777/ai-for-developers-project-386/commit/9f39d5a5b3d7dd446bdf9714b31dda9610dc9f19))
+* **schedule:** add manual time blocks (BlockTimeModal + API) ([b62ebef](https://github.com/frostiks777/ai-for-developers-project-386/commit/b62ebeff22797f2cfc55459ff6fa8ad584913889))
+* **ui:** add public nav tabs to app header ([6b0d8a9](https://github.com/frostiks777/ai-for-developers-project-386/commit/6b0d8a967ad11cdaf3ed8243973f2ee4d33ea1c5))
+* **ui:** use event type title in calendar export ([0c10fe2](https://github.com/frostiks777/ai-for-developers-project-386/commit/0c10fe26baaec97f16faec26720e1e2c80d9672a))
+
+
+### Bug Fixes
+
+* **availability:** put day toggle and first interval on one row ([828119d](https://github.com/frostiks777/ai-for-developers-project-386/commit/828119d6d7130bd67e110aa5a204742c73897108))
+* **dashboard:** count only active bookings in meetings counter ([075cad2](https://github.com/frostiks777/ai-for-developers-project-386/commit/075cad2e7231fb1c6c8cdce6e1cef4b8302ec1f4))
+* **ui:** compact availability interval remove control ([af2a1aa](https://github.com/frostiks777/ai-for-developers-project-386/commit/af2a1aaf9bd6552bbdb67b7a6bfb28aa2975f917))
+
 ## [1.10.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.9.0...v1.10.0) (2026-09-24)
 
 
