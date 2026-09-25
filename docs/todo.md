@@ -124,7 +124,7 @@
 ### Low
 
 - [ ] Полная мульти-хост-модель: `host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, страница `/book/:hostId` (текущий v1 — аддитивный, однохостовый по факту)
-- [ ] Авторизация `/dashboard` (сейчас панель публична)
+- [x] **Авторизация `/dashboard`** — [ADR-0017](adr/0017-dashboard-basic-auth.md): Basic-auth на `/dashboard` и `/admin/*` через `ADMIN_PASSWORD` (если не задан — панель открыта, для dev/тестов); демо-пароль для наставника — в README. Административные API пока публичны (учебный MVP).
 - [x] **Баг:** ссылка «Доступность» в сайдбаре `/dashboard` не скроллила к секции — исправлено: `onClick` + `scrollIntoView({behavior:'smooth'})` + `history.replaceState('#availability')` в `src/components/dashboard-sidebar.tsx`; тест `src/components/dashboard-sidebar.test.tsx`
 
 ## Ключевые расхождения со спекой

@@ -1,11 +1,12 @@
 import { existsSync } from 'node:fs'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, timingSafeEqual } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
 import { and, eq, gte } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
+import { env } from './env'
 import { bookings, eventTypes, hosts, slots } from './db/schema'
 import {
   cancelBookingV1,
@@ -86,10 +87,51 @@ function pgErrorCode(error: unknown): string | undefined {
 
 const isUniqueViolation = (error: unknown) => pgErrorCode(error) === PG_UNIQUE_VIOLATION
 
+// Панель организатора: HTML-маршруты /dashboard и /admin/* под Basic-auth.
+const isAdminPath = (url: string) => {
+  const pathname = url.split('?')[0]
+  return pathname === '/dashboard' || pathname === '/admin' || pathname.startsWith('/admin/')
+}
+
+// Basic-auth: имя пользователя любое, пароль сверяется с ADMIN_PASSWORD.
+const isAuthorizedAdmin = (authorization: string | undefined, password: string): boolean => {
+  if (!authorization?.startsWith('Basic ')) {
+    return false
+  }
+
+  const decoded = Buffer.from(authorization.slice('Basic '.length), 'base64').toString('utf8')
+  const separator = decoded.indexOf(':')
+
+  if (separator === -1) {
+    return false
+  }
+
+  const provided = Buffer.from(decoded.slice(separator + 1))
+  const expected = Buffer.from(password)
+
+  return provided.length === expected.length && timingSafeEqual(provided, expected)
+}
+
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
   // В тестах логи Fastify не нужны (vitest выставляет NODE_ENV=test)
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
+
+  // Гейт панели организатора. Без ADMIN_PASSWORD доступ открыт (локальный dev,
+  // тесты, e2e); в продакшене пароль задаётся переменной окружения.
+  app.addHook('onRequest', async (request, reply) => {
+    const password = env.ADMIN_PASSWORD
+
+    if (!password || !isAdminPath(request.url)) {
+      return
+    }
+
+    if (!isAuthorizedAdmin(request.headers.authorization, password)) {
+      reply.header('WWW-Authenticate', 'Basic realm="admin"')
+      return reply.code(401).send({ error: 'Требуется авторизация' })
+    }
+  })
+
 
   const minNoticeMs = async () => (await loadAvailabilityRules()).minNoticeMin * 60 * 1000
 

@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-25 (план `docs/todo.md`: Фазы D и A выполнены — редизайн «Доступность» и UI-фиксы панели; далее Фаза B — P0 публичный флоу)
+> Дата последнего обновления: 2026-09-25 (хвосты P1 + Фаза 4: deep-link `/admin/*`, Basic-auth панели; далее — мульти-хост)
 
 ## Текущее состояние
 
@@ -276,6 +276,12 @@
     - Доступность: пресеты горизонта 14/30/60 рядом с `horizonDays`.
     - Инфра: `vite.config.ts` → `retry: 1` (редкие тайминговые флаки RTL под нагрузкой).
     - Проверки: lint 0, typecheck чисто, **190/190 тестов**, build ✓. Осталось в C: `buffer_before/after` (контракт/БД), отдельный `EventForm` с `description`.
+60. ✅ Хвосты P1 + Фаза 4 (2026-09-25):
+    - **Раздельные буферы** `bufferBeforeMin`/`bufferAfterMin` — [ADR-0016](docs/adr/0016-split-buffers.md) (коммиты `4640244`, `f205bc2`).
+    - **Deep-link `/admin/*`** (`f6abc4f`): `DashboardPage` принимает `initialSection` — прокрутка к секции на десктопе, стартовый таб на телефоне; маршруты `/admin/{availability,event-types,bookings,blocks}`; 2 RTL-теста.
+    - **Basic-auth панели организатора** — [ADR-0017](docs/adr/0017-dashboard-basic-auth.md): `/dashboard` и `/admin/*` под HTTP Basic Auth, пароль из `ADMIN_PASSWORD` (`server/env.ts` + `onRequest`-хук, `timingSafeEqual`); если переменная не задана (dev/тесты/e2e) — гейт выключен. Демо-пароль `call-calendar-admin` — в README, `.env.example`, `render.yaml`. Легаси-код `server/index.ts` async. 5 серверных тестов (`server/admin-auth.test.ts`).
+    - **README синхронизирован**: стек БД (Postgres/Neon + PGlite вместо SQLite), таблица env (`DATABASE_URL`, `ADMIN_PASSWORD` вместо `DATABASE_PATH`), раздел «Доступ организатора».
+    - Проверки: lint 0, typecheck чисто, **199/199 тестов** (33 файла), build ✓.
 
 ## Что осталось (следующие шаги)
 
@@ -288,7 +294,7 @@
 - [x] **Фикс (2026-09-24):** счётчик «Встречи · N» в панели считал все брони, включая отменённые — теперь только активные (`075cad2`).
 - [ ] **Фаза 2 — P0 публичный флоу:** имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`.
 - [ ] **Фаза 3 — P1 self-service/dashboard:** роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
-- [ ] **Фаза 4 — Low/архитектура (нужны ADR):** мульти-хост-модель (`host_id` в `slots`/`bookings`, `/book/:hostId`), авторизация `/dashboard`.
+- [ ] **Фаза 4 — Low/архитектура (нужны ADR):** мульти-хост-модель (`host_id` в `slots`/`bookings`, `/book/:hostId`). Авторизация `/dashboard` — **✅ выполнено 2026-09-25** ([ADR-0017](docs/adr/0017-dashboard-basic-auth.md)).
 
 ## Ключевые решения
 
@@ -339,6 +345,7 @@
 | Тестирование v1 | API (`app.inject` + in-memory) + RTL/jsdOM + e2e Playwright (`npm run test:e2e`, отдельный гейт); контракт-тесты — валидация ключевых ответов по OpenAPI; миграции на `:memory:` | Требование курса: сценарий и конфликт покрыты; правила на сервере ([#14](https://github.com/frostiks777/ai-for-developers-project-386/issues/14)) |
 | Контракт-тесты и e2e | `server/contract.test.ts` (`ajv` по `docs/openapi/openapi.yaml`); Playwright против собранного приложения (`PORT=3100`, `DATABASE_PATH=:memory:`), `npm run test:e2e` вне `npm test`/CI | [ADR-0012](docs/adr/0012-contract-tests-and-e2e.md); Design First — сервер приведён к контракту (Booking.timeZone, HostSettings, nullable) |
 | Модель времени и ошибок (T9) | Время — UTC ISO (`UtcDateTime`, `@format date-time`); ошибки — конверт `{ error: ApiError }`; `timeZone` — только для отображения UI | Сверка со спецификацией ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)); контракт приведён к фактическим ответам вместо переписывания сервера под local-time |
+| Доступ к панели | HTTP Basic Auth на `/dashboard` и `/admin/*`, пароль из `ADMIN_PASSWORD` (нет переменной → панель открыта); демо-пароль в README | [ADR-0017](docs/adr/0017-dashboard-basic-auth.md); наставнику нужен доступ, полноценные сессии/аккаунты избыточны для MVP |
 
 ## Окружение
 
