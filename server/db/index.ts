@@ -30,7 +30,13 @@ const defaultHostId = await runMigrations(db)
 
 // Сидирование дефолтного хоста и типа встречи выполняет runMigrations;
 // здесь гарантируем наличие будущих слотов по сохранённым правилам доступности.
-const storedRules = (await db.select().from(schema.availabilityRules).limit(1))[0]
+const storedRules = (
+  await db
+    .select()
+    .from(schema.availabilityRules)
+    .where(eq(schema.availabilityRules.hostId, defaultHostId))
+    .limit(1)
+)[0]
 const rules = storedRules ? rulesFromRow(storedRules) : defaultAvailabilityRules
 
 const hasFutureSlots =

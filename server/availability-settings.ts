@@ -15,7 +15,7 @@ export async function loadAvailabilitySettings(
   hostId: string,
   timeZone: string,
 ): Promise<AvailabilitySettings> {
-  const rules = await loadAvailabilityRules()
+  const rules = await loadAvailabilityRules(hostId)
   const rows = await db
     .select()
     .from(availabilityRanges)
@@ -48,7 +48,7 @@ export async function saveAvailabilitySettings(
 ): Promise<void> {
   const window = windowFromRanges(settings.ranges, defaultAvailabilityRules)
 
-  await saveAvailabilityRules({
+  await saveAvailabilityRules(hostId, {
     ...window,
     slotDurationMin: settings.slotDurationMin,
     bufferBeforeMin: settings.bufferBeforeMin,

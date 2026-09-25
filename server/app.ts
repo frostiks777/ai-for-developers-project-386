@@ -19,6 +19,7 @@ import {
   rescheduleBookingV1,
 } from './bookings-v1'
 import { loadAvailabilitySettings, saveAvailabilitySettings } from './availability-settings'
+import { defaultAvailabilityRules } from './availability'
 import {
   createEventType,
   deleteEventType,
@@ -175,7 +176,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
 
-  const minNoticeMs = async () => (await loadAvailabilityRules()).minNoticeMin * 60 * 1000
+  const minNoticeMs = async (hostId: string) =>
+    (await loadAvailabilityRules(hostId)).minNoticeMin * 60 * 1000
 
   // Читает хост по slug или UUID; undefined, если не найден (роуты отвечают 404)
   const findHost = async (ref: string) =>
@@ -209,7 +211,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       .where(
         and(
           eq(slots.hostId, hostId),
-          gte(slots.startAt, new Date(Date.now() + (await minNoticeMs())).toISOString()),
+          gte(slots.startAt, new Date(Date.now() + (await minNoticeMs(hostId))).toISOString()),
         ),
       )
       .orderBy(slots.startAt)
@@ -278,7 +280,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
     }
 
-    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs(slot.hostId))).toISOString()) {
       return reply.code(400).send({ error: 'Слот уже недоступен' })
     }
 
@@ -398,7 +400,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(400).send({ error: 'Слот уже прошёл' })
     }
 
-    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs(booking.hostId))).toISOString()) {
       return reply.code(400).send({ error: 'Слот уже недоступен' })
     }
 
@@ -435,7 +437,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Текущие правила доступности организатора
-  app.get('/api/availability', async () => loadAvailabilityRules())
+  app.get('/api/availability', async () => {
+    const host = await defaultHost()
+
+    return host ? loadAvailabilityRules(host.id) : defaultAvailabilityRules
+  })
 
   // Обновление правил: сохраняем и пересобираем будущие свободные слоты
   app.put('/api/availability', async (request, reply) => {
@@ -446,14 +452,15 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send({ error: message })
     }
 
-    await saveAvailabilityRules(parsed.data)
-
     const host = await defaultHost()
-    if (host) {
-      await regenerateFutureSlots(host.id, parsed.data)
+    if (!host) {
+      return reply.code(404).send({ error: 'Хост не найден' })
     }
 
-    return loadAvailabilityRules()
+    await saveAvailabilityRules(host.id, parsed.data)
+    await regenerateFutureSlots(host.id, parsed.data)
+
+    return loadAvailabilityRules(host.id)
   })
 
   // ── API v1: мульти-хост ──────────────────────────────────────────────
@@ -519,6 +526,9 @@ export async function buildApp(): Promise<FastifyInstance> {
           })
           .returning()
       )[0]
+
+      // Новому хосту — стартовые правила расписания (ADR-0018)
+      await saveAvailabilityRules(created.id, defaultAvailabilityRules)
 
       return reply.code(201).send(toHost(created))
     } catch (error) {
@@ -753,7 +763,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
     }
 
-    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs(host.id))).toISOString()) {
       return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
     }
 
@@ -900,7 +910,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
     }
 
-    if (slot.startAt < new Date(Date.now() + (await minNoticeMs())).toISOString()) {
+    if (slot.startAt < new Date(Date.now() + (await minNoticeMs(booking.hostId))).toISOString()) {
       return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
     }
 
