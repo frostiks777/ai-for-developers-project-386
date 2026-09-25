@@ -22,6 +22,17 @@ function mockFetch() {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = requestPath(input)
 
+    if (url === '/api/v1/hosts') {
+      return jsonResponse([
+        {
+          id: '11111111-2222-3333-4444-555555555555',
+          slug: 'default',
+          name: 'Организатор',
+          timeZone: 'UTC',
+        },
+      ])
+    }
+
     if (/^\/api\/v1\/hosts\/[^/]+\/settings$/.test(url)) {
       return jsonResponse(settings)
     }

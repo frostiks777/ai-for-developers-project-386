@@ -9,6 +9,7 @@ import { BookingBar } from '@/components/booking-bar'
 import { BookingDialog } from '@/components/booking-dialog'
 import { BookingSuccess } from '@/components/booking-success'
 import { DateStrip } from '@/components/date-strip'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { HostInfo } from '@/components/host-info'
 import { MonthCalendar } from '@/components/month-calendar'
 import { SlotGrid } from '@/components/slot-grid'
@@ -68,6 +69,7 @@ function SlotsSkeleton() {
 
 export default function HomePage() {
   const { slug } = useParams<{ slug: string }>()
+  const { activeSlug } = useActiveHost()
   const [eventTypes, setEventTypes] = useState<EventType[]>([])
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
   const { slots, isLoading, error, refetch } = useAvailability(
@@ -175,7 +177,7 @@ export default function HomePage() {
         startAt: selectedSlot.startAt,
         durationMin: selectedSlot.durationMin,
         eventTypeTitle: selectedType?.title ?? null,
-        hostSlug: slug ?? host.slug,
+        hostSlug: slug ?? activeSlug,
       })
     }
 
@@ -219,7 +221,7 @@ export default function HomePage() {
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
-          { to: `/book/${slug ?? host.slug}`, label: 'Записаться', active: true },
+          { to: `/book/${slug ?? activeSlug}`, label: 'Записаться', active: true },
           { to: '/events', label: 'Предстоящие события', active: false },
           { to: '/my', label: 'Мои встречи', active: false },
         ]}

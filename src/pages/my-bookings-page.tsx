@@ -3,6 +3,7 @@ import { CalendarClock, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { AppHeader } from '@/components/app-header'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
 import { useMediaQuery } from '@/hooks/use-media-query'
@@ -11,6 +12,7 @@ import { listMyBookings, removeMyBooking, type SavedBooking } from '@/utils/my-b
 
 export default function MyBookingsPage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const { activeSlug } = useActiveHost()
   const [bookings, setBookings] = useState<SavedBooking[]>(() => listMyBookings())
 
   const handleRemove = (id: string) => {
@@ -23,7 +25,7 @@ export default function MyBookingsPage() {
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
-          { to: `/book/${host.slug}`, label: 'Записаться', active: false },
+          { to: `/book/${activeSlug}`, label: 'Записаться', active: false },
           { to: '/events', label: 'Предстоящие события', active: false },
           { to: '/my', label: 'Мои встречи', active: true },
         ]}
@@ -50,7 +52,7 @@ export default function MyBookingsPage() {
               Запишитесь на звонок в этом браузере — встреча появится в списке.
             </p>
             <Button className="mt-4" asChild>
-              <Link to={`/book/${host.slug}`}>Записаться</Link>
+              <Link to={`/book/${activeSlug}`}>Записаться</Link>
             </Button>
           </div>
         )}
