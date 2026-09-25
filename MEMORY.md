@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-25 (хвосты P1 + Фаза 4, мульти-хост, «Мои встречи», asciinema-демо записано и опубликовано; все шаги курса и backlog закрыты — открыт только опциональный Low-остаток ADR-0018)
+> Дата последнего обновления: 2026-09-25 (per-host скаляры расписания закрыты — [ADR-0020](docs/adr/0020-per-host-availability-rules.md), #41; открыт только UI управления хостами — #42)
 
 ## Текущее состояние
 
@@ -295,6 +295,11 @@
     - `HomePage.handleBooked` сохраняет `{ id: cancelToken, startAt, durationMin, eventTypeTitle, hostSlug }`; вкладка «Мои встречи» в шапке (лендинг, `/book/:slug`, `/events`, `/confirmed`, `/my`).
     - Тесты: `my-bookings.test.ts` (4), `my-bookings-page.test.tsx` (3), +1 в `home-page.test.tsx`. Проверки: lint 0, typecheck чисто, build ✓.
 63. ✅ **Asciinema-демо** (2026-09-25): записан и опубликован каст сквозного пути гостя — https://asciinema.org/a/mpuvYnckvG7iKlH4 (`docs/demo.cast` в репозитории), README обновлён (бейдж + инструкция, в т.ч. PowerSession для Windows). Попутный фикс `scripts/demo.sh`: кириллица в `curl -d` на Windows-curl ломала `Content-Length` → `--data-binary @-` (работает и на Linux). Прод-`.env` (Neon) не затрагивался — сервер поднимался на PGlite с пустым `DATABASE_URL`.
+64. ✅ **Per-host скаляры расписания** (2026-09-25) — [#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41), [ADR-0020](docs/adr/0020-per-host-availability-rules.md):
+    - `availability_rules` больше не глобальная строка `id=1`: ключ — `hostId` (+ `UNIQUE(hostId)`, legacy-колонка `id` удаляется идемпотентной миграцией, существующая строка бэкфиллится на дефолтный хост).
+    - `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` (upsert по `hostId`); `availability-settings.ts` прокидывает `hostId`; сид слотов в `db/index.ts` — по правилам дефолтного хоста; `minNoticeMs(hostId)` во всех проверках слотов; легаси `/api/availability` — на дефолтном хосте; `POST /api/v1/hosts` сидирует новому хосту `defaultAvailabilityRules`.
+    - Тесты: `server/host-availability.test.ts` (4). Проверки: lint 0, typecheck чисто, **223/223 тестов** (38 файлов), build ✓.
+    - **Осталось (отдельная задача [#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание, скоупинг секций, динамический `host.slug`.
 
 ## Что осталось (следующие шаги)
 
@@ -308,7 +313,7 @@
 - [x] **Фаза 2 — P0 публичный флоу** ✅ **выполнено 2026-09-25** (пункты 56, 57): имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`; поиск по IANA и формат 12/24 — пункт 58.
 - [x] **Фаза 3 — P1 self-service/dashboard** ✅ **выполнено 2026-09-25** (пункты 59, 60): роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
 - [x] **Фаза 4 — Low/архитектура** ✅ **выполнено 2026-09-25**: авторизация `/dashboard` ([ADR-0017](docs/adr/0017-dashboard-basic-auth.md), пункт 60) и мульти-хост-модель ([ADR-0018](docs/adr/0018-multi-host-model.md), пункт 61) — `hostId` в `slots`/`bookings`, `/book/:uuid`.
-- [ ] **Остаток Low из [ADR-0018](docs/adr/0018-multi-host-model.md)** (опционально): per-host скаляры расписания (`bufferBefore/AfterMin`, `minNoticeMin`, `horizonDays`) + UI управления хостами.
+- [x] **Остаток Low из [ADR-0018](docs/adr/0018-multi-host-model.md)** — ✅ **выполнено 2026-09-25**: per-host скаляры расписания ([ADR-0020](docs/adr/0020-per-host-availability-rules.md), [#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41)). Остался только UI управления хостами ([#42](https://github.com/frostiks777/ai-for-developers-project-386/issues/42)).
 
 ## Ключевые решения
 
@@ -361,6 +366,7 @@
 | Модель времени и ошибок (T9) | Время — UTC ISO (`UtcDateTime`, `@format date-time`); ошибки — конверт `{ error: ApiError }`; `timeZone` — только для отображения UI | Сверка со спецификацией ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)); контракт приведён к фактическим ответам вместо переписывания сервера под local-time |
 | Доступ к панели | HTTP Basic Auth на `/dashboard`, `/admin/*` и админские мутации API (`ADMIN_PASSWORD`, нет переменной → открыто); демо-пароль в README | [ADR-0017](docs/adr/0017-dashboard-basic-auth.md); наставнику нужен доступ, полноценные сессии/аккаунты избыточны для MVP; публичные чтения гостя не трогаем |
 | Мульти-хост | `slots`/`bookings` привязаны к `hostId`; `findHost` по slug или UUID; `GET/POST /api/v1/hosts` (Basic-auth); `/book/:uuid` | [ADR-0018](docs/adr/0018-multi-host-model.md); изоляция расписаний без ломки slug-флоу; скаляры расписания пока общие |
+| Per-host скаляры расписания | `availability_rules` — одна строка на `hostId` (UNIQUE, украли `id`); `load/saveAvailabilityRules(hostId)`; миграция бэкфиллит дефолтный хост | [ADR-0020](docs/adr/0020-per-host-availability-rules.md); изоляция `minNotice`/горизонтов/буферов по организаторам |
 | Отмена без ссылки | «Мои встречи» на устройстве: бронь в `localStorage`, страница `/my` с отменой/переносом | [ADR-0019](docs/adr/0019-my-bookings-on-device.md); capability-токен не утекает, нет перечисления по email; ограничение — только тот же браузер |
 
 ## Окружение

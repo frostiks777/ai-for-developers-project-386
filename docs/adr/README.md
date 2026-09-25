@@ -52,3 +52,4 @@
 | [0017](0017-dashboard-basic-auth.md) | Парольный доступ (Basic Auth) к панели организатора | Accepted | 2026-09-25 |
 | [0018](0018-multi-host-model.md) | Мульти-хост-модель (`hostId` в slots/bookings, CRUD хостов) | Accepted | 2026-09-25 |
 | [0019](0019-my-bookings-on-device.md) | «Мои встречи» на устройстве (localStorage) | Accepted | 2026-09-25 |
+| [0020](0020-per-host-availability-rules.md) | Per-host скаляры расписания (`availability_rules` по `hostId`) | Accepted | 2026-09-25 |
