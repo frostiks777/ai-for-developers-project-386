@@ -238,6 +238,52 @@ export function AvailabilitySettingsForm({
 
   const copySourceLabel = WEEKDAYS.find(({ value }) => value === copySource)?.label
 
+  const renderTimeInputs = (
+    weekday: number,
+    label: string,
+    position: number,
+    range: AvailabilityRange,
+  ) => {
+    const startError = errors.get(`${weekday}:${position}:start`)
+    const endError = errors.get(`${weekday}:${position}:end`)
+
+    return (
+      <>
+        <input
+          type="time"
+          aria-label={`${label}: начало ${position + 1}`}
+          value={minuteToTime(range.startMinute)}
+          onChange={(event) => {
+            if (!event.target.value) {
+              return
+            }
+            updateInterval(weekday, position, { startMinute: timeToMinute(event.target.value) })
+          }}
+          className={cn(
+            'h-8 w-[64px] shrink-0 rounded-md border bg-transparent px-1.5 text-[13px]',
+            startError ? 'border-destructive' : 'border-input',
+          )}
+        />
+        <span className="text-muted-foreground">–</span>
+        <input
+          type="time"
+          aria-label={`${label}: конец ${position + 1}`}
+          value={minuteToTime(range.endMinute)}
+          onChange={(event) => {
+            if (!event.target.value) {
+              return
+            }
+            updateInterval(weekday, position, { endMinute: timeToMinute(event.target.value) })
+          }}
+          className={cn(
+            'h-8 w-[64px] shrink-0 rounded-md border bg-transparent px-1.5 text-[13px]',
+            endError ? 'border-destructive' : 'border-input',
+          )}
+        />
+      </>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
@@ -269,7 +315,7 @@ export function AvailabilitySettingsForm({
 
           return (
             <div key={value} className="flex flex-col gap-2">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   role="switch"
@@ -290,101 +336,80 @@ export function AvailabilitySettingsForm({
                 </button>
                 <span
                   className={cn(
-                    'w-7 shrink-0 text-sm font-semibold',
+                    'w-6 shrink-0 text-sm font-semibold',
                     !isEnabled && 'text-muted-foreground/60',
                   )}
                 >
                   {label}
                 </span>
 
-                {!isEnabled && <span className="text-sm text-muted-foreground">Недоступен</span>}
+                {isEnabled ? (
+                  <>
+                    {renderTimeInputs(value, label, 0, ranges[0])}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Добавить интервал: ${label}`}
+                      onClick={() => addInterval(value)}
+                      className="h-7 w-7 shrink-0"
+                    >
+                      <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Скопировать интервал: ${label}`}
+                      onClick={() => openCopy(value)}
+                      className="h-7 w-7 shrink-0"
+                    >
+                      <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                    </Button>
+                    {ranges.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Убрать интервал: ${label} 1`}
+                        onClick={() => removeInterval(value, 0)}
+                        className="h-7 w-7 shrink-0"
+                      >
+                        <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Недоступен</span>
+                )}
               </div>
 
-              {ranges.map((range, position) => {
-                const startError = errors.get(`${value}:${position}:start`)
-                const endError = errors.get(`${value}:${position}:end`)
+              {isEnabled && (errors.get(`${value}:0:start`) ?? errors.get(`${value}:0:end`)) && (
+                <p className="pl-9 text-xs text-destructive">
+                  {errors.get(`${value}:0:start`) ?? errors.get(`${value}:0:end`)}
+                </p>
+              )}
+
+              {ranges.slice(1).map((range, index) => {
+                const position = index + 1
+                const error = errors.get(`${value}:${position}:start`) ?? errors.get(`${value}:${position}:end`)
 
                 return (
                   <div key={`${value}-${position}`} className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5 pl-10">
-                      <input
-                        type="time"
-                        aria-label={`${label}: начало ${position + 1}`}
-                        value={minuteToTime(range.startMinute)}
-                        onChange={(event) => {
-                          if (!event.target.value) {
-                            return
-                          }
-                          updateInterval(value, position, {
-                            startMinute: timeToMinute(event.target.value),
-                          })
-                        }}
-                        className={cn(
-                          'h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm',
-                          startError ? 'border-destructive' : 'border-input',
-                        )}
-                      />
-                      <span className="text-muted-foreground">–</span>
-                      <input
-                        type="time"
-                        aria-label={`${label}: конец ${position + 1}`}
-                        value={minuteToTime(range.endMinute)}
-                        onChange={(event) => {
-                          if (!event.target.value) {
-                            return
-                          }
-                          updateInterval(value, position, {
-                            endMinute: timeToMinute(event.target.value),
-                          })
-                        }}
-                        className={cn(
-                          'h-9 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm',
-                          endError ? 'border-destructive' : 'border-input',
-                        )}
-                      />
-
-                      {position === 0 && (
-                        <>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Добавить интервал: ${label}`}
-                            onClick={() => addInterval(value)}
-                            className="h-7 w-7 shrink-0"
-                          >
-                            <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Скопировать интервал: ${label}`}
-                            onClick={() => openCopy(value)}
-                            className="h-7 w-7 shrink-0"
-                          >
-                            <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                          </Button>
-                        </>
-                      )}
-
-                      {ranges.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Убрать интервал: ${label} ${position + 1}`}
-                          onClick={() => removeInterval(value, position)}
-                          className="h-7 w-7 shrink-0"
-                        >
-                          <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                        </Button>
-                      )}
+                    <div className="flex items-center gap-1 pl-9">
+                      {renderTimeInputs(value, label, position, range)}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Убрать интервал: ${label} ${position + 1}`}
+                        onClick={() => removeInterval(value, position)}
+                        className="h-7 w-7 shrink-0"
+                      >
+                        <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                      </Button>
                     </div>
-
-                    {(startError || endError) && (
-                      <p className="pl-10 text-xs text-destructive">{startError ?? endError}</p>
-                    )}
+                    {error && <p className="pl-9 text-xs text-destructive">{error}</p>}
                   </div>
                 )
               })}
