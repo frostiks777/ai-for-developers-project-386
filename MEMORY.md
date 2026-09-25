@@ -290,6 +290,10 @@
     - CRUD: `GET/POST /api/v1/hosts` (под Basic-auth), `409` дубликат slug, `422` неверный пояс; `POST /api/v1/hosts/:ref/bookings` пишет `hostId`, списки/слоты скоупятся по хосту.
     - Фронт: `/book/:slug` принимает slug или UUID (regex). Осталось: per-host скаляры расписания (buffer/minNotice/horizon) и UI управления хостами.
     - Проверки: lint 0, typecheck чисто, **тесты** (11 серверных файлов + `server/multi-host.test.ts`), build ✓.
+62. ✅ **«Мои встречи» на устройстве** (2026-09-25) — [ADR-0019](docs/adr/0019-my-bookings-on-device.md):
+    - `src/utils/my-bookings.ts` — `localStorage` (`call-calendar-my-bookings`), дедуп по id, лимит 50; `src/pages/my-bookings-page.tsx` — страница `/my` с «Перенести»/«Отменить»/«Убрать» и бейджем «Прошла».
+    - `HomePage.handleBooked` сохраняет `{ id: cancelToken, startAt, durationMin, eventTypeTitle, hostSlug }`; вкладка «Мои встречи» в шапке (лендинг, `/book/:slug`, `/events`, `/confirmed`, `/my`).
+    - Тесты: `my-bookings.test.ts` (4), `my-bookings-page.test.tsx` (3), +1 в `home-page.test.tsx`. Проверки: lint 0, typecheck чисто, build ✓.
 
 ## Что осталось (следующие шаги)
 
@@ -355,6 +359,7 @@
 | Модель времени и ошибок (T9) | Время — UTC ISO (`UtcDateTime`, `@format date-time`); ошибки — конверт `{ error: ApiError }`; `timeZone` — только для отображения UI | Сверка со спецификацией ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)); контракт приведён к фактическим ответам вместо переписывания сервера под local-time |
 | Доступ к панели | HTTP Basic Auth на `/dashboard`, `/admin/*` и админские мутации API (`ADMIN_PASSWORD`, нет переменной → открыто); демо-пароль в README | [ADR-0017](docs/adr/0017-dashboard-basic-auth.md); наставнику нужен доступ, полноценные сессии/аккаунты избыточны для MVP; публичные чтения гостя не трогаем |
 | Мульти-хост | `slots`/`bookings` привязаны к `hostId`; `findHost` по slug или UUID; `GET/POST /api/v1/hosts` (Basic-auth); `/book/:uuid` | [ADR-0018](docs/adr/0018-multi-host-model.md); изоляция расписаний без ломки slug-флоу; скаляры расписания пока общие |
+| Отмена без ссылки | «Мои встречи» на устройстве: бронь в `localStorage`, страница `/my` с отменой/переносом | [ADR-0019](docs/adr/0019-my-bookings-on-device.md); capability-токен не утекает, нет перечисления по email; ограничение — только тот же браузер |
 
 ## Окружение
 

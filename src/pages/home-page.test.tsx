@@ -140,6 +140,23 @@ describe('HomePage: экран успеха', () => {
     expect((cancelLink as HTMLInputElement).value).toContain('/cancel/booking-token')
   })
 
+  it('сохраняет бронь в localStorage для страницы «Мои встречи»', async () => {
+    window.localStorage.clear()
+    vi.stubGlobal('fetch', mockFetch())
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    await bookSlot(user)
+
+    await screen.findByRole('heading', { name: 'Встреча успешно запланирована!' })
+
+    const saved = JSON.parse(window.localStorage.getItem('call-calendar-my-bookings') ?? '[]')
+    expect(saved).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'booking-token', durationMin: 30 })]),
+    )
+  })
+
   it('на экране успеха есть экспорт в календарь', async () => {
     vi.stubGlobal('fetch', mockFetch())
 
