@@ -67,3 +67,49 @@ describe('Basic-auth панели организатора', () => {
     }
   })
 })
+
+describe('Basic-auth административных API', () => {
+  it('закрывает изменение настроек, типов и блокировок без пароля', async () => {
+    const requests = [
+      { method: 'PUT' as const, url: '/api/v1/hosts/default/availability', payload: {} },
+      { method: 'POST' as const, url: '/api/v1/hosts/default/event-types', payload: {} },
+      { method: 'PATCH' as const, url: '/api/v1/hosts/default/event-types/x', payload: {} },
+      { method: 'DELETE' as const, url: '/api/v1/hosts/default/event-types/x' },
+      { method: 'POST' as const, url: '/api/v1/hosts/default/blocks', payload: {} },
+      { method: 'DELETE' as const, url: '/api/v1/hosts/default/blocks/1' },
+      { method: 'GET' as const, url: '/api/v1/hosts/default/blocks' },
+      { method: 'PUT' as const, url: '/api/availability', payload: {} },
+      { method: 'GET' as const, url: '/api/bookings' },
+    ]
+
+    for (const request of requests) {
+      const response = await app.inject(request)
+      expect(response.statusCode, `${request.method} ${request.url}`).toBe(401)
+    }
+  })
+
+  it('пропускает административные запросы с верным паролем', async () => {
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/hosts/default/availability',
+      payload: {},
+      headers: { authorization: basic('admin', 'secret') },
+    })
+
+    // Валидация тела — 422, но гейт пропустил запрос (не 401)
+    expect(response.statusCode).toBe(422)
+  })
+
+  it('не закрывает публичные чтения гостя', async () => {
+    const publicRequests = [
+      { method: 'GET' as const, url: '/api/v1/hosts/default/availability' },
+      { method: 'GET' as const, url: '/api/v1/hosts/default/event-types' },
+      { method: 'GET' as const, url: '/api/v1/hosts/default/bookings' },
+    ]
+
+    for (const request of publicRequests) {
+      const response = await app.inject(request)
+      expect(response.statusCode, `${request.method} ${request.url}`).not.toBe(401)
+    }
+  })
+})
