@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.17.1...v1.18.0) (2026-09-25)
+
+
+### Features
+
+* **server:** scope availability rules per host ([#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41)) ([e90c50b](https://github.com/frostiks777/ai-for-developers-project-386/commit/e90c50b2bd89923a2638843a0380d53b4d7f9ca4))
+
 ## [1.17.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.17.0...v1.17.1) (2026-09-25)
 
 
