@@ -261,7 +261,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferMin: input_.bufferMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToTransportTransform(input_.ranges)
+    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferBeforeMin: input_.bufferBeforeMin,bufferAfterMin: input_.bufferAfterMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToTransportTransform(input_.ranges)
   }!;
 }export function jsonAvailabilitySettingsToApplicationTransform(
   input_?: any,
@@ -270,7 +270,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferMin: input_.bufferMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToApplicationTransform(input_.ranges)
+    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferBeforeMin: input_.bufferBeforeMin,bufferAfterMin: input_.bufferAfterMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToApplicationTransform(input_.ranges)
   }!;
 }export function jsonArrayAvailabilityRangeToTransportTransform(
   items_?: Array<AvailabilityRange> | null,
@@ -325,7 +325,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferMin: input_.bufferMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToTransportTransform(input_.ranges)
+    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferBeforeMin: input_.bufferBeforeMin,bufferAfterMin: input_.bufferAfterMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToTransportTransform(input_.ranges)
   }!;
 }export function jsonUpdateAvailabilityRequestToApplicationTransform(
   input_?: any,
@@ -334,7 +334,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferMin: input_.bufferMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToApplicationTransform(input_.ranges)
+    timeZone: input_.timeZone,slotDurationMin: input_.slotDurationMin,bufferBeforeMin: input_.bufferBeforeMin,bufferAfterMin: input_.bufferAfterMin,minNoticeMin: input_.minNoticeMin,horizonDays: input_.horizonDays,ranges: jsonArrayAvailabilityRangeToApplicationTransform(input_.ranges)
   }!;
 }export function jsonArrayBookingToTransportTransform(
   items_?: Array<Booking> | null,

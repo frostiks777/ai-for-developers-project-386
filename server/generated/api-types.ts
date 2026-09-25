@@ -218,8 +218,16 @@ export interface components {
             timeZone: string;
             /** Format: int32 */
             slotDurationMin: number;
-            /** Format: int32 */
-            bufferMin: number;
+            /**
+             * Format: int32
+             * @description Буфер до начала встречи, минуты.
+             */
+            bufferBeforeMin: number;
+            /**
+             * Format: int32
+             * @description Буфер после встречи, минуты.
+             */
+            bufferAfterMin: number;
             /** Format: int32 */
             minNoticeMin: number;
             /** Format: int32 */
@@ -348,7 +356,9 @@ export interface components {
             /** Format: int32 */
             slotDurationMin?: number;
             /** Format: int32 */
-            bufferMin?: number;
+            bufferBeforeMin?: number;
+            /** Format: int32 */
+            bufferAfterMin?: number;
             /** Format: int32 */
             minNoticeMin?: number;
             /** Format: int32 */
