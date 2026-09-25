@@ -148,6 +148,7 @@ OpenCode-скилы — повторно используемые workflow, ко
 - Подробнее — https://opencode.ai/docs/skills/.
 
 ## Agent behavior
+- **Задачи и баги — только через GitHub Issue (обязательно).** Любая новая задача, фича или баг до начала работы оформляется Issue (`gh issue create`, методология — [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)); в коммит-сообщении указывается номер (`(#NN)`), после пуша Issue закрывается. Баги — с меткой `bug`. Единственное исключение — однострочные механические правки без изменения поведения.
 - При изменении файлов — проверять типы (`npm run typecheck`) и линтер (`npm run lint`)
 - Не коммитить без проверки: `git status` → `git diff` → `git commit`
 - При работе с UI — сверяться с existing компонентами в `src/components/`
