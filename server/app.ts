@@ -88,9 +88,45 @@ function pgErrorCode(error: unknown): string | undefined {
 const isUniqueViolation = (error: unknown) => pgErrorCode(error) === PG_UNIQUE_VIOLATION
 
 // Панель организатора: HTML-маршруты /dashboard и /admin/* под Basic-auth.
-const isAdminPath = (url: string) => {
+// Плюс закрываются административные API (изменение настроек/типов/блокировок),
+// но публичные чтения для гостя (GET availability/event-types/bookings, бронь,
+// отмена/перенос по id) остаются открытыми.
+const requiresAdminAuth = (method: string, url: string): boolean => {
   const pathname = url.split('?')[0]
-  return pathname === '/dashboard' || pathname === '/admin' || pathname.startsWith('/admin/')
+
+  if (pathname === '/dashboard' || pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return true
+  }
+
+  // Легаси-API организатора
+  if (pathname === '/api/availability' || pathname === '/api/bookings') {
+    return true
+  }
+  if (method === 'DELETE' && /^\/api\/bookings\/\d+$/.test(pathname)) {
+    return true
+  }
+
+  const v1 = pathname.match(/^\/api\/v1\/hosts\/[^/]+\/(.+)$/)
+  if (!v1) {
+    return false
+  }
+
+  const rest = v1[1]
+
+  if (rest === 'availability') {
+    return method !== 'GET'
+  }
+  if (rest === 'blocks' || rest.startsWith('blocks/')) {
+    return true
+  }
+  if (rest === 'event-types') {
+    return method !== 'GET'
+  }
+  if (rest.startsWith('event-types/')) {
+    return true
+  }
+
+  return false
 }
 
 // Basic-auth: имя пользователя любое, пароль сверяется с ADMIN_PASSWORD.
@@ -122,7 +158,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.addHook('onRequest', async (request, reply) => {
     const password = env.ADMIN_PASSWORD
 
-    if (!password || !isAdminPath(request.url)) {
+    if (!password || !requiresAdminAuth(request.method, request.url)) {
       return
     }
 
