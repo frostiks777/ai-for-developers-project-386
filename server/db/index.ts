@@ -1,6 +1,6 @@
 import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { gte } from 'drizzle-orm'
+import { and, eq, gte } from 'drizzle-orm'
 import { Pool } from 'pg'
 import { defaultAvailabilityRules, generateSlotStarts, rulesFromRow } from '../availability'
 import { env } from '../env'
@@ -26,7 +26,7 @@ async function createDb(): Promise<Db> {
 
 export const db = await createDb()
 
-await runMigrations(db)
+const defaultHostId = await runMigrations(db)
 
 // Сидирование дефолтного хоста и типа встречи выполняет runMigrations;
 // здесь гарантируем наличие будущих слотов по сохранённым правилам доступности.
@@ -38,7 +38,12 @@ const hasFutureSlots =
     await db
       .select({ id: schema.slots.id })
       .from(schema.slots)
-      .where(gte(schema.slots.startAt, new Date().toISOString()))
+      .where(
+        and(
+          eq(schema.slots.hostId, defaultHostId),
+          gte(schema.slots.startAt, new Date().toISOString()),
+        ),
+      )
       .limit(1)
   ).length > 0
 
@@ -48,6 +53,7 @@ if (!hasFutureSlots) {
   if (slotStarts.length > 0) {
     await db.insert(schema.slots).values(
       slotStarts.map((startAt) => ({
+        hostId: defaultHostId,
         startAt,
         durationMin: rules.slotDurationMin,
       })),

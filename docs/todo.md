@@ -123,7 +123,7 @@
 
 ### Low
 
-- [ ] Полная мульти-хост-модель: `host_id` в `slots`/`bookings`, `POST /api/v1/bookings`, страница `/book/:hostId` (текущий v1 — аддитивный, однохостовый по факту)
+- [x] **Полная мульти-хост-модель** — [ADR-0018](adr/0018-multi-host-model.md): `hostId` в `slots`/`bookings` (+бэкфилл), генерация слотов per-host, `findHost` по slug **или** UUID, `GET/POST /api/v1/hosts` (под Basic-auth), scoped `/api/v1/hosts/:ref/{slots,bookings}`, публичный `/book/:uuid`. Осталось: per-host скаляры расписания и UI управления хостами.
 - [x] **Авторизация `/dashboard`** — [ADR-0017](adr/0017-dashboard-basic-auth.md): Basic-auth на `/dashboard` и `/admin/*` через `ADMIN_PASSWORD` (если не задан — панель открыта, для dev/тестов); демо-пароль для наставника — в README. Административные API пока публичны (учебный MVP).
 - [x] **Баг:** ссылка «Доступность» в сайдбаре `/dashboard` не скроллила к секции — исправлено: `onClick` + `scrollIntoView({behavior:'smooth'})` + `history.replaceState('#availability')` в `src/components/dashboard-sidebar.tsx`; тест `src/components/dashboard-sidebar.test.tsx`
 

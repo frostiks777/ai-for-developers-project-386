@@ -1,4 +1,4 @@
-import { eq, gte, inArray } from 'drizzle-orm'
+import { and, eq, gte, inArray } from 'drizzle-orm'
 
 import {
   defaultAvailabilityRules,
@@ -29,9 +29,12 @@ export async function saveAvailabilityRules(rules: AvailabilityRules): Promise<v
     .onConflictDoUpdate({ target: availabilityRules.id, set: row })
 }
 
-// Пересобирает будущие слоты под новые правила, не трогая занятые слоты:
+// Пересобирает будущие слоты хоста под новые правила, не трогая занятые слоты:
 // удаляет свободные будущие слоты и добавляет недостающие по новому расписанию
-export async function regenerateFutureSlots(rules: AvailabilityRules): Promise<void> {
+export async function regenerateFutureSlots(
+  hostId: string,
+  rules: AvailabilityRules,
+): Promise<void> {
   const now = new Date()
   const nowIso = now.toISOString()
 
@@ -39,7 +42,7 @@ export async function regenerateFutureSlots(rules: AvailabilityRules): Promise<v
     .select({ id: slots.id, bookingId: bookings.id })
     .from(slots)
     .leftJoin(bookings, eq(bookings.slotId, slots.id))
-    .where(gte(slots.startAt, nowIso))
+    .where(and(eq(slots.hostId, hostId), gte(slots.startAt, nowIso)))
 
   const freeIds = futureSlots.filter((slot) => slot.bookingId === null).map((slot) => slot.id)
 
@@ -52,7 +55,7 @@ export async function regenerateFutureSlots(rules: AvailabilityRules): Promise<v
       await db
         .select({ startAt: slots.startAt })
         .from(slots)
-        .where(gte(slots.startAt, nowIso))
+        .where(and(eq(slots.hostId, hostId), gte(slots.startAt, nowIso)))
     ).map((slot) => slot.startAt),
   )
 
@@ -61,6 +64,6 @@ export async function regenerateFutureSlots(rules: AvailabilityRules): Promise<v
   if (newStarts.length > 0) {
     await db
       .insert(slots)
-      .values(newStarts.map((startAt) => ({ startAt, durationMin: rules.slotDurationMin })))
+      .values(newStarts.map((startAt) => ({ hostId, startAt, durationMin: rules.slotDurationMin })))
   }
 }

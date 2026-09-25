@@ -22,11 +22,11 @@ function mockFetch() {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = requestPath(input)
 
-    if (url === '/api/v1/hosts/default/settings') {
+    if (/^\/api\/v1\/hosts\/[^/]+\/settings$/.test(url)) {
       return jsonResponse(settings)
     }
 
-    if (url === '/api/v1/hosts/default/slots') {
+    if (/^\/api\/v1\/hosts\/[^/]+\/slots$/.test(url)) {
       return jsonResponse({
         timeZone: 'UTC',
         date: null,
@@ -81,5 +81,12 @@ describe('App', () => {
     renderApp('/book/unknown')
 
     expect(await screen.findByRole('heading', { name: 'Страница не найдена' })).toBeInTheDocument()
+  })
+
+  it('на /book/:uuid (UUID хоста) показывает страницу бронирования', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+    renderApp('/book/11111111-2222-3333-4444-555555555555')
+
+    expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
   })
 })
