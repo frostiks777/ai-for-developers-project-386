@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-25 (хвосты P1 + Фаза 4: deep-link `/admin/*`, Basic-auth панели; далее — мульти-хост)
+> Дата последнего обновления: 2026-09-25 (хвосты P1 + Фаза 4, мульти-хост, «Мои встречи», asciinema-демо записано и опубликовано; все шаги курса и backlog закрыты — открыт только опциональный Low-остаток ADR-0018)
 
 ## Текущее состояние
 
@@ -294,19 +294,21 @@
     - `src/utils/my-bookings.ts` — `localStorage` (`call-calendar-my-bookings`), дедуп по id, лимит 50; `src/pages/my-bookings-page.tsx` — страница `/my` с «Перенести»/«Отменить»/«Убрать» и бейджем «Прошла».
     - `HomePage.handleBooked` сохраняет `{ id: cancelToken, startAt, durationMin, eventTypeTitle, hostSlug }`; вкладка «Мои встречи» в шапке (лендинг, `/book/:slug`, `/events`, `/confirmed`, `/my`).
     - Тесты: `my-bookings.test.ts` (4), `my-bookings-page.test.tsx` (3), +1 в `home-page.test.tsx`. Проверки: lint 0, typecheck чисто, build ✓.
+63. ✅ **Asciinema-демо** (2026-09-25): записан и опубликован каст сквозного пути гостя — https://asciinema.org/a/mpuvYnckvG7iKlH4 (`docs/demo.cast` в репозитории), README обновлён (бейдж + инструкция, в т.ч. PowerSession для Windows). Попутный фикс `scripts/demo.sh`: кириллица в `curl -d` на Windows-curl ломала `Content-Length` → `--data-binary @-` (работает и на Linux). Прод-`.env` (Neon) не затрагивался — сервер поднимался на PGlite с пустым `DATABASE_URL`.
 
 ## Что осталось (следующие шаги)
 
-- [ ] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
+- [x] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
 - [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным. CI + hexlet-check на `main` — success (коммит `807d4e0`).
 - [x] **Фаза 0 — гигиена/синхронизация (2026-09-24):** фикс UI-бага «Доступность», заметки в `docs/todo.md` (несколько интервалов — сделано), это обновление `MEMORY.md`.
-- [ ] Записать asciinema для README — **сценарий готов** (`scripts/demo.sh`, инструкция в разделе «Демо»); сама запись за автором (asciinema на win32 не установлен).
+- [x] Записать asciinema для README — ✅ **записано 2026-09-25**: публикация https://asciinema.org/a/mpuvYnckvG7iKlH4, каст в репозитории [`docs/demo.cast`](docs/demo.cast). На Windows asciinema не поддерживается → запись через [PowerSession](https://github.com/Watfaq/PowerSession-rs). По ходу исправлен баг `scripts/demo.sh`: кириллица в `curl -d` ломала `Content-Length` (`FST_ERR_CTP_INVALID_CONTENT_LENGTH`) — заменено на `--data-binary @-`.
 - [x] **Фаза 1 — новые формы (2026-09-24):** причина отмены (`cancellation_reason` + модалка подтверждения, `bcd7f15`) и блокировка дат/часов (`time_blocks` + `BlocksEditor`/`BlockTimeModal`, [ADR-0014](docs/adr/0014-time-blocks.md)).
 - [x] **Миграция на PostgreSQL/Neon (2026-09-24):** Drizzle `pg-core` + `pg` по `DATABASE_URL`, PGlite в тестах, async-сервер, zod-валидация env, Playwright в CI. [ADR-0013](docs/adr/0013-postgres-migration.md). Прод: Render + Neon (Environment Group `DB`).
 - [x] **Фикс (2026-09-24):** счётчик «Встречи · N» в панели считал все брони, включая отменённые — теперь только активные (`075cad2`).
-- [ ] **Фаза 2 — P0 публичный флоу:** имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`.
-- [ ] **Фаза 3 — P1 self-service/dashboard:** роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
-- [ ] **Фаза 4 — Low/архитектура (нужны ADR):** мульти-хост-модель (`host_id` в `slots`/`bookings`, `/book/:hostId`). Авторизация `/dashboard` — **✅ выполнено 2026-09-25** ([ADR-0017](docs/adr/0017-dashboard-basic-auth.md)).
+- [x] **Фаза 2 — P0 публичный флоу** ✅ **выполнено 2026-09-25** (пункты 56, 57): имя `min 2`, `notes` max 500, маска телефона, чекбокс согласия, `guests` (мульти-email), `Idempotency-Key`, спец-алерт 409, прямой «Отменить», публичная «Предстоящие события» (S5 из `docs/calendar_agent_spec.md`, табы в шапке) / `/booking/:uuid/confirmed`; поиск по IANA и формат 12/24 — пункт 58.
+- [x] **Фаза 3 — P1 self-service/dashboard** ✅ **выполнено 2026-09-25** (пункты 59, 60): роуты `/booking/:uuid/{cancel,reschedule,confirmed}`, `/admin/{availability,event-types,bookings}`, табы Upcoming/Past/Canceled, поиск, пресеты horizon, «Скопировать пн на будни», `buffer_before/after`.
+- [x] **Фаза 4 — Low/архитектура** ✅ **выполнено 2026-09-25**: авторизация `/dashboard` ([ADR-0017](docs/adr/0017-dashboard-basic-auth.md), пункт 60) и мульти-хост-модель ([ADR-0018](docs/adr/0018-multi-host-model.md), пункт 61) — `hostId` в `slots`/`bookings`, `/book/:uuid`.
+- [ ] **Остаток Low из [ADR-0018](docs/adr/0018-multi-host-model.md)** (опционально): per-host скаляры расписания (`bufferBefore/AfterMin`, `minNoticeMin`, `horizonDays`) + UI управления хостами.
 
 ## Ключевые решения
 

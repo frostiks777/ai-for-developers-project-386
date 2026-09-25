@@ -129,6 +129,30 @@
 - [x] **Авторизация `/dashboard`** — [ADR-0017](adr/0017-dashboard-basic-auth.md): Basic-auth на `/dashboard` и `/admin/*` через `ADMIN_PASSWORD` (если не задан — панель открыта, для dev/тестов); демо-пароль для наставника — в README. Административные API пока публичны (учебный MVP).
 - [x] **Баг:** ссылка «Доступность» в сайдбаре `/dashboard` не скроллила к секции — исправлено: `onClick` + `scrollIntoView({behavior:'smooth'})` + `history.replaceState('#availability')` в `src/components/dashboard-sidebar.tsx`; тест `src/components/dashboard-sidebar.test.tsx`
 
+### Остаток Low из [ADR-0018](adr/0018-multi-host-model.md) — per-host скаляры расписания (следующий заход)
+
+> Решения приняты 2026-09-25 (интервью). **В этот заход — только скаляры, без UI хостов.**
+> Проблема: `availability_rules` — одна глобальная строка (`id=1`), `loadAvailabilityRules()`/`saveAvailabilityRules()` игнорируют `hostId` (см. `server/rules.ts:13-30`). Поэтому `minNoticeMin`, `bufferBefore/AfterMin`, `horizonDays`, `slotDurationMin` общие для всех хостов, хотя `availability_ranges` (диапазоны дней) уже per-host.
+
+**Решения (интервью):**
+- **Объём этого захода:** только per-host скаляры. UI управления хостами (селектор/список/создание) — отдельным заходом.
+- **Выбор активного хоста в панели (на будущее):** dropdown в шапке панели из `GET /api/v1/hosts` + сохранение в `localStorage`; все секции панели скоупятся выбранным хостом. Сейчас панель хардкодит `host.slug='default'` (`src/config/host.ts`).
+- **Миграция правил:** бэкфилл существующей строки `id=1` на дефолтный хост + `UNIQUE(hostId)`; новым хостам при создании сидируются `defaultAvailabilityRules`.
+- **Критерий «готово»:** API-тесты на изоляцию правил по хостам + `npm run lint` / `typecheck` / `test` / `build` зелёные.
+
+**Чек-лист:**
+- [ ] `server/db/schema.ts`: `UNIQUE(hostId)` на `availability_rules` (индекс `availability_rules_hostId_unique`).
+- [ ] `server/db/migrate.ts`: `ADD COLUMN IF NOT EXISTS hostId` (уже есть) → бэкфилл `UPDATE availability_rules SET hostId=<defaultHostId> WHERE hostId IS NULL` → `CREATE UNIQUE INDEX IF NOT EXISTS`.
+- [ ] `server/rules.ts`: убрать `RULES_ID`; `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` через upsert по `hostId`.
+- [ ] `server/availability-settings.ts`: прокинуть `hostId` в load/save правил (сейчас скаляры читаются глобально).
+- [ ] `server/db/index.ts`: сид будущих слотов дефолтного хоста — по его правилам.
+- [ ] `server/app.ts`: легаси `GET/PUT /api/availability` и v1 `GET/PUT /api/v1/hosts/:slug/availability` — по `host.id`.
+- [ ] `POST /api/v1/hosts` (создание хоста): сидировать `availability_rules` дефолтами.
+- [ ] Тесты: два хоста с разными `minNoticeMin`/`horizonDays`/буферами → разные наборы слотов; бэкфилл/`UNIQUE(hostId)`.
+- [ ] `npm run lint` + `typecheck` + `test` + `build`.
+
+**Отложено (следующий-следующий заход):** UI управления хостами — селектор в шапке панели (`localStorage`), список/создание хостов, скоупинг всех секций панели по выбранному хосту, `host.slug` из конфига → динамический.
+
 ## Ключевые расхождения со спекой
 
 > Целевое состояние зафиксировано в утверждённой спецификации `docs/spec.md` (Шаг 2). Ниже — расхождения **текущего кода** с этой целью; закрываются на Шаге 3.
