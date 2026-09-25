@@ -11,7 +11,7 @@ function isValidPhone(value: string): boolean {
 // Зеркало серверной схемы (server/validation.ts) — менять только согласованно
 export const createBookingSchema = z.object({
   slotId: z.int().positive('Некорректный слот'),
-  name: z.string().trim().min(1, 'Укажите имя'),
+  name: z.string().trim().min(2, 'Имя от 2 символов'),
   phone: z
     .string()
     .trim()
@@ -22,7 +22,7 @@ export const createBookingSchema = z.object({
   comment: z
     .string()
     .trim()
-    .max(1000, 'Комментарий слишком длинный')
+    .max(500, 'Комментарий слишком длинный')
     .optional()
     .transform((value) => value || undefined),
 })

@@ -11,7 +11,7 @@ function isValidPhone(value: string): boolean {
 // Схема API-контракта, зеркалится фронтендом (src/lib/validation.ts) — менять только согласованно
 export const createBookingSchema = z.object({
   slotId: z.int().positive('Некорректный слот'),
-  name: z.string().trim().min(1, 'Укажите имя'),
+  name: z.string().trim().min(2, 'Имя от 2 символов'),
   phone: z
     .string()
     .trim()
@@ -22,7 +22,7 @@ export const createBookingSchema = z.object({
   comment: z
     .string()
     .trim()
-    .max(1000, 'Комментарий слишком длинный')
+    .max(500, 'Комментарий слишком длинный')
     .optional()
     .transform((value) => value || undefined),
 })
@@ -115,7 +115,7 @@ export const availabilitySettingsSchema = z.object({
 export const v1CreateBookingSchema = z.object({
   eventTypeId: z.string().trim().min(1, 'Укажите тип встречи'),
   startAt: z.string().trim().min(1, 'Укажите время'),
-  clientName: z.string().trim().min(1, 'Укажите имя'),
+  clientName: z.string().trim().min(2, 'Имя от 2 символов'),
   clientEmail: z.string().trim().pipe(z.email('Неверный email')),
   clientPhone: z
     .string()
@@ -126,7 +126,7 @@ export const v1CreateBookingSchema = z.object({
   clientNotes: z
     .string()
     .trim()
-    .max(1000, 'Комментарий слишком длинный')
+    .max(500, 'Комментарий слишком длинный')
     .optional()
     .transform((value) => value || undefined),
 })

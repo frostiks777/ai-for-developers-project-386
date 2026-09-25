@@ -105,11 +105,31 @@ describe('BookingDialog', () => {
     renderDialog()
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
-    await user.type(screen.getByLabelText('Телефон'), 'abcdef')
+    await user.type(screen.getByLabelText('Телефон'), '12345')
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
 
     expect(screen.getByText('Неверный номер телефона')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+  })
+
+  it('не даёт отправить форму с именем короче 2 символов', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Имя'), 'И')
+    await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+
+    expect(screen.getByText('Имя от 2 символов')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+  })
+
+  it('форматирует телефон по маске при вводе', async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(screen.getByLabelText('Телефон'), '79000000000')
+
+    expect(screen.getByLabelText('Телефон')).toHaveValue('+7 (900) 000-00-00')
   })
 
   it('бронирует слот без телефона (поле необязательное)', async () => {
@@ -189,6 +209,7 @@ describe('BookingDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Забронировать' }))
 
     expect(toast.error).toHaveBeenCalledWith('Слот только что заняли')
+    expect(screen.getByRole('alert')).toHaveTextContent('Этот слот только что заняли. Выберите другое время.')
     expect(onBooked).not.toHaveBeenCalled()
     expect(onOpenChange).not.toHaveBeenCalled()
   })
@@ -199,6 +220,6 @@ describe('BookingDialog', () => {
 
     await user.type(screen.getByLabelText('Комментарий'), 'abc')
 
-    expect(screen.getByText('3 / 1000')).toBeInTheDocument()
+    expect(screen.getByText('3 / 500')).toBeInTheDocument()
   })
 })
