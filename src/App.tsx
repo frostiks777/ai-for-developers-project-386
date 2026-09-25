@@ -2,7 +2,9 @@ import { Route, Routes, useParams } from 'react-router-dom'
 
 import { host } from '@/config/host'
 import CancelPage from '@/pages/cancel-page'
+import ConfirmedPage from '@/pages/confirmed-page'
 import DashboardPage from '@/pages/dashboard-page'
+import EventsPage from '@/pages/events-page'
 import HomePage from '@/pages/home-page'
 import LandingPage from '@/pages/landing-page'
 import NotFoundPage from '@/pages/not-found-page'
@@ -19,6 +21,8 @@ export function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/book/:slug" element={<BookingRoute />} />
+      <Route path="/events" element={<EventsPage />} />
+      <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/cancel/:token" element={<CancelPage />} />
       <Route path="/reschedule/:token" element={<ReschedulePage />} />
