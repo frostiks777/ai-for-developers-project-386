@@ -21,8 +21,7 @@
 
 ## Демо
 
-<!-- TODO(автор): записать asciinema и заменить ссылку/бейдж ниже. Сценарий — scripts/demo.sh -->
-[![asciinema](https://asciinema.org/a/placeholder.svg)](https://asciinema.org/a/placeholder)
+[![asciinema](https://asciinema.org/a/mpuvYnckvG7iKlH4.svg)](https://asciinema.org/a/mpuvYnckvG7iKlH4)
 
 Запись каста (нужен [asciinema](https://asciinema.org)): сначала поднять сервер (`npm run start`), затем
 
@@ -31,7 +30,9 @@ asciinema rec demo.cast -c "bash scripts/demo.sh"
 asciinema upload demo.cast
 ```
 
-`scripts/demo.sh` проигрывает сквозной путь гостя через API: health → настройки хоста → слоты → бронь → конфликт `409` → отмена → слот снова свободен. Затем вставьте полученную ссылку в бейдж выше.
+На Windows asciinema официально не поддерживается — используйте [PowerSession](https://github.com/Watfaq/PowerSession-rs) и Git Bash: `PowerSession rec -c "bash scripts/demo.sh" demo.cast`. Готовый каст лежит в [`docs/demo.cast`](docs/demo.cast) (проигрывание — `asciinema play docs/demo.cast` или `PowerSession play`).
+
+`scripts/demo.sh` проигрывает сквозной путь гостя через API: health → настройки хоста → слоты → бронь → конфликт `409` → отмена → слот снова свободен.
 
 Живое демо (Render, free-план — сервис засыпает после простоя): https://calendar-slots-app.onrender.com
 
