@@ -221,7 +221,7 @@ export function AvailabilitySettingsForm({
         0,
         Math.floor(
           (firstRange.endMinute - firstRange.startMinute) /
-            (draft.slotDurationMin + draft.bufferMin),
+            (draft.slotDurationMin + draft.bufferBeforeMin + draft.bufferAfterMin),
         ),
       )
     : 0
@@ -420,28 +420,28 @@ export function AvailabilitySettingsForm({
 
       <div className="flex gap-3">
         <div className="flex flex-1 flex-col gap-1.5">
-          <Label htmlFor="slot-duration">Слот, мин</Label>
+          <Label htmlFor="buffer-before">Буфер до, мин</Label>
           <Input
-            id="slot-duration"
+            id="buffer-before"
             type="number"
-            min={5}
+            min={0}
             max={480}
-            value={draft.slotDurationMin}
+            value={draft.bufferBeforeMin}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, slotDurationMin: Number(event.target.value) }))
+              setDraft((prev) => ({ ...prev, bufferBeforeMin: Number(event.target.value) }))
             }
           />
         </div>
         <div className="flex flex-1 flex-col gap-1.5">
-          <Label htmlFor="buffer-min">Буфер, мин</Label>
+          <Label htmlFor="buffer-after">Буфер после, мин</Label>
           <Input
-            id="buffer-min"
+            id="buffer-after"
             type="number"
             min={0}
             max={480}
-            value={draft.bufferMin}
+            value={draft.bufferAfterMin}
             onChange={(event) =>
-              setDraft((prev) => ({ ...prev, bufferMin: Number(event.target.value) }))
+              setDraft((prev) => ({ ...prev, bufferAfterMin: Number(event.target.value) }))
             }
           />
         </div>

@@ -76,7 +76,8 @@ export const availabilityRules = pgTable('availability_rules', {
   windowStartHour: integer('windowStartHour').notNull(),
   windowEndHour: integer('windowEndHour').notNull(),
   slotDurationMin: integer('slotDurationMin').notNull(),
-  bufferMin: integer('bufferMin').notNull(),
+  bufferBeforeMin: integer('bufferBeforeMin').notNull().default(0),
+  bufferAfterMin: integer('bufferAfterMin').notNull().default(0),
   minNoticeMin: integer('minNoticeMin').notNull(),
   horizonDays: integer('horizonDays').notNull(),
 })

@@ -6,7 +6,10 @@ export interface AvailabilityRules {
   windowStartHour: number
   windowEndHour: number
   slotDurationMin: number
-  bufferMin: number
+  // Буфер до начала встречи (минуты)
+  bufferBeforeMin: number
+  // Буфер после встречи (минуты)
+  bufferAfterMin: number
   minNoticeMin: number
   horizonDays: number
 }
@@ -16,7 +19,8 @@ export const defaultAvailabilityRules: AvailabilityRules = {
   windowStartHour: 10,
   windowEndHour: 18,
   slotDurationMin: 30,
-  bufferMin: 10,
+  bufferBeforeMin: 0,
+  bufferAfterMin: 10,
   minNoticeMin: 120,
   horizonDays: 14,
 }
@@ -27,7 +31,8 @@ export interface AvailabilityRulesRow {
   windowStartHour: number
   windowEndHour: number
   slotDurationMin: number
-  bufferMin: number
+  bufferBeforeMin: number
+  bufferAfterMin: number
   minNoticeMin: number
   horizonDays: number
 }
@@ -53,7 +58,8 @@ export function rulesFromRow(row: AvailabilityRulesRow): AvailabilityRules {
     windowStartHour: row.windowStartHour,
     windowEndHour: row.windowEndHour,
     slotDurationMin: row.slotDurationMin,
-    bufferMin: row.bufferMin,
+    bufferBeforeMin: row.bufferBeforeMin ?? 0,
+    bufferAfterMin: row.bufferAfterMin ?? 0,
     minNoticeMin: row.minNoticeMin,
     horizonDays: row.horizonDays,
   }
@@ -65,7 +71,8 @@ export function rulesToRow(rules: AvailabilityRules): AvailabilityRulesRow {
     windowStartHour: rules.windowStartHour,
     windowEndHour: rules.windowEndHour,
     slotDurationMin: rules.slotDurationMin,
-    bufferMin: rules.bufferMin,
+    bufferBeforeMin: rules.bufferBeforeMin,
+    bufferAfterMin: rules.bufferAfterMin,
     minNoticeMin: rules.minNoticeMin,
     horizonDays: rules.horizonDays,
   }
@@ -82,7 +89,7 @@ export function generateSlotStarts(
 ): string[] {
   const starts: string[] = []
   const earliest = now.getTime() + rules.minNoticeMin * MS_PER_MINUTE
-  const stepMin = rules.slotDurationMin + rules.bufferMin
+  const stepMin = rules.slotDurationMin + rules.bufferBeforeMin + rules.bufferAfterMin
   const windowEndMin = rules.windowEndHour * 60
 
   for (let dayOffset = 0; dayOffset < rules.horizonDays; dayOffset += 1) {
@@ -130,7 +137,8 @@ export interface AvailabilityRange {
 export interface AvailabilitySettings {
   timeZone: string
   slotDurationMin: number
-  bufferMin: number
+  bufferBeforeMin: number
+  bufferAfterMin: number
   minNoticeMin: number
   horizonDays: number
   ranges: AvailabilityRange[]
@@ -177,7 +185,8 @@ export function defaultAvailabilitySettings(timeZone: string): AvailabilitySetti
   return {
     timeZone,
     slotDurationMin: defaultAvailabilityRules.slotDurationMin,
-    bufferMin: defaultAvailabilityRules.bufferMin,
+    bufferBeforeMin: defaultAvailabilityRules.bufferBeforeMin,
+    bufferAfterMin: defaultAvailabilityRules.bufferAfterMin,
     minNoticeMin: defaultAvailabilityRules.minNoticeMin,
     horizonDays: defaultAvailabilityRules.horizonDays,
     ranges: rangesFromRules(defaultAvailabilityRules),
@@ -188,7 +197,7 @@ export function defaultAvailabilitySettings(timeZone: string): AvailabilitySetti
 export function generateSlotStartsFromRanges(now: Date, settings: AvailabilitySettings): string[] {
   const starts: string[] = []
   const earliest = now.getTime() + settings.minNoticeMin * MS_PER_MINUTE
-  const stepMin = settings.slotDurationMin + settings.bufferMin
+  const stepMin = settings.slotDurationMin + settings.bufferBeforeMin + settings.bufferAfterMin
 
   for (let dayOffset = 0; dayOffset < settings.horizonDays; dayOffset += 1) {
     const day = new Date(

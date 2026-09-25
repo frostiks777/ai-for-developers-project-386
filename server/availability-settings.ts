@@ -34,7 +34,8 @@ export async function loadAvailabilitySettings(
   return {
     timeZone,
     slotDurationMin: rules.slotDurationMin,
-    bufferMin: rules.bufferMin,
+    bufferBeforeMin: rules.bufferBeforeMin,
+    bufferAfterMin: rules.bufferAfterMin,
     minNoticeMin: rules.minNoticeMin,
     horizonDays: rules.horizonDays,
     ranges,
@@ -50,7 +51,8 @@ export async function saveAvailabilitySettings(
   await saveAvailabilityRules({
     ...window,
     slotDurationMin: settings.slotDurationMin,
-    bufferMin: settings.bufferMin,
+    bufferBeforeMin: settings.bufferBeforeMin,
+    bufferAfterMin: settings.bufferAfterMin,
     minNoticeMin: settings.minNoticeMin,
     horizonDays: settings.horizonDays,
   })

@@ -33,4 +33,13 @@ describe('generateSlotStarts', () => {
 
     expect(starts[0]).toBe('2026-09-23T11:20:00.000Z')
   })
+
+  it('учитывает bufferBefore при расчёте шага', () => {
+    const rules = { ...defaultAvailabilityRules, bufferBeforeMin: 10, bufferAfterMin: 10 }
+    const starts = generateSlotStarts(now, rules).filter((startAt) =>
+      startAt.startsWith('2026-09-23'),
+    )
+
+    expect(starts[1]).toBe('2026-09-23T10:50:00.000Z')
+  })
 })

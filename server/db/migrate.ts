@@ -58,7 +58,9 @@ const statements = [
     "windowStartHour" INTEGER NOT NULL,
     "windowEndHour" INTEGER NOT NULL,
     "slotDurationMin" INTEGER NOT NULL,
-    "bufferMin" INTEGER NOT NULL,
+    "bufferMin" INTEGER NOT NULL DEFAULT 0,
+    "bufferBeforeMin" INTEGER NOT NULL DEFAULT 0,
+    "bufferAfterMin" INTEGER NOT NULL DEFAULT 0,
     "minNoticeMin" INTEGER NOT NULL,
     "horizonDays" INTEGER NOT NULL
   )`,
@@ -86,6 +88,13 @@ const statements = [
   `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "consentAccepted" BOOLEAN NOT NULL DEFAULT false`,
   `ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "idempotencyKey" TEXT`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "bookings_idempotencyKey_unique" ON bookings("idempotencyKey")`,
+  // Буферы до/после встречи: аддитивно + бэкфилл из легаси-bufferMin (ADR-0016)
+  `ALTER TABLE availability_rules ADD COLUMN IF NOT EXISTS "bufferMin" INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE availability_rules ALTER COLUMN "bufferMin" SET DEFAULT 0`,
+  `ALTER TABLE availability_rules ADD COLUMN IF NOT EXISTS "bufferBeforeMin" INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE availability_rules ADD COLUMN IF NOT EXISTS "bufferAfterMin" INTEGER NOT NULL DEFAULT 0`,
+  `UPDATE availability_rules SET "bufferAfterMin" = "bufferMin"
+     WHERE "bufferAfterMin" = 0 AND "bufferMin" <> 0`,
 ]
 
 /** Гарантирует наличие дефолтного хоста и возвращает его id. */

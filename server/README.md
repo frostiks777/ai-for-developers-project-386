@@ -90,7 +90,7 @@ curl -X POST http://localhost:3000/api/bookings/reschedule \
 
 ```bash
 curl http://localhost:3000/api/availability
-# {"weekdays":[1,2,3,4,5],"windowStartHour":10,"windowEndHour":18,"slotDurationMin":30,"bufferMin":10,"minNoticeMin":120,"horizonDays":14}
+# {"weekdays":[1,2,3,4,5],"windowStartHour":10,"windowEndHour":18,"slotDurationMin":30,"bufferBeforeMin":0,"bufferAfterMin":10,"minNoticeMin":120,"horizonDays":14}
 ```
 
 ### `PUT /api/availability` — обновить правила

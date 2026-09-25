@@ -7,7 +7,8 @@ import { AvailabilitySettingsForm } from './availability-settings-form'
 const settings: AvailabilitySettings = {
   timeZone: 'UTC',
   slotDurationMin: 30,
-  bufferMin: 10,
+  bufferBeforeMin: 0,
+  bufferAfterMin: 10,
   minNoticeMin: 120,
   horizonDays: 14,
   ranges: [

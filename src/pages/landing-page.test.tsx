@@ -7,7 +7,8 @@ import LandingPage from './landing-page'
 const availability = {
   timeZone: 'UTC',
   slotDurationMin: 30,
-  bufferMin: 10,
+  bufferBeforeMin: 0,
+  bufferAfterMin: 10,
   minNoticeMin: 120,
   horizonDays: 14,
   ranges: [],
