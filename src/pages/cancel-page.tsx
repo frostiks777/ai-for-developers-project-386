@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+import type { Booking as ApiBooking } from '@/api/generated'
 import { ApiError, api, call } from '@/api/sdk'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,15 +14,40 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { host } from '@/config/host'
+import { defaultTimeZone, formatDateTimeInZone } from '@/utils/timezone'
 
 type Status = 'idle' | 'cancelling' | 'done' | 'error'
 
 export default function CancelPage() {
-  const { token } = useParams<{ token: string }>()
+  const params = useParams<{ token?: string; uuid?: string }>()
+  const token = params.token ?? params.uuid
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [reason, setReason] = useState('')
+  const [booking, setBooking] = useState<ApiBooking | null>(null)
+
+  useEffect(() => {
+    if (!token) {
+      return
+    }
+
+    let isActive = true
+
+    call(api.bookingsClient.getBooking(token))
+      .then((found) => {
+        if (isActive) {
+          setBooking(found)
+        }
+      })
+      .catch(() => {
+        // Детали необязательны: отмена всё равно доступна
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [token])
 
   const openDialog = () => {
     if (!token) {
@@ -80,6 +106,31 @@ export default function CancelPage() {
               Подтвердите отмену брони. Действие необратимо — слот снова станет доступным для
               других.
             </p>
+
+            {booking && (
+              <dl className="mt-5 grid gap-2 rounded-lg border bg-background p-4 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Когда</dt>
+                  <dd className="text-right font-medium">
+                    {formatDateTimeInZone(
+                      booking.startAt,
+                      booking.timeZone ?? defaultTimeZone,
+                    )}{' '}
+                    ({booking.timeZone ?? defaultTimeZone})
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">Длительность</dt>
+                  <dd className="font-medium">
+                    {Math.max(
+                      1,
+                      Math.round((Date.parse(booking.endAt) - Date.parse(booking.startAt)) / 60_000),
+                    )}{' '}
+                    мин
+                  </dd>
+                </div>
+              </dl>
+            )}
 
             {status === 'error' && !isDialogOpen && (
               <p className="mt-4 text-sm text-destructive">{error}</p>

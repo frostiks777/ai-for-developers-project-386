@@ -2,13 +2,31 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
+import { jsonResponse, requestPath } from '@/test/http'
 import CancelPage from './cancel-page'
+
+const apiBooking = {
+  id: 'token-123',
+  hostSlug: 'default',
+  eventTypeId: 'type-1',
+  startAt: '2099-09-24T07:00:00.000Z',
+  endAt: '2099-09-24T07:30:00.000Z',
+  timeZone: 'UTC',
+  status: 'confirmed',
+  clientName: 'Иван',
+  clientEmail: 'ivan@example.com',
+  clientPhone: null,
+  clientNotes: null,
+  consentAccepted: true,
+  createdAt: '2099-09-23T07:00:00.000Z',
+}
 
 function renderCancelPage(token = 'token-123') {
   return render(
     <MemoryRouter initialEntries={[`/cancel/${token}`]}>
       <Routes>
         <Route path="/cancel/:token" element={<CancelPage />} />
+        <Route path="/booking/:uuid/cancel" element={<CancelPage />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -83,5 +101,37 @@ describe('CancelPage', () => {
 
     expect(await screen.findByText('Бронь не найдена')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Встреча отменена' })).toBeNull()
+  })
+
+  it('показывает детали встречи и работает по маршруту /booking/:uuid/cancel', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (requestPath(input) === '/api/v1/bookings/token-123' && (init?.method ?? 'GET') === 'GET') {
+        return jsonResponse(apiBooking)
+      }
+
+      return jsonResponse({ ...apiBooking, status: 'cancelled' })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <MemoryRouter initialEntries={['/booking/token-123/cancel']}>
+        <Routes>
+          <Route path="/booking/:uuid/cancel" element={<CancelPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Когда')).toBeInTheDocument()
+    expect(screen.getByText(/30 мин/)).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Отменить встречу' }))
+    await user.click(await screen.findByRole('button', { name: 'Да, отменить' }))
+
+    expect(await screen.findByRole('heading', { name: 'Встреча отменена' })).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/bookings/token-123/cancel'),
+      expect.objectContaining({ method: 'POST' }),
+    )
   })
 })

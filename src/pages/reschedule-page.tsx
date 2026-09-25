@@ -12,7 +12,8 @@ import type { BookingWithSlot, TimeSlot } from '@/types/booking'
 import { defaultTimeZone, formatDateTimeInZone, toDateKeyInZone } from '@/utils/timezone'
 
 export default function ReschedulePage() {
-  const { token } = useParams<{ token: string }>()
+  const params = useParams<{ token?: string; uuid?: string }>()
+  const token = params.token ?? params.uuid
 
   const [booking, setBooking] = useState<BookingWithSlot | null>(null)
   const [slots, setSlots] = useState<TimeSlot[]>([])

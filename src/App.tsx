@@ -25,9 +25,14 @@ export function App() {
         <Route path="/book/:slug" element={<BookingRoute />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/cancel/:token" element={<CancelPage />} />
-        <Route path="/reschedule/:token" element={<ReschedulePage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/admin/availability" element={<DashboardPage />} />
+      <Route path="/admin/event-types" element={<DashboardPage />} />
+      <Route path="/admin/bookings" element={<DashboardPage />} />
+      <Route path="/cancel/:token" element={<CancelPage />} />
+      <Route path="/reschedule/:token" element={<ReschedulePage />} />
+      <Route path="/booking/:uuid/cancel" element={<CancelPage />} />
+      <Route path="/booking/:uuid/reschedule" element={<ReschedulePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </TimeFormatProvider>
