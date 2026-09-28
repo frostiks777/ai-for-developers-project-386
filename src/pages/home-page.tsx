@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarX, Clock, Hourglass, Video } from 'lucide-react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 import type { EventType } from '@/api/generated'
 import { api, call } from '@/api/sdk'
@@ -63,6 +63,8 @@ function formatMonthDay(dateKey: string): string {
 
 export default function HomePage() {
   const { slug } = useParams<{ slug: string }>()
+  const [searchParams] = useSearchParams()
+  const typeParam = searchParams.get('type')
   const { activeSlug, hosts } = useActiveHost()
   const [eventTypes, setEventTypes] = useState<EventType[]>([])
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
@@ -132,7 +134,17 @@ export default function HomePage() {
         }
 
         setEventTypes(types)
-        setSelectedTypeId((current) => current ?? types.find((type) => type.isActive)?.id ?? null)
+        setSelectedTypeId((current) => {
+          if (current) {
+            return current
+          }
+
+          if (typeParam && types.some((type) => type.id === typeParam && type.isActive)) {
+            return typeParam
+          }
+
+          return types.find((type) => type.isActive)?.id ?? null
+        })
       })
       .catch(() => {
         if (isActive) {
@@ -143,7 +155,7 @@ export default function HomePage() {
     return () => {
       isActive = false
     }
-  }, [slug])
+  }, [slug, typeParam])
 
   const selectedType = eventTypes.find((type) => type.id === selectedTypeId) ?? null
   const activeTypes = eventTypes.filter((type) => type.isActive)

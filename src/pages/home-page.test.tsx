@@ -36,6 +36,21 @@ const eventType = {
   createdAt: '2026-09-24 10:00:00',
 }
 
+const meetingTypes = [
+  eventType,
+  {
+    id: 'type-2',
+    hostId: 'host-1',
+    slug: 'deep-dive',
+    title: 'Глубокая сессия',
+    description: null,
+    durationMin: 60,
+    locationType: 'online' as const,
+    isActive: true,
+    createdAt: '2026-09-24 10:00:00',
+  },
+]
+
 function mockFetch(slots: TimeSlot[] = [slot]) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = requestPath(input)
@@ -339,36 +354,11 @@ describe('HomePage: выбор типа встречи', () => {
   })
 
   it('показывает типы и перезапрашивает слоты с выбранным типом', async () => {
-    const types = [
-      {
-        id: 'type-1',
-        hostId: 'host-1',
-        slug: 'consultation',
-        title: 'Консультация',
-        description: null,
-        durationMin: 30,
-        locationType: 'online',
-        isActive: true,
-        createdAt: '2026-09-24 10:00:00',
-      },
-      {
-        id: 'type-2',
-        hostId: 'host-1',
-        slug: 'deep-dive',
-        title: 'Глубокая сессия',
-        description: null,
-        durationMin: 60,
-        locationType: 'online',
-        isActive: true,
-        createdAt: '2026-09-24 10:00:00',
-      },
-    ]
-
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = requestPath(input)
 
       if (url === '/api/v1/hosts/default/event-types') {
-        return jsonResponse(types)
+        return jsonResponse(meetingTypes)
       }
 
       if (url.startsWith('/api/v1/hosts/default/slots')) {
@@ -406,6 +396,51 @@ describe('HomePage: выбор типа встречи', () => {
       expect(
         fetchMock.mock.calls.some(([url]) => String(url).includes('eventTypeId=type-2')),
       ).toBe(true),
+    )
+  })
+
+  it('выбирает формат из параметра type', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = requestPath(input)
+
+      if (url === '/api/v1/hosts/default/event-types') {
+        return jsonResponse(meetingTypes)
+      }
+
+      if (url.startsWith('/api/v1/hosts/default/slots')) {
+        return jsonResponse({
+          timeZone: 'UTC',
+          date: null,
+          slots: [
+            {
+              id: 1,
+              startAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+              durationMin: 30,
+              available: true,
+            },
+          ],
+        })
+      }
+
+      return jsonResponse({ error: 'Не найдено' }, 404)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(
+      <MemoryRouter initialEntries={['/book/default?type=type-2']}>
+        <Routes>
+          <Route path="/book/:slug" element={<HomePage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('radio', { name: /Глубокая сессия/ })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
+    expect(screen.getByRole('radio', { name: /Консультация/ })).toHaveAttribute(
+      'aria-checked',
+      'false',
     )
   })
 })
