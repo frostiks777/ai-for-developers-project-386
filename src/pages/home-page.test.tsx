@@ -326,6 +326,40 @@ describe('HomePage: мобильная раскладка', () => {
 
     expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
   })
+
+  it('открывает контакты при выборе времени на другой дате', async () => {
+    const first: TimeSlot = {
+      id: 1,
+      startAt: new Date(2099, 8, 24, 10, 0).toISOString(),
+      durationMin: 30,
+      isBooked: false,
+    }
+    const second: TimeSlot = {
+      id: 2,
+      startAt: new Date(2099, 8, 25, 15, 0).toISOString(),
+      durationMin: 30,
+      isBooked: false,
+    }
+    vi.stubGlobal('fetch', mockFetch([first, second]))
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: toDateKeyInZone(new Date(first.startAt), defaultTimeZone),
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Следующий день' }))
+    await user.click(
+      await screen.findByRole('button', {
+        name: formatTimeInZone(second.startAt, defaultTimeZone),
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Далее' }))
+
+    expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
+  })
 })
 
 describe('HomePage: вид «Неделя»', () => {

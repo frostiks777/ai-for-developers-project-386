@@ -16,6 +16,7 @@ import { AvailabilityPreview } from '@/components/availability-preview'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { cn } from '@/lib/utils'
 import type { AvailabilityRange, AvailabilitySettings } from '@/types/availability-settings'
+import type { TimeSlot } from '@/types/booking'
 
 const WEEKDAYS: { value: number; label: string }[] = [
   { value: 1, label: 'Пн' },
@@ -89,12 +90,14 @@ interface AvailabilitySettingsFormProps {
   settings: AvailabilitySettings
   isSaving: boolean
   onSave: (settings: AvailabilitySettings) => Promise<boolean>
+  slots?: TimeSlot[]
 }
 
 export function AvailabilitySettingsForm({
   settings,
   isSaving,
   onSave,
+  slots = [],
 }: AvailabilitySettingsFormProps) {
   const [draft, setDraft] = useState<AvailabilitySettings>(settings)
   const [copySource, setCopySource] = useState<number | null>(null)
@@ -303,7 +306,7 @@ export function AvailabilitySettingsForm({
         </p>
       </div>
 
-      <AvailabilityPreview settings={draft} />
+      <AvailabilityPreview settings={draft} slots={slots} />
 
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((preset) => (
