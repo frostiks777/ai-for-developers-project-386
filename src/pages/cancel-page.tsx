@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { defaultTimeZone, formatDateTimeInZone } from '@/utils/timezone'
+import { defaultTimeZone, formatDayShortTitle, formatTimeInZone, formatZoneShort, toDateKeyInZone } from '@/utils/timezone'
 
 type Status = 'idle' | 'cancelling' | 'done' | 'error'
 
@@ -114,11 +114,12 @@ export default function CancelPage() {
                 <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">Когда</dt>
                   <dd className="text-right font-medium">
-                    {formatDateTimeInZone(
-                      booking.startAt,
-                      booking.timeZone ?? defaultTimeZone,
-                    )}{' '}
-                    ({booking.timeZone ?? defaultTimeZone})
+                    {formatDayShortTitle(
+                      toDateKeyInZone(new Date(booking.startAt), defaultTimeZone),
+                    )}
+                    , {formatTimeInZone(booking.startAt, defaultTimeZone)} –{' '}
+                    {formatTimeInZone(booking.endAt, defaultTimeZone)} (
+                    {formatZoneShort(defaultTimeZone)})
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
