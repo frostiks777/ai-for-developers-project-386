@@ -136,6 +136,7 @@ OpenCode-скилы — повторно используемые workflow, ко
 
 - Расположение: `.agents/skills/<name>/SKILL.md`. Одна директория на скил + YAML frontmatter (`name`, `description` обязательны, `description` ≤ 1024 символов).
 - Текущие скилы:
+  - `apply-design-v2` — внедрение редизайна v2 («Мята и солнце») по `docs/design/v2/implementation-plan.md` (этапы 0–13).
   - `commit-push` — workflow для коммита и пуша (lint + typecheck + тесты → Conventional Commits → push).
   - `interview` — задаёт 3–7 уточняющих вопросов до начала работы над нетривиальной задачей.
   - `plan` — превращает задачу в атомарный пронумерованный чек-лист с проверками.
