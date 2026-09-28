@@ -74,6 +74,7 @@ export default function HomePage() {
   const [bookedBooking, setBookedBooking] = useState<CreatedBooking | null>(null)
   const [bookedSlot, setBookedSlot] = useState<TimeSlot | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [conflictSlot, setConflictSlot] = useState<TimeSlot | null>(null)
   const [timeZone, setTimeZone] = useState(defaultTimeZone)
   const [minNoticeMin, setMinNoticeMin] = useState<number | null>(null)
   const [horizonDays, setHorizonDays] = useState<number | null>(null)
@@ -248,10 +249,27 @@ export default function HomePage() {
     refetch()
   }
 
-  const handleConflict = () => {
+  const handleConflict = (slot: TimeSlot) => {
+    setConflictSlot(slot)
     setSelectedSlotId(null)
     refetch()
   }
+
+  const handleSelectSuggestion = (slot: TimeSlot) => {
+    setConflictSlot(null)
+    setSelectedSlotId(slot.id)
+  }
+
+  const suggestions = useMemo(() => {
+    if (!conflictSlot) {
+      return []
+    }
+
+    return slots
+      .filter((slot) => !slot.isBooked && Date.parse(slot.startAt) > Date.parse(conflictSlot.startAt))
+      .sort((a, b) => Date.parse(a.startAt) - Date.parse(b.startAt))
+      .slice(0, 3)
+  }, [slots, conflictSlot])
 
   const hostBlurb = (
     <div className="min-w-0">
@@ -426,6 +444,8 @@ export default function HomePage() {
                   variant="column"
                   onBooked={handleBooked}
                   onConflict={handleConflict}
+                  suggestions={suggestions}
+                  onSelectSuggestion={handleSelectSuggestion}
                 />
               </aside>
             </div>
@@ -509,6 +529,8 @@ export default function HomePage() {
                 variant="column"
                 onBooked={handleBooked}
                 onConflict={handleConflict}
+                suggestions={suggestions}
+                onSelectSuggestion={handleSelectSuggestion}
               />
             </aside>
           </div>
@@ -542,6 +564,8 @@ export default function HomePage() {
                 hostName={hostName}
                 selectedSlot={selectedSlot}
                 onSelectSlot={(slot) => setSelectedSlotId(slot.id)}
+                suggestions={suggestions}
+                onSelectSuggestion={handleSelectSuggestion}
                 onBooked={handleBooked}
                 onConflict={handleConflict}
               />
