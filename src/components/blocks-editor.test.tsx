@@ -58,6 +58,21 @@ describe('BlocksEditor', () => {
     expect(await screen.findByText('Нет блокировок')).toBeInTheDocument()
   })
 
+  // Регресс #49: на 360 px текст и кнопка встают в столбик — иначе текст
+  // сжимается в узкую колонку рядом с кнопкой.
+  it('на узком экране ставит описание и кнопку блокировки в столбик', async () => {
+    vi.stubGlobal('fetch', mockFetch([]))
+    render(<BlocksEditor slug="default" />)
+
+    const description = await screen.findByText(/гости не увидят эти слоты/)
+    const button = screen.getByRole('button', { name: 'Заблокировать время' })
+    const row = description.parentElement
+
+    expect(row).toHaveClass('flex-col', 'items-start')
+    expect(row?.className).toContain('sm:flex-row')
+    expect(row?.contains(button)).toBe(true)
+  })
+
   it('создаёт блокировку через модалку', async () => {
     const fetchMock = mockFetch([])
     vi.stubGlobal('fetch', fetchMock)

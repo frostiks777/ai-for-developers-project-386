@@ -5,15 +5,13 @@
 
 ## Актуальный план (обновлён 2026-09-28)
 
-**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66). Все шаги курса закрыты. Открытые issues на 2026-09-28: [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49) (bug, P1 — мобильная вёрстка), [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) (enhancement — CAPTCHA), [#72](https://github.com/frostiks777/ai-for-developers-project-386/issues/72) (chore — синхронизация доков).
+**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0, v1.21.2). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66), мобильный аудит после v2 закрыт (#49). Все шаги курса закрыты, доки синхронизированы (#72). Открытые issues на 2026-09-28: [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) (enhancement — CAPTCHA).
 
 **Следующие шаги (в порядке приоритета):**
 
-1. **Синхронизация документации** — [#72](https://github.com/frostiks777/ai-for-developers-project-386/issues/72): `AGENTS.md` и `README.md` обещают SQLite, `DATABASE_PATH` и легаси `/api/*` вместо v1. В работе.
-2. **Мобильная вёрстка** — [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49): сверить чек-лист дефектов с текущим кодом после v2, закрыть то, что не починено редизайном, остаток — отдельными issue. Проверить горизонтальную прокрутку на 360 px.
-3. **Визуальная приёмка v2** (человек): сверить со `docs/design/v2/screenshots/` на 1280×820 и 390×844 в обеих темах (A/B, C1–C4, M, D; UX-кейсы case-01…case-11). Список — `docs/design/v2/README.md`; отличия — в раздел «Отклонения».
-4. **SSL-режим драйвера `pg`** (мелкая): явно задать `sslmode=verify-full` в `.env.example`/`DATABASE_URL`, убрать предупреждение; при необходимости — ADR.
-5. **CAPTCHA в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): выбор провайдера + ADR, серверная верификация токена и rate-limit по IP на публичном `POST /api/v1/hosts/:slug/bookings`.
+1. **CAPTCHA в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): выбор провайдера + ADR, серверная верификация токена и rate-limit по IP на публичном `POST /api/v1/hosts/:slug/bookings`.
+2. **Визуальная приёмка v2** (человек): сверить со `docs/design/v2/screenshots/` на 1280×820 и 390×844 в обеих темах (A/B, C1–C4, M, D; UX-кейсы case-01…case-11). Список — `docs/design/v2/README.md`; отличия — в раздел «Отклонения».
+3. **SSL-режим драйвера `pg`** (мелкая): явно задать `sslmode=verify-full` в `.env.example`/`DATABASE_URL`, убрать предупреждение; при необходимости — ADR.
 
 ## Критерии приёмки проекта — статус (проверяет наставник + hexlet-check)
 
