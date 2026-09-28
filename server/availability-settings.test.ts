@@ -115,4 +115,36 @@ describe('PUT /api/v1/hosts/:slug/availability', () => {
 
     expect(response.statusCode).toBe(422)
   })
+
+  it('PUT с новым поясом меняет settings.timeZone в ответе (ADR-0024)', async () => {
+    // Отдельный хост, чтобы не менять пояс дефолтного для других тестов
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts',
+      payload: { slug: 'tz-host', name: 'TZ', timezone: 'UTC' },
+    })
+    expect(created.statusCode).toBe(201)
+
+    const put = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/hosts/tz-host/availability',
+      payload: {
+        timeZone: 'Europe/Moscow',
+        slotDurationMin: 40,
+        bufferBeforeMin: 0,
+        bufferAfterMin: 0,
+        minNoticeMin: 0,
+        horizonDays: 1,
+        ranges: [{ weekday: 1, startMinute: 600, endMinute: 660 }],
+      },
+    })
+
+    expect(put.statusCode).toBe(200)
+    expect(put.json<Settings>().timeZone).toBe('Europe/Moscow')
+
+    const settings = (
+      await app.inject({ method: 'GET', url: '/api/v1/hosts/tz-host/availability' })
+    ).json<Settings>()
+    expect(settings.timeZone).toBe('Europe/Moscow')
+  })
 })

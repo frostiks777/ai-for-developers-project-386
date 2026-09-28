@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultAvailabilityRules, generateSlotStarts } from './availability'
+import {
+  defaultAvailabilityRules,
+  generateSlotStarts,
+  generateSlotStartsFromRanges,
+  type AvailabilitySettings,
+} from './availability'
 
 const now = new Date('2026-09-23T06:00:00.000Z')
 
@@ -41,5 +46,59 @@ describe('generateSlotStarts', () => {
     )
 
     expect(starts[1]).toBe('2026-09-23T10:50:00.000Z')
+  })
+})
+
+describe('generateSlotStartsFromRanges: пояс хоста', () => {
+  const mondayRanges = [{ weekday: 1, startMinute: 600, endMinute: 660 }]
+
+  const settings = (timeZone: string): AvailabilitySettings => ({
+    timeZone,
+    slotDurationMin: 40,
+    bufferBeforeMin: 0,
+    bufferAfterMin: 0,
+    minNoticeMin: 0,
+    horizonDays: 1,
+    ranges: mondayRanges,
+  })
+
+  it('в UTC 10:00 локального пояса — это 10:00Z', () => {
+    // 2026-09-28 — понедельник
+    const starts = generateSlotStartsFromRanges(new Date('2026-09-28T00:00:00.000Z'), settings('UTC'))
+
+    expect(starts).toEqual(['2026-09-28T10:00:00.000Z'])
+  })
+
+  it('в Europe/Moscow 10:00 — это 07:00Z', () => {
+    const starts = generateSlotStartsFromRanges(
+      new Date('2026-09-27T21:00:00.000Z'),
+      settings('Europe/Moscow'),
+    )
+
+    expect(starts).toEqual(['2026-09-28T07:00:00.000Z'])
+  })
+
+  it('день недели считается в поясе хоста', () => {
+    // 2026-09-27T22:00Z — это уже понедельник в Москве (01:00 28-го)
+    const starts = generateSlotStartsFromRanges(
+      new Date('2026-09-27T22:00:00.000Z'),
+      settings('Europe/Moscow'),
+    )
+
+    expect(starts[0]).toBe('2026-09-28T07:00:00.000Z')
+  })
+
+  it('переход на летнее время в Europe/Berlin не даёт дублей и пропусков', () => {
+    // 2026-03-29 — переход на летнее время; 02:00–03:00 локального времени не существует.
+    const berlin = {
+      ...settings('Europe/Berlin'),
+      slotDurationMin: 60,
+      ranges: [{ weekday: 7, startMinute: 60, endMinute: 300 }],
+    }
+    const starts = generateSlotStartsFromRanges(new Date('2026-03-29T00:00:00.000Z'), berlin)
+
+    expect(new Set(starts).size).toBe(starts.length)
+    expect(starts).toContain('2026-03-29T00:00:00.000Z') // 01:00 CET
+    expect(starts.every((startAt) => startAt.endsWith('Z'))).toBe(true)
   })
 })
