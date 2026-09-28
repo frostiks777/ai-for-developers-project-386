@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatDateTimeInZone, searchTimeZones, toDateKeyInZone } from './timezone'
+import {
+  formatDateTimeInZone,
+  formatWeekdayShort,
+  formatZoneShort,
+  searchTimeZones,
+  toDateKeyInZone,
+} from './timezone'
 
 describe('toDateKeyInZone', () => {
   it('возвращает дату в UTC', () => {
@@ -25,6 +31,30 @@ describe('formatDateTimeInZone', () => {
 
   it('без hour12 использует 24-часовой формат', () => {
     expect(formatDateTimeInZone('2026-09-24T19:00:00.000Z', 'UTC')).toContain('19:00')
+  })
+})
+
+describe('formatWeekdayShort', () => {
+  it('возвращает сокращённый день недели, не завися от TZ процесса', () => {
+    expect(formatWeekdayShort('2026-09-28')).toBe('Пн')
+  })
+
+  it('воскресенье — Вс', () => {
+    expect(formatWeekdayShort('2026-09-27')).toBe('Вс')
+  })
+})
+
+describe('formatZoneShort', () => {
+  it('пояс с предложным падежом', () => {
+    expect(formatZoneShort('Europe/Moscow')).toBe('по Москве (UTC+3)')
+  })
+
+  it('UTC', () => {
+    expect(formatZoneShort('UTC')).toBe('по UTC (UTC+0)')
+  })
+
+  it('неизвестный пояс — по IANA', () => {
+    expect(formatZoneShort('Asia/Tokyo')).toContain('Asia/Tokyo')
   })
 })
 
