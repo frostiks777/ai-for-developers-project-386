@@ -5,7 +5,7 @@
 «Календарь звонков» — сервис бронирования звонков. Приложение состоит из двух частей, которые разрабатываются и запускаются в одном репозитории:
 
 - **Фронтенд** — React 18 + TypeScript (strict) + Vite. UI строится на Tailwind CSS и компонентах shadcn/ui.
-- **Бэкенд** — Fastify 5 на Node.js, порт **3000**. Данные хранятся во встроенной БД **SQLite**, доступ к ней идёт через **Drizzle ORM**.
+- **Бэкенд** — Fastify 5 на Node.js, порт **3000**. Данные хранятся в **PostgreSQL** (в проде — Neon, доступ через **Drizzle ORM** и драйвер `pg`); без `DATABASE_URL` используется PGlite в памяти. См. [ADR-0013](adr/0013-postgres-migration.md).
 
 Общий язык проекта — TypeScript в strict-режиме: и клиент, и сервер типизированы, проверка типов выполняется командой `npm run typecheck`.
 
@@ -19,17 +19,17 @@
 | `src/components/ui/` | Компоненты shadcn/ui — базовые примитивы (кнопки, инпуты, диалоги) |
 | `src/pages/` | Маршруты/страницы; только здесь разрешены default-экспорты |
 | `src/hooks/` | Кастомные хуки (например `use-availability.ts` → `useAvailability`) |
-| `src/api/` | Клиентский слой API-вызовов — все обращения к бэкенду только отсюда; сгенерированный SDK — в `src/api/generated/` |
-| `src/utils/`, `src/lib/` | Утилиты; в `src/lib/utils.ts` живёт хелпер `cn()` |
-| `src/types/` | Общие TypeScript-типы (интерфейсы сущностей: слот, бронирование) |
+| `src/api/` | Клиентский слой API-вызовов: инстанс сгенерированного SDK и `call()`/`ApiError` в `sdk.ts`, маппинг контрактных моделей в UI-типы — `mappers.ts`; сам SDK — в `src/api/generated/` |
+| `src/utils/`, `src/lib/` | Утилиты; в `src/lib/utils.ts` живёт хелпер `cn()`, в `src/lib/validation.ts` — zod-схемы формы |
+| `src/types/` | UI-модели (`booking.ts`, `availability-settings.ts`); контрактные типы приходят из `src/api/generated/` |
 | `src/main.tsx` | Точка входа приложения |
 
 Во всём проекте настроен path alias: **`@` → `./src`** (в `vite.config.ts` и `tsconfig.json`). Импорты пишутся через алиас, а не через относительные пути вида `../../`.
 
 ```ts
 import { Button } from '@/components/ui/button'
-import { fetchHostSlots } from '@/api/client'
-import type { HostSettings } from '@/types/host'
+import { api } from '@/api/sdk'
+import type { Host } from '@/api/generated'
 ```
 
 ## Бэкенд
@@ -37,20 +37,23 @@ import type { HostSettings } from '@/types/host'
 Код сервера отделён от фронтенда и лежит в `server/`:
 
 - `server/index.ts` — точка входа: создаёт приложение через `buildApp()` и слушает порт 3000. Запуск в dev-режиме — `npm run server:dev` (через `tsx watch`).
-- `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты `/api/*` и раздачу собранного фронтенда из `dist/`. Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
+- `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты легаси `/api/*`, маршруты `/api/v1/*`, Basic-auth гейт панели и раздачу собранного фронтенда из `dist/`. Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
+- `server/env.ts` — валидация переменных окружения (`PORT`, `DATABASE_URL`, `ADMIN_PASSWORD`) через zod.
+- `server/bookings-v1.ts` — логика броней v1: проверка слота, `minNotice`, статус, гости, `Idempotency-Key`, отмена/перенос.
+- `server/event-types.ts`, `server/time-blocks.ts` — CRUD типов встреч и блокировок времени ([ADR-0014](adr/0014-time-blocks.md)).
 - `server/validation.ts` — zod-схемы API-контракта (`createBookingSchema`, `availabilityRulesSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).
-- `server/availability.ts` — правила доступности (`AvailabilityRules`), дефолт и чистая генерация слотов `generateSlotStarts`; конверсия строк таблицы `availability_rules`. См. [ADR-0004](adr/0004-slot-generation-rules.md), [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md).
-- `server/rules.ts` — персистентные правила: `loadAvailabilityRules` / `saveAvailabilityRules` / `regenerateFutureSlots` (пересборка свободных будущих слотов, занятые не трогаются).
-- `server/db/schema.ts` — схема БД в терминах Drizzle ORM (таблицы `hosts`, `slots`, `bookings`, `availability_rules`).
-- `server/hosts.ts` — слой хостов API v1: `GET /api/v1/hosts/:slug/settings` и `/slots` (404 на неизвестный slug). См. [ADR-0009](adr/0009-hosts-and-api-v1.md).
-- `server/db/` — клиент Drizzle поверх `better-sqlite3`; путь к файлу БД переопределяется переменной `DATABASE_PATH` (`:memory:` используется в тестах).
-- `server/data/app.db` — файл базы SQLite. БД **in-app**: не требует отдельного сервера СУБД, файл живёт внутри проекта.
+- `server/availability.ts` — правила доступности (`AvailabilityRules`), дефолт и чистая генерация слотов `generateSlotStarts`; конверсия строк таблицы `availability_rules`. См. [ADR-0004](adr/0004-slot-generation-rules.md), [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md), [ADR-0024](adr/0024-slots-in-host-timezone.md).
+- `server/rules.ts` — персистентные правила per-host: `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` / `regenerateFutureSlots(hostId, rules)` (пересборка свободных будущих слотов, занятые не трогаются). См. [ADR-0020](adr/0020-per-host-availability-rules.md).
+- `server/hosts.ts` — слой хостов API v1: `findHost` по slug **или** UUID, `GET /api/v1/hosts/:ref/settings|slots` (404 на неизвестный хост). См. [ADR-0009](adr/0009-hosts-and-api-v1.md), [ADR-0018](adr/0018-multi-host-model.md).
+- `server/db/schema.ts` — схема БД в терминах Drizzle ORM (`pg-core`): `hosts`, `event_types`, `slots`, `bookings`, `availability_rules`, `availability_ranges`, `time_blocks`.
+- `server/db/index.ts` — клиент Drizzle: `pg` при заданном `DATABASE_URL` (Neon), иначе **PGlite в памяти** (тесты и локальный dev без переменной).
+- `server/db/migrate.ts` — идемпотентные миграции (`ALTER TABLE … IF NOT EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS`) и бэкфиллы; выполняются при старте сервера.
 
-Миграции и синхронизация схемы выполняются через drizzle-kit (`npm run db:generate` / `npm run db:push`). Для скелета при старте создаются недостающие таблицы и колонки, а также сидируются слоты по правилам доступности (если будущих слотов нет).
+drizzle-kit (`npm run db:generate` / `db:push`, `drizzle.config.ts`) в проде **не используется**: реальная схема создаётся и обновляется идемпотентным `server/db/migrate.ts`, а drizzle-kit нужен только для генерации SQL-файлов.
 
-Маршруты фронтенда (React Router): `/` — лендинг гостя (`LandingPage`), `/book/:slug` — бронирование (`HomePage`), `/dashboard` — панель организатора (`DashboardPage`), `/cancel/:token` и `/reschedule/:token` — self-service, `*` — 404. См. [ADR-0010](adr/0010-landing-and-booking-routes.md).
+Маршруты фронтенда (React Router, `src/App.tsx`): `/` — лендинг гостя (`LandingPage`), `/book/:slug` — бронирование (`HomePage`), `/my` — «Мои встречи», `/booking/:uuid/confirmed` — shareable-экран подтверждения, `/booking/:uuid/{cancel,reschedule}` (алиасы `/cancel/:token`, `/reschedule/:token`) — self-service (`ManageBookingPage`), `/dashboard` и `/admin/{bookings,availability,event-types,blocks,hosts}` — панель организатора (`DashboardPage`), `*` — 404. См. [ADR-0010](adr/0010-landing-and-booking-routes.md), [ADR-0019](adr/0019-my-bookings-on-device.md), [ADR-0023](adr/0023-redesign-v2-mint.md).
 
-Интеграционные тесты API живут в `server/app.test.ts`, `server/dashboard.test.ts`, `server/hosts.test.ts`, `server/availability.test.ts` и работают с in-memory БД (`DATABASE_PATH=:memory:` в `vite.config.ts` → `test.env`).
+Интеграционные тесты API лежат в `server/*.test.ts` (~12 файлов: `app`, `dashboard`, `contract`, `bookings-v1`, `event-types`, `hosts`, `host-availability`, `availability-settings`, `availability`, `admin-auth`, `multi-host`, `time-blocks`, `db/migrate`) и работают через `app.inject()` на PGlite в памяти (`DATABASE_URL=''` в `vite.config.ts` → `test.env`).
 
 ## Контракт API (TypeSpec)
 
@@ -69,14 +72,14 @@ npm run api:generate   # tsp compile api/main.tsp + openapi-typescript
 
 ## Поток данных
 
-В dev-режиме фронтенд открывается на порту Vite (5173), а все запросы к API идут через **прокси**: Vite перенаправляет пути `/api/*` (включая `/api/v1/*`) на Fastify (`http://localhost:3000`, настроено в `vite.config.ts`). Поэтому клиентский код всегда обращается к относительному пути `/api/...` и не знает ни про порт сервера, ни про CORS.
+В dev-режиме фронтенд открывается на порту Vite (5173), а все запросы к API идут через **прокси**: Vite перенаправляет пути `/api/*` (включая `/api/v1/*`) на Fastify (`http://127.0.0.1:3000`, настроено в `vite.config.ts`). Поэтому клиентский код всегда обращается к относительному пути `/api/...` и не знает ни про порт сервера, ни про CORS.
 
-Цепочка: **браузер → vite dev proxy `/api` → Fastify :3000 → Drizzle → SQLite**. Гостевые страницы используют `/api/v1` (типы, слоты, брони из контракта), легаси-слой `/api/*` сохранён для дашборда/тестов.
+Цепочка: **браузер → vite dev proxy `/api` → Fastify :3000 → Drizzle → PostgreSQL (Neon) / PGlite**. Гостевые страницы используют `/api/v1` (типы, слоты, брони из контракта), легаси-слой `/api/*` сохранён для панели, скриптов и тестов.
 
 Пример на двух эндпоинтах:
 
-1. `GET /api/slots` — страница календаря вызывает `fetchSlots()` из `src/api/client.ts` → запрос уходит на `/api/slots` → прокси Vite передаёт его Fastify → маршрут через Drizzle читает таблицу слотов из `server/data/app.db` (прошедшие слоты отфильтровываются и на бэке, и в `useAvailability`) → JSON со слотами возвращается на фронтенд и кладётся в состояние хука.
-2. `POST /api/bookings` — форма бронирования вызывает `createBooking()` из `src/api/client.ts` с данными формы → Fastify валидирует тело zod-схемой (`name`, `email`, `slotId`, опциональные `phone`, `comment`) → Drizzle вставляет запись в таблицу бронирований → клиент получает созданное бронирование и обновляет UI.
+1. `GET /api/v1/hosts/:slug/slots` — страница календаря вызывает `call(api.listSlots(slug, { eventTypeId }))` из `src/api/sdk.ts` (результат мапится в UI-модель в `src/api/mappers.ts`) → запрос уходит на `/api/v1/...` → прокси Vite передаёт его Fastify → маршрут через Drizzle читает таблицу слотов (прошедшие слоты и окно `minNotice` отсекаются на бэке) → JSON со слотами возвращается на фронтенд и кладётся в состояние хука `useAvailability`.
+2. `POST /api/v1/hosts/:slug/bookings` — форма бронирования вызывает `api.hostBookingsClient.createBooking` с данными формы → Fastify валидирует тело zod-схемой (`clientName`, `clientEmail`, `slotId`, `consentAccepted`, опциональные `clientPhone`, `clientNotes`, `guests`) → Drizzle вставляет запись в таблицу `bookings` (уникальный индекс по `slotId` даёт `409 SLOT_TAKEN`) → клиент получает бронь и показывает экран успеха.
 
 ## Диаграмма потока запроса
 
@@ -86,13 +89,13 @@ npm run api:generate   # tsp compile api/main.tsp + openapi-typescript
 │  React-компонент │ ───────► │  proxy '/api'    │ ───────► │  server/app.ts   │
 │  → src/api/*     │ ◄─────── │                  │ ◄─────── │  маршруты /api/* │
 └──────────────────┘   JSON   └──────────────────┘          └────────┬─────────┘
-                                                                     │ Drizzle ORM
-                                                                     ▼
-                                                            ┌──────────────────┐
-                                                            │     SQLite       │
-                                                            │ server/data/     │
-                                                            │   app.db         │
-                                                            └──────────────────┘
+                                                                      │ Drizzle ORM
+                                                                      ▼
+                                                             ┌──────────────────┐
+                                                             │    PostgreSQL    │
+                                                             │  Neon (прод) /   │
+                                                             │  PGlite (тесты)  │
+                                                             └──────────────────┘
 ```
 
 ## Команды разработки
@@ -101,12 +104,15 @@ npm run api:generate   # tsp compile api/main.tsp + openapi-typescript
 |---|---|
 | `npm run dev` | Запуск dev-сервера Vite (фронтенд, :5173, с прокси `/api`) |
 | `npm run server:dev` | Запуск бэкенда Fastify с перезагрузкой (`tsx watch server/index.ts`, :3000) |
+| `npm run dev:all` | Оба процесса сразу (`scripts/dev-all.mjs`) |
+| `npm run start` | Продакшн-режим: Fastify + раздача `dist/` |
 | `npm test` | Прогон тестов (Vitest + React Testing Library) |
+| `npm run test:e2e` | Сквозные сценарии Playwright (отдельный гейт, job `e2e` в CI) |
 | `npm run lint` | Проверка ESLint |
 | `npm run typecheck` | Проверка типов (`tsc --noEmit`) |
 | `npm run build` | Продакшн-сборка (`tsc --noEmit && vite build`) |
-| `npm run db:generate` | Генерация миграций Drizzle по изменениям схемы |
-| `npm run db:push` | Применение схемы к БД напрямую (для локальной разработки) |
 | `npm run api:generate` | Генерация OpenAPI, клиентского SDK и серверных типов из `api/main.tsp` |
+| `npm run db:generate` / `npm run db:push` | drizzle-kit; в проде не используются (миграции — `server/db/migrate.ts` при старте) |
 
-Для полноценной локальной работы нужны два процесса: `npm run server:dev` и `npm run dev` — бэкенд и фронтенд запускаются параллельно.
+Для полноценной локальной работы нужны два процесса: `npm run server:dev` и `npm run dev` — бэкенд и фронтенд запускаются параллельно (или одной командой `npm run dev:all`).
+
