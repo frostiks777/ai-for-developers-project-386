@@ -156,6 +156,7 @@
 ## Backlog (новые задачи)
 
 - [ ] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): `POST /api/v1/hosts/:slug/bookings` публичный; поле «Гости» принимает произвольные email, а форма — спам/абьюз. Добавить CAPTCHA (напр. Cloudflare Turnstile или hCaptcha) на шаге брони, серверную верификацию токена и rate-limit по IP; показывать/требовать капчу при указании email гостя (или всегда). Выбор провайдера и точки проверки зафиксировать отдельным ADR.
+- [ ] **SSL-режим драйвера Postgres (`pg`)** — при старте API видно предупреждение: `SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'` и намёк, что в `pg-connection-string` v3 / `pg` v9 семантика станет строже. Задача: явно задать SSL-режим в строке подключения (`sslmode=verify-full` для текущего поведения либо `uselibpqcompat=true&sslmode=require` для совместимости с libpq), убрать предупреждение и зафиксировать решение в `docs/adr/` / `.env.example`. Проверить после апгрейда `pg` до v9.
 
 ### Backlog: редизайн v2
 
@@ -166,10 +167,20 @@
 - [x] **Этап 0 — подготовка** — ветка `feat/redesign-v2-mint`, пакет в [`docs/design/v2/`](design/v2/), ADR-0022…0024 в [`docs/adr/`](adr/) (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
 - [x] **Этап 1** — контакты гостей только для организатора ([ADR-0022](adr/0022-private-bookings-list.md)): `GET /bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, вкладка и `events-page` удалены.
 - [x] **Этап 2** — баги времени: `formatWeekdayShort` (дни недели в ленте), пояс гостя при отмене (`formatZoneShort`).
-- [ ] **Этапы 3–13** — редизайн по [`docs/design/v2/implementation-plan.md`](design/v2/implementation-plan.md).
-- [ ] **ADRs v2** — [`design/docs/design/v2/adr/`](../design/docs/design/v2/adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone).
-- [ ] **Макеты/скриншоты v2** — `design/docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking).
-- [ ] **Архив v1** — [`design/Old/`](../design/Old/): старый пакет (PROMPT.md, README.md) — при решении о v2 удалить или оставить как справку.
+- [x] **Этап 3** — токены, живой фон, стеклянные поверхности, шапка (`ambient-background`, `app-shell`, `glass-bar`, `formatZoneShort`).
+- [x] **Этап 4** — десктоп «Дни» (A): `event-type-picker`, `two-week-grid`, `slot-groups`, `booking-form`, `timezone-card`; форма в колонке, без автовыбора слота.
+- [x] **Этап 5** — вид «Неделя» (B): `view-toggle`, `use-booking-view`, `week-grid`.
+- [x] **Этап 6** — мобильный мастер C1–C3: `booking-wizard`, `day-list`, `day-switcher`, `booking-bar`.
+- [x] **Этап 7** — экран подтверждения C4: рестайл `booking-success`, ссылки переноса/отмены, «Скопировать ссылку».
+- [x] **Этап 8** — конфликт 409: сохранение полей, `slot-suggestions`, toast убран.
+- [x] **Этап 9** — страница управления встречей M: `manage-booking-page` (перенос + отмена), старые страницы объединены.
+- [x] **Этап 10** — панель: разделы-экраны, «Обзор» (`dashboard-overview`), раскрытие строк, «Скопировать текст для гостя».
+- [x] **Этап 11** — доступность и пояс ([ADR-0024](adr/0024-slots-in-host-timezone.md)): генерация слотов в поясе хоста, широкие поля времени, `availability-preview`.
+- [x] **Этап 12** — лендинг и «Мои встречи»: имя организатора без дубля, одна CTA `bg-highlight`, блок «Форматы встречи» (`/book/:slug?type=…`), карточки `glass`.
+- [x] **Этап 13** — документация: ADR-0022…0024 → Accepted, ADR-0007 дополнен ADR-0023, `docs/design/README.md` (v2 — текущий, v1 — история), «Отклонения» в `docs/design/v2/README.md`; `MEMORY.md`/`docs/todo.md`/`README.md` синхронизированы. Визуальная приёмка — за человеком.
+- [x] **ADRs v2** — [`docs/adr/`](adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone) — **Accepted** 2026-09-28.
+- [ ] **Макеты/скриншоты v2** — `docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking) — визуальная приёмка человеком.
+- [ ] **Архив v1** — [`docs/design/`](design/): старый пакет оставлен как история (см. `docs/design/README.md`).
 
 ## Ключевые расхождения со спекой
 

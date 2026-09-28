@@ -54,6 +54,6 @@
 | [0019](0019-my-bookings-on-device.md) | «Мои встречи» на устройстве (localStorage) | Accepted | 2026-09-25 |
 | [0020](0020-per-host-availability-rules.md) | Per-host скаляры расписания (`availability_rules` по `hostId`) | Accepted | 2026-09-25 |
 | [0021](0021-active-host-and-hosts-ui.md) | Активный организатор на клиенте и UI управления хостами | Accepted | 2026-09-25 |
-| [0022](0022-private-bookings-list.md) | Список броней доступен только организатору | Proposed | 2026-09-25 |
-| [0023](0023-redesign-v2-mint.md) | Редизайн v2 — «Мята и солнце», запись без автовыбора | Proposed | 2026-09-25 |
-| [0024](0024-slots-in-host-timezone.md) | Слоты генерируются в поясе организатора | Proposed | 2026-09-25 |
+| [0022](0022-private-bookings-list.md) | Список броней доступен только организатору | Accepted | 2026-09-28 |
+| [0023](0023-redesign-v2-mint.md) | Редизайн v2 — «Мята и солнце», запись без автовыбора | Accepted | 2026-09-28 |
+| [0024](0024-slots-in-host-timezone.md) | Слоты генерируются в поясе организатора | Accepted | 2026-09-28 |

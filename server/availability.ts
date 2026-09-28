@@ -146,6 +146,106 @@ export interface AvailabilitySettings {
 
 const jsDayToIso = (jsDay: number): number => (jsDay === 0 ? 7 : jsDay)
 
+// Смещение пояса в минутах для конкретного UTC-момента (ISO-строка смещения → минуты)
+function zoneOffsetMinutes(timeZone: string, utcMs: number): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'longOffset',
+  }).formatToParts(new Date(utcMs))
+  const offset = parts.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT'
+
+  if (offset === 'GMT' || offset === 'UTC') {
+    return 0
+  }
+
+  const match = offset.match(/GMT([+-])(\d{2}):?(\d{2})?/)
+
+  if (!match) {
+    return 0
+  }
+
+  const sign = match[1] === '-' ? -1 : 1
+  const hours = Number(match[2])
+  const minutes = Number(match[3] ?? '0')
+
+  return sign * (hours * 60 + minutes)
+}
+
+// Календарный день и день недели для момента в заданном поясе
+function zonedDateParts(timeZone: string, utcMs: number) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  }).formatToParts(new Date(utcMs))
+  const get = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
+  const weekdayShort = get('weekday')
+  const weekdayMap: Record<string, number> = {
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+    Sun: 7,
+  }
+
+  return {
+    year: Number(get('year')),
+    month: Number(get('month')),
+    day: Number(get('day')),
+    isoWeekday: weekdayMap[weekdayShort] ?? 1,
+  }
+}
+
+// Локальное время (y/m/d, минуты от полуночи) в поясе → UTC-миллисекунды.
+// Повторная проверка смещения на найденный момент закрывает переходы на летнее время.
+export function zonedTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  minute: number,
+  timeZone: string,
+): number {
+  const naiveUtc = Date.UTC(year, month - 1, day, 0, minute)
+  const firstGuess = naiveUtc - zoneOffsetMinutes(timeZone, naiveUtc) * 60_000
+  const secondOffset = zoneOffsetMinutes(timeZone, firstGuess)
+
+  return naiveUtc - secondOffset * 60_000
+}
+
+// Проверяет, что найденный UTC-момент действительно соответствует запрошенному
+// локальному времени в поясе (нужно на переходе «вперёд»: несуществующее время
+// вроде 02:00 в Europe/Berlin не должно превращаться в 03:00 и дублировать его).
+function isLocalTimeValid(
+  year: number,
+  month: number,
+  day: number,
+  minute: number,
+  timeZone: string,
+  utcMs: number,
+): boolean {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(utcMs))
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? '0')
+
+  return (
+    get('year') === year &&
+    get('month') === month &&
+    get('day') === day &&
+    get('hour') * 60 + get('minute') === minute
+  )
+}
+
 // Преобразует одно окно из легаси-правил в набор диапазонов (по дню недели)
 export function rangesFromRules(rules: AvailabilityRules): AvailabilityRange[] {
   return rules.weekdays
@@ -193,19 +293,17 @@ export function defaultAvailabilitySettings(timeZone: string): AvailabilitySetti
   }
 }
 
-// Генерирует ISO-времена начал слотов по диапазонам дней недели.
+// Генерирует ISO-времена начал слотов по диапазонам дней недели в поясе хоста.
 export function generateSlotStartsFromRanges(now: Date, settings: AvailabilitySettings): string[] {
   const starts: string[] = []
   const earliest = now.getTime() + settings.minNoticeMin * MS_PER_MINUTE
   const stepMin = settings.slotDurationMin + settings.bufferBeforeMin + settings.bufferAfterMin
+  const timeZone = settings.timeZone || 'UTC'
 
   for (let dayOffset = 0; dayOffset < settings.horizonDays; dayOffset += 1) {
-    const day = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + dayOffset),
-    )
-    const weekday = jsDayToIso(day.getUTCDay())
+    const dayParts = zonedDateParts(timeZone, now.getTime() + dayOffset * 24 * 60 * MS_PER_MINUTE)
     const ranges = settings.ranges
-      .filter((range) => range.weekday === weekday)
+      .filter((range) => range.weekday === dayParts.isoWeekday)
       .sort((a, b) => a.startMinute - b.startMinute)
 
     for (const range of ranges) {
@@ -214,13 +312,20 @@ export function generateSlotStartsFromRanges(now: Date, settings: AvailabilitySe
         minute + settings.slotDurationMin <= range.endMinute;
         minute += stepMin
       ) {
-        const startAt = Date.UTC(
-          day.getUTCFullYear(),
-          day.getUTCMonth(),
-          day.getUTCDate(),
-          0,
+        const startAt = zonedTimeToUtc(
+          dayParts.year,
+          dayParts.month,
+          dayParts.day,
           minute,
+          timeZone,
         )
+
+        if (
+          !isLocalTimeValid(dayParts.year, dayParts.month, dayParts.day, minute, timeZone, startAt)
+        ) {
+          // несуществующее локальное время (переход на летнее время) — пропускаем
+          continue
+        }
 
         if (startAt < earliest) {
           continue

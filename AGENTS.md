@@ -207,4 +207,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/notify.ps1 "За
 - Отправка: `node telegram-bot/notify.mjs "Заголовок" "Текст"`; вопрос с кнопками ✅/⛔: добавить `--id <qid>`.
 - Слушать ответы: `node telegram-bot/bot.mjs` (long-polling); решения падают в `telegram-bot/decisions.jsonl` (последняя строка с нужным `qid`).
 - Команды с телефона: `/ping`, `/status`, `/approve <id>`, `/deny <id>` (меню регистрируется через `node telegram-bot/setup-menu.mjs`).
+- Свободные вопросы пользователя из TG: `node telegram-bot/unread.mjs` (что без ответа) → ответить в чате → продублировать через `node telegram-bot/reply.mjs "текст"`.
+- Автозапуск: `.opencode/plugins/telegram-autostart.js` поднимает `bot.mjs` и шлёт уведомления по событиям сессии (`session.idle` — «Агент закончил», `session.error` — «Ошибка сессии»). Тумблер в `.env`: `TELEGRAM_NOTIFY=on|off` (по умолчанию `off`). Антиспам: не чаще раза в минуту на тип события.
 - Те же 2 случая, что и у тоста: блокер/решение и успешный релиз. Секреты в чат не слать.

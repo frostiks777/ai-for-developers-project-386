@@ -9,26 +9,16 @@ import { useTimeFormat } from '@/hooks/use-time-format'
 import { cn } from '@/lib/utils'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { buildIcs, downloadIcs, googleCalendarUrl } from '@/utils/calendar'
-import { formatDateTimeInZone } from '@/utils/timezone'
+import { formatDayShortTitle, formatTimeRange, formatZoneShort, toDateKeyInZone } from '@/utils/timezone'
 
 interface BookingSuccessProps {
   booking: CreatedBooking
   slot: TimeSlot
   timeZone: string
   eventTypeTitle?: string | null
+  formatLabel?: string | null
+  hostName?: string | null
   onReset: () => void
-}
-
-const endTimeFormatter = (timeZone: string, hour12: boolean) =>
-  new Intl.DateTimeFormat('ru-RU', { timeZone, hour: '2-digit', minute: '2-digit', hour12 })
-
-function formatTimeRange(slot: TimeSlot, timeZone: string, hour12: boolean): string {
-  const start = new Date(slot.startAt)
-  const end = new Date(start.getTime() + slot.durationMin * 60 * 1000)
-  const startLabel = formatDateTimeInZone(slot.startAt, timeZone, hour12)
-  const endLabel = endTimeFormatter(timeZone, hour12).format(end)
-
-  return `${startLabel} — ${endLabel}`
 }
 
 export function BookingSuccess({
@@ -36,17 +26,21 @@ export function BookingSuccess({
   slot,
   timeZone,
   eventTypeTitle,
+  formatLabel,
+  hostName,
   onReset,
 }: BookingSuccessProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { hour12 } = useTimeFormat()
   const cancelUrl = `${window.location.origin}/cancel/${booking.cancelToken}`
+  const confirmedUrl = `${window.location.origin}/booking/${booking.id}/confirmed`
   const calendarOptions = eventTypeTitle ? { title: eventTypeTitle } : undefined
   const googleUrl = googleCalendarUrl(booking, slot, calendarOptions)
+  const dateKey = toDateKeyInZone(new Date(slot.startAt), timeZone)
 
-  const handleCopy = async () => {
+  const handleCopy = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(cancelUrl)
+      await navigator.clipboard.writeText(text)
       toast.success('Ссылка скопирована')
     } catch {
       toast.error('Не удалось скопировать ссылку')
@@ -57,13 +51,44 @@ export function BookingSuccess({
     downloadIcs(`booking-${booking.id}.ics`, buildIcs(booking, slot, calendarOptions))
   }
 
+  const details = (
+    <dl className="grid gap-2.5 text-[15px]">
+      <div className="flex justify-between gap-4">
+        <dt className="text-muted-foreground">Формат</dt>
+        <dd className="text-right font-semibold">{eventTypeTitle ?? formatLabel ?? 'Онлайн-звонок'}</dd>
+      </div>
+      <div className="flex justify-between gap-4">
+        <dt className="text-muted-foreground">Длительность</dt>
+        <dd className="text-right font-semibold">{slot.durationMin} мин</dd>
+      </div>
+      {hostName && (
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Организатор</dt>
+          <dd className="text-right font-semibold">{hostName}</dd>
+        </div>
+      )}
+      <div className="flex justify-between gap-4">
+        <dt className="text-muted-foreground">Имя</dt>
+        <dd className="text-right font-semibold">{booking.name}</dd>
+      </div>
+      <div className="flex justify-between gap-4">
+        <dt className="text-muted-foreground">Email</dt>
+        <dd className="text-right font-semibold">{booking.email}</dd>
+      </div>
+      {booking.phone && (
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">Телефон</dt>
+          <dd className="text-right font-semibold">{booking.phone}</dd>
+        </div>
+      )}
+    </dl>
+  )
+
   return (
     <section
       className={cn(
-        'flex w-full flex-col',
-        isDesktop
-          ? 'mx-auto max-w-[600px] gap-4 rounded-card border bg-card p-8 pb-9 shadow-soft'
-          : 'min-h-[60dvh] gap-3.5',
+        'flex w-full flex-col gap-4',
+        isDesktop ? 'glass rounded-card p-8' : 'gap-4',
       )}
     >
       <Button
@@ -75,154 +100,92 @@ export function BookingSuccess({
         Назад
       </Button>
 
-      <div
-        className={cn(
-          'flex flex-col',
-          isDesktop ? 'items-start gap-4' : 'items-center gap-3.5 text-center',
-        )}
-      >
-        <div
+      <div className={cn('flex items-center gap-3.5', isDesktop ? 'items-start' : 'flex-col text-center')}>
+        <span
           aria-hidden="true"
-          className={cn(
-            'flex items-center justify-center rounded-full bg-success-soft text-success',
-            isDesktop ? 'size-16' : 'size-20',
-          )}
+          className="flex size-16 shrink-0 items-center justify-center rounded-full bg-success-soft text-success"
         >
-          <Check
-            className={isDesktop ? 'size-8' : 'size-10'}
-            strokeWidth={isDesktop ? 2.4 : 2.6}
-            aria-hidden="true"
-          />
+          <Check className="size-8" strokeWidth={2.4} />
+        </span>
+        <div>
+          <h2 className="font-serif text-[26px] font-semibold leading-tight">
+            Встреча успешно запланирована!
+          </h2>
+          <p className="mt-1 text-[16px] font-semibold">
+            {formatDayShortTitle(dateKey)} · {formatTimeRange(slot, timeZone, hour12)}
+          </p>
+          <p className="text-[13px] text-muted-foreground">{formatZoneShort(timeZone)}</p>
         </div>
-        <h2
-          className={cn(
-            'font-serif font-semibold',
-            isDesktop ? 'text-[30px]' : 'text-center text-[26px] leading-tight',
-          )}
+      </div>
+
+      <div className="glass rounded-2xl p-4">{details}</div>
+
+      <div className="flex flex-col gap-2.5">
+        <Button
+          asChild
+          className="h-14 w-full rounded-[14px] bg-highlight text-base font-semibold text-highlight-foreground shadow-glow hover:bg-highlight/90"
         >
-          Встреча успешно запланирована!
-        </h2>
-        <p className="text-[15px] text-muted-foreground">
-          {isDesktop
-            ? 'Добавьте встречу в свой календарь, чтобы не пропустить звонок.'
-            : 'Добавьте её в календарь, чтобы не пропустить.'}
+          <a href={googleUrl} target="_blank" rel="noopener noreferrer">
+            <Calendar className="size-4" strokeWidth={1.8} aria-hidden="true" />
+            Добавить в Google Календарь
+          </a>
+        </Button>
+        <Button variant="outline" onClick={handleDownload} className="h-11 w-full">
+          <Download className="size-4" strokeWidth={1.8} aria-hidden="true" />
+          Скачать .ics
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Google Календарь или файл .ics для Apple и Outlook
         </p>
       </div>
 
-      <dl
-        className={cn(
-          'text-[15px]',
-          !isDesktop && 'rounded-2xl border border-border bg-card px-4',
-        )}
-      >
-        <div
-          className={cn(
-            'flex justify-between gap-4 border-t py-3',
-            isDesktop ? 'border-border' : 'border-transparent',
-          )}
-        >
-          <dt className="text-muted-foreground">Когда</dt>
-          <dd className="text-right font-semibold">{formatTimeRange(slot, timeZone, hour12)}</dd>
+      <div className="rounded-2xl bg-surface p-3.5">
+        <p className="text-[13px] font-semibold">Планы изменились?</p>
+        <div className="mt-2.5 flex flex-col gap-2">
+          <Button variant="outline" asChild className="h-11 w-full">
+            <Link to={`/reschedule/${booking.cancelToken}`} aria-label="Перенести встречу">
+              Перенести
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="h-11 w-full border-destructive-border text-destructive"
+          >
+            <Link to={`/cancel/${booking.cancelToken}`}>
+              Отменить встречу
+            </Link>
+          </Button>
         </div>
-        <div className="flex justify-between gap-4 border-t border-border py-3">
-          <dt className="text-muted-foreground">Длительность</dt>
-          <dd className="text-right font-semibold">{slot.durationMin} мин</dd>
-        </div>
-        <div className="flex justify-between gap-4 border-t border-border py-3">
-          <dt className="text-muted-foreground">Имя</dt>
-          <dd className="text-right font-semibold">{booking.name}</dd>
-        </div>
-        {booking.phone && (
-          <div className="flex justify-between gap-4 border-t border-border py-3">
-            <dt className="text-muted-foreground">Телефон</dt>
-            <dd className="text-right font-semibold">{booking.phone}</dd>
-          </div>
-        )}
-        <div className="flex justify-between gap-4 border-t border-border py-3">
-          <dt className="text-muted-foreground">Email</dt>
-          <dd className="text-right font-semibold">{booking.email}</dd>
-        </div>
-      </dl>
-
-      <div className={cn('flex flex-col', isDesktop ? 'gap-2.5' : 'mt-auto gap-2.5 pt-2')}>
-        {isDesktop ? (
-          <div className="flex gap-2.5">
-            <Button variant="outline" asChild className="h-11 flex-1">
-              <a href={googleUrl} target="_blank" rel="noreferrer">
-                <Calendar className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                Добавить в Google Календарь
-              </a>
-            </Button>
-            <Button variant="outline" onClick={handleDownload} className="h-11 flex-1">
-              <Download className="size-4" strokeWidth={1.8} aria-hidden="true" />
-              Скачать .ics
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" asChild className="h-12 rounded-xl">
-              <a href={googleUrl} target="_blank" rel="noreferrer" aria-label="Добавить в Google Календарь">
-                <Calendar className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                Google
-              </a>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              className="h-12 rounded-xl"
-              aria-label="Скачать .ics"
-            >
-              <Download className="size-4" strokeWidth={1.8} aria-hidden="true" />
-              Файл .ics
-            </Button>
-          </div>
-        )}
-
-        <Button
-          variant="outline"
-          asChild
-          className={cn('w-full', isDesktop ? 'h-11' : 'h-12 rounded-xl')}
-        >
-          <Link to={`/reschedule/${booking.cancelToken}`}>Перенести</Link>
-        </Button>
-
-        <Button
-          variant="outline"
-          asChild
-          className={cn('w-full', isDesktop ? 'h-11' : 'h-12 rounded-xl')}
-        >
-          <Link to={`/cancel/${booking.cancelToken}`}>Отменить встречу</Link>
-        </Button>
-
-        <Button
-          onClick={onReset}
-          className={cn('w-full', isDesktop ? 'h-12' : 'h-14 rounded-2xl text-base font-bold')}
-        >
-          Выбрать другое время
-        </Button>
-
-        <div className="grid gap-2 pt-1">
-          <p className="text-[13px] text-muted-foreground">
-            Ссылка для отмены (сохраните её — по ней можно отменить встречу):
-          </p>
-          <div className={cn('flex gap-2', isDesktop ? 'flex-row' : 'flex-col')}>
-            <Input
-              readOnly
-              value={cancelUrl}
-              aria-label="Ссылка для отмены"
-              className={cn(!isDesktop && 'h-12 rounded-xl text-base')}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCopy}
-              className={cn('min-h-[44px] shrink-0', !isDesktop && 'h-12 rounded-xl')}
-            >
-              Скопировать
-            </Button>
-          </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Встреча сохранена в «Мои встречи» на этом устройстве. Для другого устройства скопируйте
+          ссылку
+        </p>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <Input
+            readOnly
+            value={cancelUrl}
+            aria-label="Ссылка для отмены"
+            className="h-11 min-w-0"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleCopy(confirmedUrl)}
+            className="h-11 shrink-0"
+          >
+            Скопировать ссылку
+          </Button>
         </div>
       </div>
+
+      <Button
+        variant="ghost"
+        onClick={onReset}
+        className="h-11 w-full text-[15px] font-semibold text-primary"
+      >
+        Выбрать другое время
+      </Button>
     </section>
   )
 }

@@ -1,23 +1,26 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { toBookingWithSlot } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { AvailabilitySettingsForm } from '@/components/availability-settings-form'
 import { BlocksEditor } from '@/components/blocks-editor'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
 import { BookingsList } from '@/components/bookings-list'
+import { DashboardOverview } from '@/components/dashboard-overview'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { EventTypesEditor } from '@/components/event-types-editor'
 import { HostSelect } from '@/components/host-select'
-import { useActiveHost } from '@/hooks/use-active-host'
 import { HostsEditor } from '@/components/hosts-editor'
 import { Input } from '@/components/ui/input'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import { cn } from '@/lib/utils'
 import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
-import { cn } from '@/lib/utils'
 
 function applySelection(
   bookings: BookingWithSlot[],
@@ -48,6 +51,7 @@ function applySelection(
 }
 
 export type DashboardSection =
+  | 'overview'
   | 'bookings'
   | 'event-types'
   | 'availability'
@@ -56,6 +60,18 @@ export type DashboardSection =
 
 interface DashboardPageProps {
   initialSection?: DashboardSection
+}
+
+const SECTION_HEADING: Record<DashboardSection, { title: string; subtitle: string }> = {
+  overview: { title: 'Обзор', subtitle: 'Сводка по встречам и доступности' },
+  bookings: { title: 'Встречи', subtitle: 'Брони по статусу и дню' },
+  'event-types': { title: 'Типы встреч', subtitle: 'Что может выбрать гость при записи' },
+  availability: { title: 'Доступность', subtitle: 'Из этих правил собираются свободные слоты' },
+  blocks: {
+    title: 'Блокировки времени',
+    subtitle: 'Отпуск и личные дела — гости не увидят эти слоты',
+  },
+  hosts: { title: 'Организаторы', subtitle: 'Отдельные расписания и брони для каждого' },
 }
 
 export default function DashboardPage({ initialSection }: DashboardPageProps) {
@@ -71,7 +87,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
   const [filter, setFilter] = useState<BookingFilterValue>('upcoming')
   const [search, setSearch] = useState('')
-  const [mobileTab, setMobileTab] = useState<DashboardSection>(initialSection ?? 'bookings')
+  const section: DashboardSection = initialSection ?? 'overview'
 
   const loadBookings = useCallback(async () => {
     setIsLoadingBookings(true)
@@ -105,16 +121,6 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
     })()
   }, [loadBookings, activeSlug])
 
-  useEffect(() => {
-    if (!initialSection) {
-      return
-    }
-
-    document
-      .getElementById(initialSection)
-      ?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
-  }, [initialSection])
-
   const handleCancel = async (booking: BookingWithSlot) => {
     try {
       await call(api.bookingsClient.cancelBooking(booking.id))
@@ -147,23 +153,18 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
   ).length
   const filteredBookings = applySelection(bookings, filter, search, now)
 
-  if (isDesktop) {
-    return (
-      <div className="flex min-h-screen bg-background">
-        <DashboardSidebar bookingCount={upcomingCount} />
-        <main className="flex min-w-0 flex-1 flex-col gap-6 p-10">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="font-serif text-[28px] font-semibold leading-tight">
-              Панель организатора
-            </h1>
-            <HostSelect />
-          </div>
-
-          <div className="flex min-w-0 flex-1 gap-8">
-          <div className="flex min-w-0 flex-1 flex-col gap-6">
-            <div id="bookings" className="flex scroll-mt-4 flex-wrap items-end justify-between gap-4">
+  const renderSection = () => {
+    switch (section) {
+      case 'overview':
+        return (
+          <DashboardOverview bookings={bookings} hostSlug={activeSlug} onCancel={handleCancel} />
+        )
+      case 'bookings':
+        return (
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <h2 className="font-serif text-[32px] font-semibold leading-tight">Встречи</h2>
+                <h1 className="font-serif text-[32px] font-semibold leading-tight">Встречи</h1>
                 <p className="mt-1.5 text-sm text-muted-foreground">Брони по статусу и дню</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -186,198 +187,115 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
                 bookings={filteredBookings}
                 onCancel={handleCancel}
                 showCancel={filter === 'upcoming'}
+                hostSlug={activeSlug}
               />
             )}
-
-            <section id="event-types" className="rounded-[18px] border bg-card p-6">
-              <div className="mb-5">
-                <h2 className="text-xl font-semibold">Типы встреч</h2>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Что может выбрать гость при записи
-                </p>
-              </div>
-              <EventTypesEditor slug={activeSlug} />
-            </section>
-
-            <section id="blocks" className="rounded-[18px] border bg-card p-6">
-              <div className="mb-5">
-                <h2 className="text-xl font-semibold">Блокировки времени</h2>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Отпуск и личные дела — гости не увидят эти слоты
-                </p>
-              </div>
-              <BlocksEditor slug={activeSlug} />
-            </section>
-
-            <section id="hosts" className="scroll-mt-4 rounded-[18px] border bg-card p-6">
-              <div className="mb-5">
-                <h2 className="text-xl font-semibold">Организаторы</h2>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Отдельные расписания и брони для каждого организатора
-                </p>
-              </div>
-              <HostsEditor />
-            </section>
           </div>
-
-          <section
-            id="availability"
-            className="sticky top-10 w-[360px] shrink-0 self-start rounded-[18px] border bg-card p-6"
-          >
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold">Доступность</h2>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                Из этих правил собираются свободные слоты
-              </p>
-            </div>
-
+        )
+      case 'event-types':
+        return (
+          <section className="glass rounded-2xl p-6">
+            <EventTypesEditor slug={activeSlug} />
+          </section>
+        )
+      case 'availability':
+        return (
+          <section className="glass rounded-2xl p-6">
             {rulesError && <p className="text-destructive">{rulesError}</p>}
             {!rulesError && !settings && <p>Загрузка настроек…</p>}
             {settings && (
-              <AvailabilitySettingsForm settings={settings} isSaving={isSavingRules} onSave={handleSaveRules} />
+              <AvailabilitySettingsForm
+                settings={settings}
+                isSaving={isSavingRules}
+                onSave={handleSaveRules}
+              />
             )}
           </section>
-          </div>
-        </main>
-      </div>
+        )
+      case 'blocks':
+        return (
+          <section className="glass rounded-2xl p-6">
+            <BlocksEditor slug={activeSlug} />
+          </section>
+        )
+      case 'hosts':
+        return (
+          <section className="glass rounded-2xl p-6">
+            <HostsEditor />
+          </section>
+        )
+    }
+  }
+
+  const heading = SECTION_HEADING[section]
+
+  if (isDesktop) {
+    return (
+      <AppShell>
+        <div className="flex min-h-screen">
+          <DashboardSidebar bookingCount={upcomingCount} />
+          <main className="flex min-w-0 flex-1 flex-col gap-6 p-10">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h1 className="font-serif text-[28px] font-semibold leading-tight">
+                Панель организатора
+              </h1>
+              <HostSelect />
+            </div>
+            <div>
+              <h2 className="font-serif text-[24px] font-semibold leading-tight">{heading.title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{heading.subtitle}</p>
+            </div>
+            {renderSection()}
+          </main>
+        </div>
+      </AppShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell>
       <AppHeader linkTo={`/book/${activeSlug}`} linkLabel="Бронирование" variant="mobile" />
       <main className="mx-auto w-full max-w-md px-4 py-4">
         <div className="flex flex-col gap-3">
-          <h2 className="font-serif text-[28px] font-semibold leading-tight">
-            Панель организатора
-          </h2>
+          <h2 className="font-serif text-[28px] font-semibold leading-tight">Панель организатора</h2>
           <HostSelect />
         </div>
 
-        <div role="tablist" aria-label="Разделы панели" className="mt-4 grid grid-cols-5 gap-1 rounded-xl bg-secondary p-0.5">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === 'bookings'}
-            onClick={() => setMobileTab('bookings')}
-            className={cn(
-              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              mobileTab === 'bookings'
-                ? 'bg-segment-active font-semibold shadow-sm'
-                : 'text-muted-foreground',
-            )}
-          >
-            Встречи · {upcomingCount}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === 'event-types'}
-            onClick={() => setMobileTab('event-types')}
-            className={cn(
-              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              mobileTab === 'event-types'
-                ? 'bg-segment-active font-semibold shadow-sm'
-                : 'text-muted-foreground',
-            )}
-          >
-            Типы
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === 'availability'}
-            onClick={() => setMobileTab('availability')}
-            className={cn(
-              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              mobileTab === 'availability'
-                ? 'bg-segment-active font-semibold shadow-sm'
-                : 'text-muted-foreground',
-            )}
-          >
-            Доступность
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === 'blocks'}
-            onClick={() => setMobileTab('blocks')}
-            className={cn(
-              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              mobileTab === 'blocks'
-                ? 'bg-segment-active font-semibold shadow-sm'
-                : 'text-muted-foreground',
-            )}
-          >
-            Блокировки
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mobileTab === 'hosts'}
-            onClick={() => setMobileTab('hosts')}
-            className={cn(
-              'h-11 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              mobileTab === 'hosts'
-                ? 'bg-segment-active font-semibold shadow-sm'
-                : 'text-muted-foreground',
-            )}
-          >
-            Хосты
-          </button>
+        <div
+          role="tablist"
+          aria-label="Разделы панели"
+          className="mt-4 flex gap-1 overflow-x-auto rounded-xl bg-secondary p-0.5"
+        >
+          {(
+            [
+              ['overview', 'Обзор'],
+              ['bookings', 'Встречи'],
+              ['event-types', 'Типы'],
+              ['availability', 'Доступность'],
+              ['blocks', 'Блокировки'],
+              ['hosts', 'Хосты'],
+            ] as [DashboardSection, string][]
+          ).map(([value, label]) => (
+            <Link
+              key={value}
+              to={value === 'overview' ? '/dashboard' : `/admin/${value}`}
+              role="tab"
+              aria-selected={section === value}
+              className={cn(
+                'flex h-11 shrink-0 items-center rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                section === value
+                  ? 'bg-segment-active font-semibold shadow-sm'
+                  : 'text-muted-foreground',
+              )}
+            >
+              {label}
+              {value === 'bookings' && ` · ${upcomingCount}`}
+            </Link>
+          ))}
         </div>
 
-        {mobileTab === 'bookings' && (
-          <div className="mt-4 flex flex-col gap-4">
-            <Input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Поиск по имени и email"
-              aria-label="Поиск по имени и email"
-              className="h-11"
-            />
-            <BookingFilter value={filter} onChange={setFilter} />
-            {isLoadingBookings && <p>Загрузка броней…</p>}
-            {bookingsError && <p className="text-destructive">{bookingsError}</p>}
-            {!isLoadingBookings && !bookingsError && (
-              <BookingsList
-                bookings={filteredBookings}
-                onCancel={handleCancel}
-                showCancel={filter === 'upcoming'}
-              />
-            )}
-          </div>
-        )}
-
-        {mobileTab === 'event-types' && (
-          <section className="mt-4 rounded-[18px] border bg-card p-5">
-            <EventTypesEditor slug={activeSlug} />
-          </section>
-        )}
-
-        {mobileTab === 'availability' && (
-          <div className="mt-4 rounded-[18px] border bg-card p-5">
-            {rulesError && <p className="text-destructive">{rulesError}</p>}
-            {!rulesError && !settings && <p>Загрузка настроек…</p>}
-            {settings && (
-              <AvailabilitySettingsForm settings={settings} isSaving={isSavingRules} onSave={handleSaveRules} />
-            )}
-          </div>
-        )}
-
-        {mobileTab === 'blocks' && (
-          <section className="mt-4 rounded-[18px] border bg-card p-5">
-            <BlocksEditor slug={activeSlug} />
-          </section>
-        )}
-
-        {mobileTab === 'hosts' && (
-          <section className="mt-4 rounded-[18px] border bg-card p-5">
-            <HostsEditor />
-          </section>
-        )}
+        <div className="mt-4">{renderSection()}</div>
       </main>
-    </div>
+    </AppShell>
   )
 }

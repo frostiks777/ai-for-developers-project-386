@@ -317,8 +317,11 @@
     - **Этап 0** (`6e7e54d`): пакет в `docs/design/v2/`, ADR-0022…0024 в `docs/adr/` (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
     - **Этап 1** (`e3328f5`, `335c8e1`): `fix(api): require admin auth for bookings list and redirect /events` + `feat(web): move upcoming events into organizer panel` ([ADR-0022](docs/adr/0022-private-bookings-list.md)); `GET /api/v1/hosts/:slug/bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, `events-page` и вкладка удалены, ADR-0017 п.6 помечен заменённым.
     - **Этап 2** (`2f4e6de`): `fix(web): correct weekday labels and show cancel time in guest zone` — `formatWeekdayShort` (TDD: падающий тест на 2026-09-28 → Пн), `formatZoneShort`/`formatZoneOffsetLabel` (словарь предложного падежа), `date-strip` и `cancel-page` обновлены.
-    - Проверки: lint 0, typecheck чисто, **236/236 тестов**, build ✓, e2e 2/2.
-    - Осталось: этапы 3–13 (токены/фон/стекло, «Дни»/«Неделя», мастер, форма, успех, 409, страница управления, панель, пояс правил, лендинг/«Мои встречи», документация).
+    - **Этапы 3–12** (`e023cc4`, `4c6ffd5`, `47f2deb`, `d69d90a`, `dcb5d52`, `eec5a16`, `7189747`, `e7da573`, `92074b4`, текущий): токены/фон/стекло/шапка; десктоп «Дни»; «Неделя»; мобильный мастер; экран успеха; 409 + подсказки; страница управления встречей; панель-разделы + «Обзор»; пояс правил доступности ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)); лендинг (имя без дубля, CTA `bg-highlight`, блок «Форматы встречи» `/book/:slug?type=…`) и «Мои встречи» (`glass`).
+    - **Этап 13** (текущий): ADR-0022…0024 → **Accepted** (2026-09-28), ADR-0007 дополнен ADR-0023, `docs/adr/README.md` обновлён; `docs/design/README.md` — v2 как текущий дизайн, v1 как история; «Отклонения» в `docs/design/v2/README.md`; `docs/todo.md`/`MEMORY.md` синхронизированы. Визуальная приёмка со `screenshots/` — за человеком.
+    - **Фиксы по ходу** (issues #52, #53, коммиты `ac2e9cc`, `ae1543a`): «Неделя глазами гостя» показывает встречи (`AvailabilityPreview` принимает `slots`, `bg-primary`, `data-state=meeting`; `weekdayAndMinuteInZone`); `dev-all.mjs` ждёт `/health` API до старта Vite (гонка ECONNREFUSED).
+    - Проверки: lint 0, typecheck чисто, **266/266 тестов** (47 файлов), build ✓.
+    - Осталось: визуальная сверка со `screenshots/` (человек) и мерж ветки `feat/redesign-v2-mint` в `main`.
 
 ## Что осталось (следующие шаги)
 
@@ -363,7 +366,7 @@
 | Причина отмены | `bookings.cancellationReason` + модалка на `/cancel/:token` | ТЗ §2.1; `POST /api/v1/bookings/:id/cancel` принимает `{reason}` |
 | Процессные скиллы (локальные) | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
 | Процессные скиллы (плагин) | [obra/superpowers](https://github.com/obra/superpowers) через `opencode.jsonc` → `plugins` (V2 git-spec) | Дополнительные 14 скилов: `brainstorming`, `systematic-debugging`, `test-driven-development`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `using-git-worktrees`, `verification-before-completion`, `using-superpowers`, `diagnosing-superpowers`. Приоритет V2: проектные → персональные → superpowers (локальные `ponytail` и др. не страдают). |
-| MCP для UI | [`@shadcn/ui/mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Доступ к каталогу компонентов через `components.json` |
+| MCP для UI | [`shadcn mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Пакет `shadcn` (не `@shadcn/ui/mcp`); доступ к каталогу компонентов через `components.json` |
 | Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP (`docs/ci_cd.md`) не используется |
 | Фронт в проде | `@fastify/static` раздаёт `dist/` из Fastify | Один контейнер, same-origin `/api` без CORS |
 | Порт в проде | `process.env.PORT` (fallback 3000) | Требование Render; хост `0.0.0.0` |

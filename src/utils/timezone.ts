@@ -164,3 +164,46 @@ export function formatZoneShort(timeZone: string): string {
 
   return `по ${label} (${formatZoneOffsetLabel(timeZone)})`
 }
+
+// Час начала слота в заданном поясе (0–23). Для группировки «Утром / Днём / Вечером».
+export function hourInZone(iso: string, timeZone: string): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      hour12: false,
+    }).format(new Date(iso)),
+  )
+}
+
+const WEEKDAY_BY_SHORT: Record<string, number> = {
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+  Sun: 7,
+}
+
+// День недели (1=Пн…7=Вс) и минута от начала суток в заданном поясе.
+export function weekdayAndMinuteInZone(
+  iso: string,
+  timeZone: string,
+): { weekday: number; minute: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(iso))
+
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? ''
+
+  return {
+    weekday: WEEKDAY_BY_SHORT[value('weekday')] ?? 1,
+    minute: Number(value('hour')) * 60 + Number(value('minute')),
+  }
+}
