@@ -15,3 +15,19 @@ export function parseDateKey(key: string): Date {
 export function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
+
+export function addDays(dateKey: string, days: number): string {
+  const date = parseDateKey(dateKey)
+  date.setDate(date.getDate() + days)
+
+  return toDateKey(date)
+}
+
+// Понедельник недели, к которой относится дата
+export function startOfWeek(dateKey: string): string {
+  const date = parseDateKey(dateKey)
+  const offset = (date.getDay() + 6) % 7
+  date.setDate(date.getDate() - offset)
+
+  return toDateKey(date)
+}
