@@ -1,8 +1,10 @@
 # ADR 0024: Слоты генерируются в поясе организатора
 
+> ⚠️ **Черновик, заморожен 2026-09-25.** Каноническая версия — [`docs/adr/0024-slots-in-host-timezone.md`](../../adr/0024-slots-in-host-timezone.md), статус **Accepted** (2026-09-28). Не править здесь: при расхождении с каноном правьте `docs/adr/`.
+
 ## Status
 
-Proposed — 2026-09-25.
+Proposed — 2026-09-25 (черновик; принят в `docs/adr/0024-slots-in-host-timezone.md` 2026-09-28).
 
 ## Context
 

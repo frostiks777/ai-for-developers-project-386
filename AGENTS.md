@@ -3,69 +3,97 @@
 ## Project
 Hexlet "AI for Developers" course project: **Календарь звонков** (Call Calendar) — a call booking service.
 - Spec: https://files.hexlet.app/a/2ipc5m
-- Repo has skeleton: backend (Fastify + SQLite), frontend (React + Vite), docs.
+- Repo has skeleton: backend (Fastify + PostgreSQL), frontend (React + Vite), docs.
 
 ## Critical constraints
 - **DO NOT edit or delete** `.github/workflows/hexlet-check.yml` or the repo name — they drive automated Hexlet tests on every push.
 
 ## Stack
-- Runtime: Node.js
+- Runtime: Node.js 22/24 (CI-матрица), локально — 26
 - Language: TypeScript (strict mode)
 - Bundler: Vite 6
 - UI: shadcn/ui + Tailwind CSS 3.4
 - API: Fastify 5 (порт 3000, vite proxy `/api`)
-- БД: SQLite + Drizzle ORM 0.45
+- БД: PostgreSQL (Neon в проде) + Drizzle ORM 0.45 (`pg`); без `DATABASE_URL` — PGlite в памяти (тесты/локальный dev). [ADR-0013](docs/adr/0013-postgres-migration.md)
+- Миграции: идемпотентный `server/db/migrate.ts`, выполняется при старте сервера (не drizzle-kit)
 - Валидация: zod 4 (схемы-зеркала: `server/validation.ts` ↔ `src/lib/validation.ts`)
-- Тесты: Vitest 4 + React Testing Library (API — `server/app.test.ts`, `app.inject()`, in-memory БД)
+- Контракт API: TypeSpec (`api/main.tsp`) → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); генерация — `npm run api:generate`
+- Тесты: Vitest 4 + React Testing Library (фронт), `app.inject()` на PGlite (API, ~12 серверных файлов), контракт-тесты (`server/contract.test.ts`, ajv по OpenAPI), Playwright e2e (`e2e/`, `npm run test:e2e` — job в CI)
 - Линтеры: ESLint 9 (flat config), Prettier
 
 ## Directory structure
 ├── src/
-│   ├── components/    # UI-компоненты (shadcn/ui)
-│   ├── pages/         # Маршруты/страницы
-│   ├── hooks/         # Кастомные хуки
-│   ├── utils/         # Утилиты
-│   ├── types/         # TypeScript-типы
-│   ├── api/           # API-клиент
-│   ├── lib/           # cn(), zod-схемы (validation.ts)
-│   ├── test/          # setup тестов
+│   ├── components/    # UI-компоненты (в т.ч. ui/ — shadcn)
+│   ├── pages/         # Маршруты/страницы (landing, home/book, my, confirmed, manage-booking, dashboard, 404)
+│   ├── hooks/         # Кастомные хуки (use-availability, use-booking, use-active-host, use-theme, use-time-format, use-media-query, use-booking-view)
+│   ├── utils/         # Утилиты (dates, timezone, calendar, phone, my-bookings, plural, guest-message)
+│   ├── types/         # UI-модели (booking, availability-settings)
+│   ├── api/           # sdk.ts (инстанс ApiV1Client + call/ApiError), mappers.ts, generated/ (не править)
+│   ├── config/        # host.ts (брендинг)
+│   ├── lib/           # cn(), zod-схемы (validation.ts), theme-context
+│   ├── test/          # setup тестов + http-хелпер
+│   ├── App.tsx        # Роуты
 │   └── main.tsx       # Точка входа
 ├── server/
 │   ├── index.ts       # Точка входа: buildApp() + listen
-│   ├── app.ts         # Фабрика Fastify: /health, /api/*, статика dist/
+│   ├── app.ts         # Фабрика Fastify: /health, /api/*, /api/v1/*, Basic-auth гейт, статика dist/
+│   ├── hosts.ts       # Хосты: findHost (slug или UUID), дефолтный хост
+│   ├── bookings-v1.ts # Логика броней v1 (слоты, статус, гости, идемпотентность)
+│   ├── event-types.ts # Типы встреч CRUD
+│   ├── time-blocks.ts # Блокировки времени
+│   ├── availability.ts / availability-settings.ts / rules.ts
+│   ├── env.ts         # Валидация env (zod)
 │   ├── validation.ts  # zod-схема API (зеркало src/lib/validation.ts)
 │   ├── types.ts       # Типы API
-│   └── db/            # Drizzle schema + клиент (DATABASE_PATH)
+│   ├── generated/     # Серверные типы из OpenAPI (не править)
+│   ├── db/            # schema.ts (pg-core), index.ts (pg/PGlite по DATABASE_URL), migrate.ts (идемпотентные миграции)
+│   └── *.test.ts      # Интеграционные тесты через app.inject()
+├── api/
+│   ├── main.tsp       # TypeSpec-контракт (источник истины для API v1)
+│   └── tspconfig.yaml
+├── e2e/               # Playwright: сквозной сценарий гостя + конфликт слотов
+├── scripts/           # dev-all.mjs, api-generate.mjs, demo.sh, notify.ps1
 ├── docs/              # Документация проекта
 │   ├── architecture.md
 │   ├── conventions.md
 │   ├── agent-principles.md
+│   ├── spec.md         # Утверждённая спека (снимок Шага 2 курса)
+│   ├── course-steps.md # Шаги курса и критерии приёмки
 │   ├── model-usage.md
 │   ├── Структура проекта.md
 │   └── Каркас приложения.md
 ├── docs/adr/          # Architecture Decision Records (ADR-0001, …)
 ├── docs/agents/       # Конфиг скиллов: issue-tracker / triage-labels / domain
+├── docs/design/       # Дизайн-пакеты: v1 (история) и v2 «Мята и солнце» (текущий)
+├── docs/openapi/      # Сгенерированный openapi.yaml
+├── docs/artefacts/    # Скриншоты и отчёты аудитов
 ├── public/            # Статика
 ├── .agents/
-│   └── skills/        # OpenCode SKILL.md (commit-push, interview, plan, ponytail, tdd, verify)
+│   └── skills/        # 83 SKILL.md: локальные процессные + upstream-набор (в .gitignore не попадают)
 ├── MEMORY.md          # Долгосрочное состояние проекта между сессиями
 ├── skills-lock.json   # Манифест установленных скиллов (mattpocock/skills)
 ├── opencode.jsonc     # Конфигурация opencode (модели, MCP, субагенты)
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
-├── drizzle.config.ts
+├── playwright.config.ts
+├── drizzle.config.ts  # Только для drizzle-kit (реальные миграции — server/db/migrate.ts)
+├── CONTEXT.md         # Словарь проекта (единый доменный контекст)
 └── AGENTS.md
 
 ## Commands
 - `npm run dev` — запуск dev-сервера (Vite, :5173)
-- `npm run server:dev` — запуск бэкенда (Fastify, :3000)
-- `npm run build` — продакшн-сборка
+- `npm run server:dev` — запуск бэкенда (Fastify, :3000, tsx watch)
+- `npm run dev:all` — оба процесса сразу (`scripts/dev-all.mjs`)
+- `npm run start` — продакшн-сервер: Fastify + раздача `dist/`
+- `npm run build` — продакшн-сборка (`tsc --noEmit` + `vite build`)
+- `npm run preview` — предпросмотр собранного фронтенда (Vite)
 - `npm run lint` — проверка ESLint
 - `npm run typecheck` — проверка типов (tsc --noEmit)
-- `npm test` — запуск тестов (Vitest)
-- `npm run db:generate` — генерация миграций Drizzle
-- `npm run db:push` — push схемы в БД
+- `npm test` — запуск тестов (Vitest: фронт + API + контракт)
+- `npm run test:e2e` — Playwright против собранного приложения (отдельный гейт, но входит в CI job `e2e`; перед первым прогоном — `npx playwright install chromium`)
+- `npm run api:generate` — регенерация OpenAPI + SDK + серверных типов из `api/main.tsp`
+- `npm run db:generate` / `npm run db:push` — drizzle-kit (в проде не используются: миграции идемпотентные, `server/db/migrate.ts`, при старте)
 
 ## Conventions
 - Язык проекта: русский (README, комментарии — по необходимости)
@@ -101,10 +129,13 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - `model-usage.md` — правила использования бесплатных моделей для субагентов
 - `code_artifact.md` — ТЗ и логика реализации (спека Hexlet)
 - `todo.md` — текущий roadmap и расхождения со спекой
-- `ci_cd.md` — руководство по CI/CD-пайплайну в Google Cloud Run
-- `ci_cd_render.md` — руководство по бесплатному деплою на Render.com
+- `spec.md` — утверждённая спецификация (снимок Шага 2; реализация ушла вперёд, см. ADR)
+- `course-steps.md` — шаги курса и критерии приёмки
+- `ci_cd.md` — план деплоя на Google Cloud Run (**не используется**, см. `ci_cd_render.md`)
+- `ci_cd_render.md` — руководство по бесплатному деплою на Render.com + Neon
 - `adr/` — Architecture Decision Records (см. `docs/adr/README.md`)
-- `mcp.md` — подключённые MCP-серверы и правила работы с ними (если создаётся в § D.2 плана)
+- `mcp.md` — подключённые MCP-серверы и правила работы с ними
+- `design/v2/` — текущий дизайн-пакет («Мята и солнце») и план внедрения
 
 При внесении изменений — сверяться с документацией в `docs/`. При принятии архитектурного решения — добавить ADR (шаблон в `docs/adr/template.md`).
 
@@ -124,23 +155,25 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 
 ### Triage labels
 
-Используются пять канонических меток по умолчанию (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). См. `docs/agents/triage-labels.md`.
+Канонические метки по умолчанию: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Фактически в репозитории используются также `bug` (дефекты) и `enhancement` (улучшения). См. `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Один контекст (single-context): `CONTEXT.md` + `docs/adr/` в корне репозитория. См. `docs/agents/domain.md`.
+Один контекст (single-context): `CONTEXT.md` в корне репозитория + `docs/adr/`. См. `docs/agents/domain.md`.
 
 ## Skills (OpenCode)
 
 OpenCode-скилы — повторно используемые workflow, которые агент подгружает через `skill` tool по триггер-фразам в `description`.
 
 - Расположение: `.agents/skills/<name>/SKILL.md`. Одна директория на скил + YAML frontmatter (`name`, `description` обязательны, `description` ≤ 1024 символов).
-- Текущие скилы:
+- Всего 83 директории: ~11 проектных процессных + upstream-набор (mattpocock/skills, tech-leads-club, tlc-*, архитектурные и т.д.). Полный список — `ls .agents/skills/`, манифест — `skills-lock.json`.
+- Проектные скилы:
+  - `apply-design` — внедрение редизайна v1 (история, этапы 1–7).
   - `apply-design-v2` — внедрение редизайна v2 («Мята и солнце») по `docs/design/v2/implementation-plan.md` (этапы 0–13).
   - `commit-push` — workflow для коммита и пуша (lint + typecheck + тесты → Conventional Commits → push).
   - `interview` — задаёт 3–7 уточняющих вопросов до начала работы над нетривиальной задачей.
   - `plan` — превращает задачу в атомарный пронумерованный чек-лист с проверками.
-  - `ponytail` — принудительная проверка «можно ли решить без нового кода/зависимости/абстракции». *(Файл есть в `.agents/skills/`; в текущей версии opencode id не активируется через `skill` tool — содержимое всё равно служит справочником.)*
+  - `ponytail` — принудительная проверка «можно ли решить без нового кода/зависимости/абстракции».
   - `tdd` — сначала failing-тест, потом минимум кода для зелёного, потом рефакторинг.
   - `telegram-bridge` — личный Telegram-мост согласований (`telegram-bot/`, в `.gitignore`): отправка через `notify.mjs`, решения из `decisions.jsonl`.
   - `verify` — финальный прогон `lint`/`typecheck`/`test`/`build` перед отметкой задачи как «готово».
@@ -148,6 +181,7 @@ OpenCode-скилы — повторно используемые workflow, ко
 - В этом проекте используем **только** `.agents/skills/`. `.opencode/skills/` и `.claude/skills/` больше не применять.
 - Порядок применения процессных скиллов: `interview` → `plan` → (`ponytail` по ситуации) → `tdd` по ситуации → `verify` → `commit-push`.
 - Подробнее — https://opencode.ai/docs/skills/.
+
 
 ## Agent behavior
 - **Задачи и баги — только через GitHub Issue (обязательно).** Любая новая задача, фича или баг до начала работы оформляется Issue (`gh issue create`, методология — [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)); в коммит-сообщении указывается номер (`(#NN)`), после пуша Issue закрывается. Баги — с меткой `bug`. Единственное исключение — однострочные механические правки без изменения поведения.

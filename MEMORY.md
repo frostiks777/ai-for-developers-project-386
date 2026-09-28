@@ -1,15 +1,20 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-25 (per-host скаляры закрыты — [ADR-0020](docs/adr/0020-per-host-availability-rules.md), #41; UI управления хостами и активный организатор на всём фронте — [ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md), #42. Открытого бэклога нет)
+> Дата последнего обновления: 2026-09-28 (синхронизация документации с кодом — [#72](https://github.com/frostiks777/ai-for-developers-project-386/issues/72); редизайн v2 «Мята и солнце» принят — [ADR-0022](docs/adr/0022-private-bookings-list.md), [ADR-0023](docs/adr/0023-redesign-v2-mint.md), [ADR-0024](docs/adr/0024-slots-in-host-timezone.md)).
+> Все шаги курса закрыты. Открытые задачи: [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49) (bug, P1 — мобильная вёрстка), [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) (CAPTCHA), мелкий пункт SSL-режима `pg` (см. `docs/todo.md`, «Актуальный план»).
+
+> **Актуальный стек:** PostgreSQL (Neon) + Drizzle ORM (`pg`), PGlite в тестах и локальном dev без `DATABASE_URL`; миграции — идемпотентный `server/db/migrate.ts` при старте сервера; контракт — TypeSpec `api/main.tsp` → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); фронт ходит в API через `src/api/sdk.ts` (ручной `src/api/client.ts` удалён на Шаге 3, T7).
+> Упоминания SQLite, `DATABASE_PATH`, `better-sqlite3`, `server/data/app.db` ниже — **история** до [ADR-0013](docs/adr/0013-postgres-migration.md) (2026-09-24).
 
 ## Текущее состояние
 
-Проект находится на шаге 3 курса Hexlet "ИИ для разработчиков" — **Реализация тикетов**.
-Шаг 2 (проектирование бронирования) завершён: карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 закрыта, утверждена спецификация `docs/spec.md`, контракт `api/main.tsp`, конвейер `npm run api:generate` (OpenAPI + клиентский SDK + серверные типы).
-Создан и установлен скелет: бэкенд (Fastify + Drizzle ORM + SQLite), фронтенд (React 18 + TypeScript + Vite + shadcn/ui), документация, конфиги.
-Дополнительно реализованы: обязательный email в брони (zod), фильтр прошедших слотов, интеграционные тесты API на in-memory БД, `GET /api/bookings` (панель организатора), README с примерами; тесты на Vitest 4, CI на Node 22/24.
+**Все 4 шага курса закрыты** (2026-09-24), включая Шаг 3 (реализация тикетов T1–T9, #19–#27). Шаг 2 (проектирование бронирования): карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 закрыта, утверждена спецификация `docs/spec.md`, контракт `api/main.tsp`, конвейер `npm run api:generate` (OpenAPI + клиентский SDK + серверные типы).
+Скелет: бэкенд (Fastify + Drizzle ORM + PostgreSQL/Neon, PGlite в тестах), фронтенд (React 18 + TypeScript + Vite + shadcn/ui), документация, конфиги.
+Сверх курса реализовано: мульти-хост, Basic-auth панели, блокировки времени, раздельные буферы, «Мои встречи» на устройстве, приватный список броней, редизайн v2 «Мята и солнце», контракт-тесты + e2e Playwright (в т.ч. в CI).
 
-### Файловая структура (создана)
+### Файловая структура (снимок на 2026-09-24; актуальная — в `AGENTS.md`)
+
+> Блок ниже отражает состояние скелета **до** миграции на PostgreSQL и до редизайна v2. Актуальный состав каталогов — раздел «Directory structure» в [`AGENTS.md`](AGENTS.md).
 
 ```
 ├── package.json              ✅ зависимости + скрипты
@@ -108,26 +113,44 @@
 ```json
 {
   "react": "^18.3.1",
+  "react-dom": "^18.3.1",
   "vite": "^6.0.7",
   "vitest": "^4.1.11",
   "typescript": "~5.7.2",
   "fastify": "^5.2.0",
-  "better-sqlite3": "^13.0.3",
+  "pg": "^8.23.0",
+  "@electric-sql/pglite": "^0.5.8",
   "drizzle-orm": "^0.45.3",
   "drizzle-kit": "^0.31.11",
+  "@fastify/static": "^8.3.0",
+  "tsx": "^4.23.15",
   "tailwindcss": "^3.4.17",
-  "react-router-dom": "^7",
+  "react-router-dom": "^7.18.4",
   "zod": "^4.6.5",
-  "@typespec/compiler": "1.16.0",
-  "@typespec/http": "1.16.0",
-  "@typespec/openapi3": "1.16.0",
+  "sonner": "^2.0.8",
+  "@typespec/compiler": "^1.16.0",
+  "@typespec/http": "^1.16.0",
+  "@typespec/openapi3": "^1.16.0",
   "@typespec/http-client-js": "0.16.2",
-  "@typespec/ts-http-runtime": "0.2.1",
-  "openapi-typescript": "^7.13.0"
+  "@typespec/ts-http-runtime": "^0.2.1",
+  "openapi-typescript": "^7.13.0",
+  "@playwright/test": "^1.63.0",
+  "ajv": "^8.20.0"
 }
 ```
 
 ## Результаты проверок
+
+> Актуальный прогон — 2026-09-28. Блок ниже в комментарии `// 2026-09-25 (эпоха SQLite)` — история.
+
+```
+✅ typecheck: tsc --noEmit — чисто
+✅ lint: 0 ошибок, 0 warnings
+✅ test: 272/272 passed (47 файлов: фронтенд RTL + server/*), PGlite в памяти
+✅ e2e: playwright — 2/2 (сквозной сценарий гостя + конфликт слотов), собранное приложение на :3100
+```
+
+Исторический прогон 2026-09-25 (до миграции на PostgreSQL, см. [ADR-0013](docs/adr/0013-postgres-migration.md)):
 
 ```
 ✅ typecheck: tsc --noEmit — чисто
@@ -172,11 +195,7 @@
       - `AGENTS.md`: добавлен `opencode/big-pickle` в список бесплатных ID.
       - `opencode.jsonc`, `docs/ai-tuning-plan.md`: без изменений (sync #1 уже закрыл `mimo-v2.5-free → v2.6`).
       - Сводная статистика: **133 модели всего, 17 бесплатных, 116 платных**.
-15. ✅ Подключение плагина [obra/superpowers](https://github.com/obra/superpowers) в `opencode.jsonc`:
-    - Добавлен ключ `plugins: ["superpowers@git+https://github.com/obra/superpowers.git"]` (V2, требует opencode ≥ 2.0.4).
-    - Регистрирует 14 дополнительных процессных скилов через OpenCode plugin manager (см. таблицу ключевых решений).
-    - `verification-before-completion` + `using-superpowers` теперь доступны в этой же сессии.
-    - Локальные 6 скилов в `.agents/skills/` остаются — приоритет V2: проектные → персональные → плагины, ID не пересекаются.
+15. ⚠️ **Плагин superpowers — в репозитории НЕ подключён.** Запись 2026-09-25 утверждала, что в `opencode.jsonc` добавлен ключ `plugins: ["superpowers@git+…"]`; фактически в конфиге ключ **`plugin`** со значением `["opencode-notify"]` (уведомления opencode), а `obra/superpowers` отсутствует. Процессные скиллы работают из `.agents/skills/` — этого достаточно. Если superpowers понадобится: добавить в `plugin` (синтаксис плагинов opencode 1.18.x — `plugin`, не `plugins`) и проверить `skill`-лист.
 16. ✅ Обязательный email ([ADR-0002](docs/adr/0002-zod-api-validation.md)):
     - zod 4: `server/validation.ts` + зеркало `src/lib/validation.ts`
     - форма: поле Email, inline-ошибка «Неверный email», submit заблокирован
@@ -215,7 +234,7 @@
 37. ✅ `422` вместо `400` на невалидное тело (спека): zod-ошибки в `POST /api/bookings`, `POST /api/bookings/cancel`, `PUT /api/availability` → `422 Unprocessable Entity`; бизнес-ошибки (прошедший слот, `minNotice`, некорректный `:id`) остаются `400`. Тесты и доки обновлены.
 38. ✅ Визуальный редизайн, **Этап 1** (`3c97980`): токены в `src/index.css`, шрифты (`@fontsource/golos-text`, `@fontsource/lora`), `ThemeProvider`/`useTheme`/`ThemeToggle`, `useMediaQuery`, анти-флеш-скрипт в `index.html`, стабы `matchMedia`/`localStorage` в `src/test/setup.ts`. [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) (Proposed).
 39. ✅ Визуальный редизайн, **Этап 2** (`14df808`): Desktop-раскладка страницы бронирования — `AppHeader`, `HostInfo` (слот-карточка хоста), `SlotGrid`, `MonthCalendar`/`TimeZoneSelect` обновлены, `src/config/host.ts`, `src/utils/plural.ts`. `minNoticeMin` поднят из `HostInfo` в `HomePage` (порядок `fetch` важен для контрактного `App.test`). 91/91 тестов зелёные.
-40. ✅ Скиллы и агентная среда (шаг курса, `6aa21ce`): установлен набор [mattpocock/skills](https://github.com/mattpocock/skills) в `.agents/skills/` (`npx skills@latest add mattpocock/skills --agent '*' -y`, 38 скилов) + `skills-lock.json`; настроено через `setup-matt-pocock-skills`: трекер — GitHub Issues, метки — дефолтные, домен — single-context. Записано в `docs/agents/{issue-tracker,triage-labels,domain}.md`, в `AGENTS.md` добавлен раздел `## Agent skills`. Лишние `.claude/`/`agent/` удалены (конвенция `.agents/skills/`).
+40. ✅ Скиллы и агентная среда (шаг курса, `6aa21ce`): установлен набор [mattpocock/skills](https://github.com/mattpocock/skills) в `.agents/skills/` (`npx skills@latest add mattpocock/skills --agent '*' -y`; сейчас в `.agents/skills/` **83 директории**: ~11 проектных + upstream-набор, манифест — `skills-lock.json`) + настроено через `setup-matt-pocock-skills`: трекер — GitHub Issues, метки — дефолтные, домен — single-context. Записано в `docs/agents/{issue-tracker,triage-labels,domain}.md`, в `AGENTS.md` добавлен раздел `## Agent skills`. Лишние `.claude/`/`agent/` удалены (конвенция `.agents/skills/`).
 41. ✅ Хосты + API v1 (`server/hosts.ts`, аддитивно): таблица `hosts` (UUID PK, unique slug), сид дефолтного хоста (`slug=default`), `GET /api/v1/hosts/:slug/settings` и `GET /api/v1/hosts/:slug/slots?date=&timezone=` (`404` unknown slug, `400` дата/пояс); `selectFutureSlots()` переиспользован; `/api/*` без изменений. [ADR-0009](docs/adr/0009-hosts-and-api-v1.md). 7 API-тестов. Итог: 98/98 тестов.
 42. ✅ Визуальный редизайн, **Этап 3** (`b163d03`): мобильная раскладка D — `src/components/date-strip.tsx` (лента доступных дат, `aria-pressed`, прокрутка к выбранной), `src/components/booking-bar.tsx` (sticky-панель снизу с выбранным временем), `HomePage` при `useMediaQuery('(min-width: 1024px)') === false` (`AppHeader variant="mobile"`, кнопка «Весь месяц» с `aria-expanded`, `SlotGrid columns={3}`). Тесты: `date-strip.test.tsx` + тест страницы с `matchMedia → false`.
 43. ✅ Визуальный редизайн, фикс (`5a4e95e`): `ThemeToggle` добавлен в панель организатора до этапа 6 (переключатель темы доступен на обеих страницах).
@@ -332,8 +351,25 @@
     - #65: мастер сохраняет поля при смене даты (шаги смонтированы, неактивные скрыты атрибутом `hidden`).
     - #66: поля формы «Хосты» на всю ширину на мобильных (`lg:grid-cols-2` вместо `sm:`).
     - Проверки: lint 0, typecheck чисто, **271/271 тестов** (47 файлов), build ✓, CI/e2e — зелёные.
+72. ✅ **Синхронизация документации с кодом (2026-09-28)** — [#72](https://github.com/frostiks777/ai-for-developers-project-386/issues/72). Аудит ~55 расхождений (SQLite/`DATABASE_PATH`/`src/api/client`/легаси-API вместо v1) → правки:
+    - `AGENTS.md`: стек (PostgreSQL/Neon + PGlite, миграции `server/db/migrate.ts`, TypeSpec-контракт, ~12 серверных тест-файлов), «Directory structure» (реальные `src/`, `server/`, `api/`, `e2e/`, `scripts/`, `docs/*`), «Commands» (`dev:all`, `start`, `preview`, `test:e2e` — job в CI, `api:generate`), скиллы (83 директории, `apply-design`/`telegram-bridge`), метки `bug`/`enhancement`.
+    - `README.md`: роуты (`/my`, `/booking/:uuid/*`, `/admin/*`), таблица API — публичные и админские (Basic-auth) маршруты `/api/v1/*` + легаси, форматы ошибок (конверт v1 vs плоский legacy, `400` у legacy-reschedule), комментарий `max(500)`, слоты в поясе хоста, e2e в CI, деплой Neon + `ADMIN_PASSWORD`, `src/api/sdk.ts` вместо `client.ts`.
+    - `docs/architecture.md`: БД, слои фронта, `server/db/*`, полные роуты и тесты, поток данных и диаграмма (Neon/PGlite), команды.
+    - `docs/ci_cd_render.md` пересобран под Neon (Environment Group `DB`, `ADMIN_PASSWORD`, отсутствие `db:seed`); `docs/ci_cd.md` помечен DEPRECATED (GCP не используется).
+    - `docs/spec.md` помечен снимком Шага 2; §5 — фактические таблицы (PostgreSQL, `time_blocks`, `guests`/`consentAccepted`/`idempotencyKey`, раздельные буферы, `UNIQUE(hostId)`).
+    - `docs/todo.md`: S5 `/events` помечен отменённым ([ADR-0022](docs/adr/0022-private-bookings-list.md)), «Ключевые расхождения» — «закрыты», `23505` вместо `SQLITE_CONSTRAINT`, `max(500)`, PR #9/1.8.0 заменён актуальным релиз-процессом, «Актуальный план» перестроен (#72 → #49 → #46).
+    - `MEMORY.md`: шапка (курс закрыт, открытые #49/#46/SSL, актуальный стек), результаты проверок **272/272** (47 файлов) + исторический блок 230/230, версии зависимостей из `package.json` (`pg`/`pglite` вместо `better-sqlite3`), плагин superpowers помечен неподключённым (в `opencode.jsonc` ключ `plugin: ["opencode-notify"]`), «83 скила» вместо «38», устаревшие строки «Ключевых решений» помечены историей.
+    - `drizzle.config.ts`: `dialect: 'sqlite'` → `'postgresql'`, `dbCredentials.url` из `DATABASE_URL`.
+    - Ссылки: `docs/model-usage.md` (`../MEMORY.md`), `docs/agents/domain.md` (примеры ADR), `docs/agents/triage-labels.md` (`bug`/`enhancement`), `docs/agent-principles.md` (список скиллов), `docs/design/v2/adr/0022…0024` — черновики помечены «заморожен, канон в `docs/adr/`», ссылки на ADR-0017/0007 исправлены.
+    - Удалена мусорная директория `design/` в корне репозитория (108 файлов, дубли пакета v2 с висящими ссылками; содержимое восстановимо `git checkout HEAD -- design/` до коммита).
+    - Проверки: lint 0, typecheck чисто, **272/272 тестов** (47 файлов), build ✓.
 
 ## Что осталось (следующие шаги)
+
+- [ ] **#49 — мобильная вёрстка** (P1, bug): сверить чек-лист дефектов с текущим кодом после v2, починить остаток (горизонтальная прокрутка на 360 px), отметить пункты issue.
+- [ ] **#46 — CAPTCHA** (enhancement): выбор провайдера + ADR, серверная верификация токена и rate-limit по IP на `POST /api/v1/hosts/:slug/bookings`.
+- [ ] **SSL-режим `pg`** (мелкое): `sslmode=verify-full` в `.env.example`, убрать предупреждение драйвера.
+- [ ] **Визуальная приёмка v2** (человек): `docs/design/v2/screenshots/` vs реализация, отличия — в «Отклонения».
 
 - [x] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
 - [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным. CI + hexlet-check на `main` — success (коммит `807d4e0`).
@@ -349,23 +385,25 @@
 
 ## Ключевые решения
 
+> Таблица содержит историю решений. Строки, помеченные «(история)», описывают состояние до [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md)/[ADR-0013](docs/adr/0013-postgres-migration.md) и заменены более поздними решениями ниже.
+
 | Решение | Выбор | Причина |
 |---|---|---|
 | Бэкенд | Fastify 5 | Современный, быстрый, встроенная валидация |
 | ORM | Drizzle ORM | TypeScript-first, SQL-подобный, лёгкий |
-| БД | SQLite (better-sqlite3) | Нулевая конфигурация, in-app файл |
+| ~~БД (история)~~ | ~~SQLite (better-sqlite3)~~ → **заменено**: PostgreSQL (Neon) + PGlite | товарная БД в облаке, тот же диалект в тестах ([ADR-0013](docs/adr/0013-postgres-migration.md)) |
 | UI | shadcn/ui + Tailwind v3.4 | Хорошая поддержка coding-агентами |
 | Тесты | Vitest 4 + React Testing Library | Нативная интеграция с Vite 6; пул без tinypool — фикс `Channel closed` |
-| CI | GitHub Actions: lint + typecheck + test + build на Node 22 и 24 | Node 20 EOL (апрель 2026); vitest 4 требует Node ^20 \|\| ^22 \|\| >=24 |
+| CI | GitHub Actions: lint + typecheck + test + build + job `e2e` на Node 22 и 24 | Node 20 EOL (апрель 2026); vitest 4 требует Node ^20 \|\| ^22 \|\| >=24 |
 | `GET /api/bookings` | Плоский массив `BookingWithSlot`, сортировка по `startAt` | Потребитель — `/dashboard` (`BookingsTable`); контракт простой |
-| Защита от двойных броней | `UNIQUE(slotId)` на уровне SQLite + `409` из перехвата constraint | [ADR-0003](docs/adr/0003-unique-slot-booking.md); exclusion constraint спеки в SQLite недоступен |
-| Фильтр слотов по дате | Клиентский (группировка по локальной дате в `MonthCalendar`/HomePage) | `GET /api/slots?date=` требует TZ-семантики — отложен к TZ-шагу; слотов ≤ ~112 (14 дней) |
-| Генерация слотов | Правила-константы в `server/availability.ts`, материализация в `slots` при старте, правила в UTC | [ADR-0004](docs/adr/0004-slot-generation-rules.md); `hosts/availability_rules` — Low-этап |
-| Таймзоны | Хранение — UTC ISO; отображение и группировка по дням — на клиенте в выбранном поясе (`Intl`, без зависимостей) | Селектор в UI, browser TZ по умолчанию; серверные `?date=`/`timezone` не нужны, пока слотов ≤ ~112 |
-| Телефон опционален | nullable-колонка + пересборка таблицы при старте (SQLite не умеет DROP NOT NULL) | По спеке телефон необязателен; `ALTER TABLE … ADD COLUMN` недостаточно |
-| Панель организатора | `/dashboard` + `react-router-dom`: список броней, отмена, настройки доступности | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); без auth (учебный MVP) |
-| Правила доступности | Персистентная таблица `availability_rules` — одна строка `id=1`; `PUT` пересобирает свободные будущие слоты, занятые не трогает | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); `hosts`/`/api/v1` отложены |
-| Отмена брони | `DELETE /api/bookings/:id` удаляет строку → `isBooked` вычисляется join-ом, слот освобождается | Несовместимо с soft-delete из-за `UNIQUE(slotId)`; partial index отложен ([ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md)) |
+| Защита от двойных броней | Частичный уникальный индекс `UNIQUE(slotId) WHERE status != 'cancelled'` + `409` из перехвата `23505` | [ADR-0003](docs/adr/0003-unique-slot-booking.md), [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md) |
+| Фильтр слотов по дате | Клиентский (группировка по локальной дате в календаре) | Серверный `?date=` не нужен, пока слотов ≤ ~112 (14 дней) |
+| Генерация слотов | Правила-константы в `server/availability.ts`, материализация в `slots` при старте, **в поясе хоста** | [ADR-0004](docs/adr/0004-slot-generation-rules.md), [ADR-0024](docs/adr/0024-slots-in-host-timezone.md) |
+| Таймзоны | Хранение — UTC ISO; отображение и группировка по дням — на клиенте в выбранном поясе (`Intl`, без зависимостей) | Селектор в UI, browser TZ по умолчанию; слоты при этом считаются в часовом поясе хоста |
+| Телефон опционален | nullable-колонка | По спеке телефон необязателен |
+| Панель организатора (история) | `/dashboard` + `react-router-dom`: список броней, отмена, настройки доступности, **без auth** | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); позже закрыта Basic-auth ([ADR-0017](docs/adr/0017-dashboard-basic-auth.md)) |
+| Правила доступности (история) | Таблица `availability_rules` — одна строка `id=1` | [ADR-0005](docs/adr/0005-dashboard-availability-and-cancellation.md); позже одна строка на `hostId` ([ADR-0020](docs/adr/0020-per-host-availability-rules.md)) |
+| Отмена брони (история) | `DELETE /api/bookings/:id` удаляет строку | Несовместимо с soft-delete из-за `UNIQUE(slotId)`; в v1 отмена переводит `status` в `cancelled` ([ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md)) |
 | Отмена гостем | Токен `cancelToken` (UUID, `UNIQUE`) в ответе на создание + `POST /api/bookings/cancel`; ссылка `/cancel/:token` | [ADR-0006](docs/adr/0006-cancellation-by-token.md); capability-модель без auth |
 | Перенос гостем | `POST /api/bookings/reschedule` — `UPDATE bookings.slotId` по токену; старый слот свободен | [ADR-0007](docs/adr/0008-reschedule-by-token.md); переиспользует `UNIQUE(slotId)` и токен |
 | Порт бэкенда | 3000 | Vite proxy `/api` → `:3000` |
@@ -382,7 +420,7 @@
 | Порт в проде | `process.env.PORT` (fallback 3000) | Требование Render; хост `0.0.0.0` |
 | Валидация API | zod 4 (схема-зеркало: `server/validation.ts` ↔ `src/lib/validation.ts`) | См. [ADR-0002](docs/adr/0002-zod-api-validation.md); единые сообщения об ошибках фронт/бэк |
 | Архитектура сервера | Фабрика `buildApp()` в `server/app.ts`, `server/index.ts` — только listen | Тесты через `app.inject()` без реального порта |
-| БД в тестах | `DATABASE_PATH=:memory:` (`vite.config.ts` → `test.env`) | Изоляция тестов от `server/data/app.db` |
+| БД в тестах | `DATABASE_URL=''` (`vite.config.ts` → `test.env`) → PGlite в памяти | Изоляция тестов от боевой БД; тот же диалект, что в проде ([ADR-0013](docs/adr/0013-postgres-migration.md)) |
 | Upstream-скилы | Копия upstream-репо в `.agents/skills/<name>/`, имена = frontmatter `name:`, deep-рекурсия (`references/`, `scripts/`) | Доступны всем агентам в проекте (не только opencode); не зависят от локального кеша персональных скилов и плагинов |
 | Хосты + API v1 | Аддитивный слой: таблица `hosts` (UUID PK, unique slug), `/api/v1/hosts/:slug/settings|slots`; `/api/*` не тронут | [ADR-0009](docs/adr/0009-hosts-and-api-v1.md); основа мульти-хоста без ломающей миграции |
 | Скиллы Matt Pocock | Набор `mattpocock/skills` в `.agents/skills/` + `skills-lock.json`; конфиг трекера/меток/домена в `docs/agents/` | Требование шага курса: GitHub Issues, дефолтные метки, single-context (`CONTEXT.md` + `docs/adr/`) |
@@ -394,10 +432,10 @@
 | Модель данных v1 | Материализованные `slots` остаются; `event_types`; `bookings.eventTypeId` + `status` + `startAt`/`endAt`; `availability_ranges`; partial unique `UNIQUE(slotId) WHERE status != 'cancelled'`; миграции — `server/db/migrate.ts` | Отклонение от ТЗ §5 (нет `slots`) обосновано: SQLite без exclusion constraint ([ADR-0003](docs/adr/0003-unique-slot-booking.md), [ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md), [#12](https://github.com/frostiks777/ai-for-developers-project-386/issues/12)) |
 | Отмена брони (Шаг 2) | Смена `status` на `cancelled` вместо удаления строки; занятость считается только для `confirmed` | ТЗ требует `status` и историю ([ADR-0011](docs/adr/0011-event-types-status-and-availability-ranges.md)); в коде — переход на Шаге 3 |
 | Тестирование v1 | API (`app.inject` + in-memory) + RTL/jsdOM + e2e Playwright (`npm run test:e2e`, отдельный гейт); контракт-тесты — валидация ключевых ответов по OpenAPI; миграции на `:memory:` | Требование курса: сценарий и конфликт покрыты; правила на сервере ([#14](https://github.com/frostiks777/ai-for-developers-project-386/issues/14)) |
-| Контракт-тесты и e2e | `server/contract.test.ts` (`ajv` по `docs/openapi/openapi.yaml`); Playwright против собранного приложения (`PORT=3100`, `DATABASE_PATH=:memory:`), `npm run test:e2e` вне `npm test`/CI | [ADR-0012](docs/adr/0012-contract-tests-and-e2e.md); Design First — сервер приведён к контракту (Booking.timeZone, HostSettings, nullable) |
+| Контракт-тесты и e2e | `server/contract.test.ts` (`ajv` по `docs/openapi/openapi.yaml`); Playwright против собранного приложения (`PORT=3100`, PGlite), `npm run test:e2e` вне `npm test`, но отдельным job `e2e` в CI | [ADR-0012](docs/adr/0012-contract-tests-and-e2e.md); Design First — сервер приведён к контракту (Booking.timeZone, HostSettings, nullable) |
 | Модель времени и ошибок (T9) | Время — UTC ISO (`UtcDateTime`, `@format date-time`); ошибки — конверт `{ error: ApiError }`; `timeZone` — только для отображения UI | Сверка со спецификацией ([#27](https://github.com/frostiks777/ai-for-developers-project-386/issues/27)); контракт приведён к фактическим ответам вместо переписывания сервера под local-time |
 | Доступ к панели | HTTP Basic Auth на `/dashboard`, `/admin/*` и админские мутации API (`ADMIN_PASSWORD`, нет переменной → открыто); демо-пароль в README | [ADR-0017](docs/adr/0017-dashboard-basic-auth.md); наставнику нужен доступ, полноценные сессии/аккаунты избыточны для MVP; публичные чтения гостя не трогаем |
-| Мульти-хост | `slots`/`bookings` привязаны к `hostId`; `findHost` по slug или UUID; `GET/POST /api/v1/hosts` (Basic-auth); `/book/:uuid` | [ADR-0018](docs/adr/0018-multi-host-model.md); изоляция расписаний без ломки slug-флоу; скаляры расписания пока общие |
+| Мульти-хост | `slots`/`bookings` привязаны к `hostId`; `findHost` по slug или UUID; `GET/POST /api/v1/hosts` (POST — Basic-auth); `/book/:uuid` | [ADR-0018](docs/adr/0018-multi-host-model.md); изоляция расписаний без ломки slug-флоу; скаляры расписания per-host ([ADR-0020](docs/adr/0020-per-host-availability-rules.md)) |
 | Per-host скаляры расписания | `availability_rules` — одна строка на `hostId` (UNIQUE, украли `id`); `load/saveAvailabilityRules(hostId)`; миграция бэкфиллит дефолтный хост | [ADR-0020](docs/adr/0020-per-host-availability-rules.md); изоляция `minNotice`/горизонтов/буферов по организаторам |
 | Активный организатор | `HostProvider` + `useActiveHost`; `activeSlug` в `localStorage` (`call-calendar-active-host`), фолбэк — первый хост; весь фронт на активном хосте; `GET /api/v1/hosts` публичный, `POST` — Basic-auth | [ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md); UI управления хостами (селектор + секция «Организаторы» + `/admin/hosts`) |
 | Отмена без ссылки | «Мои встречи» на устройстве: бронь в `localStorage`, страница `/my` с отменой/переносом | [ADR-0019](docs/adr/0019-my-bookings-on-device.md); capability-токен не утекает, нет перечисления по email; ограничение — только тот же браузер |
@@ -405,6 +443,6 @@
 ## Окружение
 
 - **ОС**: Windows 10 (win32)
-- **Node.js**: v26.9.0
+- **Node.js**: v26.9.0 (CI-матрица — 22/24; v26 используется только локально)
 - **npm**: 11.19.1
-- **better-sqlite3@13** — пресборки для win32-x64 + Node 26 доступны
+- **Зависимости БД**: `pg` (чистый JS, без нативной сборки) и `@electric-sql/pglite` — нативных модулей в проекте больше нет, `better-sqlite3` из зависимостей удалён (2026-09-24, ADR-0013)

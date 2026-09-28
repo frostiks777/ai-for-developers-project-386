@@ -1,14 +1,16 @@
 # Спецификация приложения «Календарь звонков» (v1)
 
-> Источник истины по поведению. Термины — в [`CONTEXT.md`](../CONTEXT.md), архитектурные решения — в [`docs/adr/`](adr/), контракт — [`api/main.tsp`](../api/main.tsp), исходное ТЗ — [`docs/code_artifact.md`](code_artifact.md).
+> **Снимок Шага 2 курса (2026-09-24), заморожен.** Документ фиксирует согласованный на Шаге 2 объём v1. Реализация ушла вперёд: мульти-хост, Basic-auth панели, блокировки дат, раздельные буферы, PostgreSQL/Neon, согласие и гости, `/my` и редизайн v2 реализованы позже — см. `docs/adr/` и `docs/todo.md`. Расхождения ниже помечены как «на момент Шага 2».
+>
+> Источник истины по поведению. Термины — в [`CONTEXT.md`](../CONTEXT.md), архитектурные решения — в [`docs/adr/`](adr/), контракт — [`api/main.tsp`](../api/main.tsp) (он обновляется по мере изменений), исходное ТЗ — [`docs/code_artifact.md`](code_artifact.md).
 > Утверждено в тикет-карте #10 (тикеты #11, #12, #14, #15, #16, #17, #18).
 
 ## 1. Цель и рамки
 
-Сервис бронирования звонков: организатор публикует ссылку, гость выбирает **тип встречи** и свободный слот, оставляет контакты и получает подтверждение. Регистрации и авторизации нет.
+Сервис бронирования звонков: организатор публикует ссылку, гость выбирает **тип встречи** и свободный слот, оставляет контакты и получает подтверждение. Регистрации и полноценной авторизации нет.
 
 **В рамках v1:** типы встреч, генерация слотов, бронирование, конфликт слотов, отмена/перенос, страница владельца, контракт TypeSpec → OpenAPI → SDK + серверные типы.
-**Вне рамок:** мульти-хост, авторизация, email/напоминания, блокировка дат, Telegram, многодневные интервалы, раздельные буферы, аналитика.
+**Вне рамок (на момент Шага 2; часть реализована позже — см. ADR-0013…0024):** мульти-хост ✅ реализовано, авторизация панели ✅ Basic-auth (ADR-0017), email/напоминания ✗, блокировка дат ✅ (ADR-0014), Telegram ✗, многодневные интервалы ✗, раздельные буферы ✅ (ADR-0016), аналитика ✗.
 
 ## 2. Роли
 
@@ -34,27 +36,31 @@
 ## 4. Функциональные правила
 
 - **Тип встречи** задаёт `durationMin`, `locationType`, признак активности. Гость выбирает активный тип; его `durationMin` определяет длительность встречи, а шаг сетки слотов — `slotDurationMin` (в MVP 30 мин). Отдельная сетка под 15/45/60 мин — бэклог.
-- **Слоты** генерируются из правил доступности: диапазоны по дням недели, шаг `slotDurationMin`, с учётом `bufferMin`, `minNoticeMin`, `horizonDays`.
+- **Слоты** генерируются из правил доступности: диапазоны по дням недели, шаг `slotDurationMin`, с учётом `minNoticeMin`, `horizonDays`. Позже: буферы разделены на `bufferBeforeMin`/`bufferAfterMin` (ADR-0016), слоты генерируются в часовом поясе хоста (ADR-0024).
 - **Окно записи** — по умолчанию 14 дней; слоты по 30 минут.
 - **Конфликт:** на одно время — не более одной активной брони, **в том числе для разных типов**. Занятый слот не предлагается как свободный; повторная запись отклоняется с понятным сообщением.
 - **Правила бронирования выполняются на сервере** — UI-проверки не считаются защитой.
 - **Отмена** переводит бронь в статус `cancelled` (не удаляет); слот снова свободен. **Перенос** меняет слот брони.
-- **Доступность:** `availability_rules` (одна строка на хоста в MVP) + `availability_ranges` (диапазоны по дням недели).
+- **Доступность:** `availability_rules` (одна строка на хоста) + `availability_ranges` (диапазоны по дням недели). Правила хранятся per-host с `UNIQUE(hostId)` ([ADR-0020](adr/0020-per-host-availability-rules.md)).
 
-## 5. Доменная модель (SQLite / Drizzle)
+## 5. Доменная модель (PostgreSQL / Drizzle)
+
+> На момент Шага 2 предполагался SQLite; фактически — PostgreSQL (Neon) + PGlite в тестах ([ADR-0013](adr/0013-postgres-migration.md)). Ниже — состав таблиц и колонок; он актуален.
 
 | Таблица | Ключевые поля | Примечание |
 |---|---|---|
-| `hosts` | `id`, `slug` (unique), `name`, `timezone`, `createdAt` | MVP — один организатор (`slug=default`) |
-| `availability_rules` | `hostId`, `weekdays` (JSON), `windowStartHour`, `windowEndHour`, `slotDurationMin`, `bufferMin`, `minNoticeMin`, `horizonDays` | параметры генерации слотов (одна строка `id=1`) |
+| `hosts` | `id`, `slug` (unique), `name`, `timezone`, `createdAt` | мульти-хост ([ADR-0018](adr/0018-multi-host-model.md)) |
+| `availability_rules` | `hostId` (UNIQUE), `weekdays` (JSON), `windowStartHour`, `windowEndHour`, `slotDurationMin`, `bufferBeforeMin`, `bufferAfterMin`, `minNoticeMin`, `horizonDays` | параметры генерации слотов; `UNIQUE(hostId)` ([ADR-0020](adr/0020-per-host-availability-rules.md)) |
 | `availability_ranges` | `hostId`, `weekday` (1–7), `startMinute`, `endMinute` | несколько интервалов на день (ADR-0011) |
 | `event_types` | `id`, `hostId`, `slug`, `title`, `description`, `durationMin`, `locationType`, `isActive`, `createdAt` | unique `(hostId, slug)`; сеется дефолтный тип |
-| `slots` | `id`, `startAt` (UTC ISO), `durationMin` | материализованные слоты (ADR-0003/0004) |
-| `bookings` | `id`, `slotId`, `eventTypeId`, `name`, `email`, `phone`, `comment`, `status`, `startAt`, `endAt`, `cancelToken`, `createdAt` | `startAt`/`endAt` — снимок времени |
+| `slots` | `id`, `hostId`, `startAt` (UTC ISO), `durationMin` | материализованные слоты (ADR-0003/0004) |
+| `bookings` | `id`, `hostId`, `slotId`, `eventTypeId`, `name`, `email`, `phone`, `comment`, `guests`, `consentAccepted`, `idempotencyKey`, `cancellationReason`, `status`, `startAt`, `endAt`, `cancelToken`, `createdAt` | `startAt`/`endAt` — снимок времени; `guests`/`consentAccepted`/`idempotencyKey` — [ADR-0015](adr/0015-booking-guests-consent-idempotency.md) |
+| `time_blocks` | `id`, `hostId`, `startAt`, `endAt`, `reason` | блокировки времени ([ADR-0014](adr/0014-time-blocks.md)) |
 
-- `bookings.status` — `confirmed` \| `cancelled`; уникальность: partial unique index `UNIQUE(slotId) WHERE status != 'cancelled'` (вместо прежнего `UNIQUE(slotId)`).
-- Миграции — идемпотентный модуль `server/db/migrate.ts`, выполняется при старте; тесты на `DATABASE_PATH=:memory:`.
-- Модель ТЗ без `slots` (overlap-проверка) отклонена: SQLite не даёт exclusion constraint (см. тикет #12).
+- `bookings.status` — `confirmed` | `cancelled`; уникальность: partial unique index `UNIQUE(slotId) WHERE status != 'cancelled'` (вместо прежнего `UNIQUE(slotId)`).
+- Миграции — идемпотентный модуль `server/db/migrate.ts`, выполняется при старте; тесты и e2e — на PGlite в памяти (`DATABASE_URL` пустой).
+- Модель ТЗ без `slots` (overlap-проверка) отклонена: exclusion constraint в PostgreSQL потребовал бы `btree_gist`; вместо него частичный уникальный индекс (см. тикет #12, [ADR-0003](adr/0003-unique-slot-booking.md)).
+
 
 ## 6. API-контракт
 
