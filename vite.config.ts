@@ -26,9 +26,11 @@ export default defineConfig({
     // Exclude agent-skills repo content from project test discovery
     exclude: [
       'node_modules',
+      '**/node_modules/**',
       'dist',
       '.git',
       '.agents/skills/**',
+      '.opencode/**',
       'e2e/**',
     ],
     env: {

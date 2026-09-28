@@ -1,11 +1,31 @@
 import { z } from 'zod'
 
 const phonePattern = /^\+?[\d\s()-]+$/
+const emailPattern = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 // Телефон (необязательный): только цифры и разделители, 10–15 цифр (E.164)
 function isValidPhone(value: string): boolean {
   const digits = value.replace(/\D/g, '')
   return phonePattern.test(value) && digits.length >= 10 && digits.length <= 15
+}
+
+// Текст ошибки email по дизайн-спеке v2 §5: различаем «нет @» и «нет домена»
+export function emailErrorMessage(value: string): string {
+  const atIndex = value.indexOf('@')
+
+  if (atIndex === -1) {
+    return 'Проверьте email: в нём должен быть знак @'
+  }
+
+  if (!value.slice(atIndex + 1).includes('.')) {
+    return 'Похоже, адрес не полный: не хватает домена, например .ru'
+  }
+
+  return 'Проверьте email: в нём должен быть знак @'
+}
+
+function isValidEmail(value: string): boolean {
+  return emailPattern.test(value)
 }
 
 // Зеркало серверной схемы (server/validation.ts) — менять только согласованно
@@ -18,7 +38,15 @@ export const createBookingSchema = z.object({
     .optional()
     .transform((value) => value || undefined)
     .refine((value) => value === undefined || isValidPhone(value), 'Неверный номер телефона'),
-  email: z.string().trim().pipe(z.email('Неверный email')),
+  email: z
+    .string()
+    .trim()
+    .superRefine((value, ctx) => {
+      if (!isValidEmail(value)) {
+        ctx.addIssue({ code: 'custom', message: emailErrorMessage(value) })
+      }
+    }),
+
   comment: z
     .string()
     .trim()

@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, CalendarCheck, Clock, MailCheck, UserRound, Video } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import type { EventType } from '@/api/generated'
+import { LocationType } from '@/api/generated'
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
@@ -28,11 +31,18 @@ const STEPS = [
   },
 ] as const
 
+const LOCATION_FORMATS: Record<LocationType, string> = {
+  [LocationType.Online]: 'Онлайн-звонок',
+  [LocationType.Offline]: 'Очная встреча',
+  [LocationType.Phone]: 'Телефонный звонок',
+}
+
 export default function LandingPage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { activeSlug } = useActiveHost()
-  const [hostName, setHostName] = useState(host.name)
+  const [hostName, setHostName] = useState<string | null>(null)
   const [durationMin, setDurationMin] = useState<number | null>(null)
+  const [eventTypes, setEventTypes] = useState<EventType[]>([])
 
   useEffect(() => {
     let isActive = true
@@ -46,7 +56,7 @@ export default function LandingPage() {
           return
         }
 
-        setHostName(settings.name)
+        setHostName(settings.name?.trim() || null)
         setDurationMin(availability.slotDurationMin)
       })
       .catch(() => {
@@ -58,8 +68,28 @@ export default function LandingPage() {
     }
   }, [activeSlug])
 
+  useEffect(() => {
+    let isActive = true
+
+    call(api.eventTypesClient.listEventTypes(activeSlug))
+      .then((types) => {
+        if (isActive) {
+          setEventTypes(Array.isArray(types) ? types.filter((type) => type.isActive) : [])
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setEventTypes([])
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [activeSlug])
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <AppShell>
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
@@ -84,7 +114,10 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button className="h-12 px-6 text-[15px]" asChild>
+              <Button
+                className="h-12 rounded-xl bg-highlight px-6 text-[15px] text-highlight-foreground shadow-glow hover:bg-highlight/90"
+                asChild
+              >
                 <Link to={`/book/${activeSlug}`}>
                   Выбрать время
                   <ArrowRight className="size-4" strokeWidth={1.8} aria-hidden="true" />
@@ -94,14 +127,20 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="rounded-card border bg-card p-6 text-card-foreground shadow-soft">
+          <div className="glass rounded-card p-6">
             <div className="flex items-center gap-3">
               <span className="flex size-12 items-center justify-center rounded-full bg-accent text-lg font-semibold text-accent-foreground">
                 {host.initials}
               </span>
-              <div>
-                <p className="text-sm text-muted-foreground">Организатор</p>
-                <p className="font-semibold">{hostName}</p>
+              <div className="min-w-0">
+                {hostName ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">Организатор</p>
+                    <p className="truncate font-semibold">{hostName}</p>
+                  </>
+                ) : (
+                  <p className="font-semibold">{host.meetingTitle}</p>
+                )}
               </div>
             </div>
 
@@ -120,13 +159,36 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {eventTypes.length > 1 && (
+          <section className="mt-14">
+            <h3 className="font-serif text-[24px] font-semibold leading-tight lg:text-[28px]">
+              Форматы встречи
+            </h3>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {eventTypes.map((type) => (
+                <Link
+                  key={type.id}
+                  to={`/book/${activeSlug}?type=${type.id}`}
+                  className="glass rounded-card p-5 transition-colors hover:bg-accent/40"
+                >
+                  <p className="font-semibold">{type.title}</p>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    {type.durationMin} {pluralRu(type.durationMin, ['минута', 'минуты', 'минут'])} ·{' '}
+                    {LOCATION_FORMATS[type.locationType]}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="mt-16">
           <h3 className="font-serif text-[24px] font-semibold leading-tight lg:text-[28px]">
             Как это работает
           </h3>
           <ol className="mt-6 grid gap-4 lg:grid-cols-3">
             {STEPS.map((step, index) => (
-              <li key={step.title} className="rounded-card border bg-card p-6 text-card-foreground">
+              <li key={step.title} className="glass rounded-card p-6">
                 <span className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
                   <step.icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
                 </span>
@@ -140,7 +202,7 @@ export default function LandingPage() {
           </ol>
         </section>
 
-        <section className="mt-14 flex flex-col items-start gap-4 rounded-card border bg-surface p-8 lg:flex-row lg:items-center lg:justify-between">
+        <section className="mt-14 flex flex-col items-start gap-4 rounded-card bg-surface p-8 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="font-serif text-[22px] font-semibold leading-tight">
               Готовы выбрать время?
@@ -149,11 +211,11 @@ export default function LandingPage() {
               Свободные слоты обновляются автоматически.
             </p>
           </div>
-          <Button className="h-12 px-6 text-[15px]" asChild>
+          <Button variant="outline" className="h-12 px-6 text-[15px]" asChild>
             <Link to={`/book/${activeSlug}`}>Записаться на звонок</Link>
           </Button>
         </section>
       </main>
-    </div>
+    </AppShell>
   )
 }

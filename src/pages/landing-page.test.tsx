@@ -16,6 +16,25 @@ const availability = {
 
 const settings = { slug: 'default', name: 'Анна Петрова', timeZone: 'UTC' }
 
+const eventTypes = [
+  {
+    id: 'consultation',
+    slug: 'consultation',
+    title: 'Консультация',
+    durationMin: 30,
+    locationType: 'online',
+    isActive: true,
+  },
+  {
+    id: 'conference',
+    slug: 'conference',
+    title: 'Конференция',
+    durationMin: 45,
+    locationType: 'offline',
+    isActive: true,
+  },
+]
+
 function mockFetch(status = 200) {
   return vi.fn(async (input: RequestInfo | URL) => {
     if (status !== 200) {
@@ -26,6 +45,10 @@ function mockFetch(status = 200) {
 
     if (url === '/api/v1/hosts/default/availability') {
       return jsonResponse(availability)
+    }
+
+    if (url === '/api/v1/hosts/default/event-types') {
+      return jsonResponse(eventTypes)
     }
 
     return jsonResponse(settings)
@@ -57,11 +80,23 @@ describe('LandingPage', () => {
     expect(screen.getByRole('heading', { name: 'Как это работает' })).toBeInTheDocument()
   })
 
-  it('показывает данные из конфига, если API недоступно', async () => {
+  it('показывает форматы встречи со ссылкой на запись выбранного формата', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+    renderLanding()
+
+    expect(await screen.findByRole('heading', { name: 'Форматы встречи' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Конференция/ })).toHaveAttribute(
+      'href',
+      '/book/default?type=conference',
+    )
+  })
+
+  it('прячет подпись организатора и показывает данные конфига, если API недоступно', async () => {
     vi.stubGlobal('fetch', mockFetch(500))
     renderLanding()
 
-    expect(await screen.findAllByText('Организатор')).toHaveLength(2)
+    expect(await screen.findAllByText('Звонок-консультация')).not.toHaveLength(0)
+    expect(screen.queryByText('Организатор')).toBeNull()
     expect(screen.getByRole('link', { name: /Записаться на звонок/ })).toHaveAttribute(
       'href',
       '/book/default',

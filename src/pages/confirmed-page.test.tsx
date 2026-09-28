@@ -70,9 +70,11 @@ describe('ConfirmedPage', () => {
     vi.stubGlobal('fetch', mockFetch())
     renderPage()
 
-    expect(await screen.findByRole('heading', { name: 'Звонок-консультация' })).toBeInTheDocument()
-    expect(screen.getAllByText('Организатор').length).toBeGreaterThan(0)
-    expect(screen.getByText('Онлайн-звонок')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Встреча успешно запланирована!' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Звонок-консультация')).toBeInTheDocument()
+    expect(screen.getAllByText('Иван').length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: /Перенести встречу/ })).toHaveAttribute(
       'href',
       '/reschedule/token-123',

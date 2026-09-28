@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process'
 
-const jobs = [
-  { name: 'web', cmd: 'npm run dev', color: '\x1b[36m' },
-  { name: 'api', cmd: 'npm run server:dev', color: '\x1b[35m' },
-]
+// Поднимаем API первым и ждём /health, иначе Vite стартует раньше и первые
+// запросы браузера падают с http proxy error: ECONNREFUSED 127.0.0.1:3000.
+const API_HEALTH = 'http://127.0.0.1:3000/health'
+const API_WAIT_MS = 30_000
 
 const reset = '\x1b[0m'
 const children = []
@@ -15,7 +15,7 @@ function log(name, color, data) {
   }
 }
 
-for (const { name, cmd, color } of jobs) {
+function start({ name, cmd, color }) {
   const child = spawn(cmd, { shell: true, stdio: ['ignore', 'pipe', 'pipe'] })
   children.push(child)
   child.stdout.on('data', (d) => log(name, color, d))
@@ -27,8 +27,33 @@ for (const { name, cmd, color } of jobs) {
       process.exit(code)
     }
   })
+  return child
 }
 
+async function waitForApi(deadline) {
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(API_HEALTH)
+      if (response.ok) return true
+    } catch {
+      // API ещё не слушает — повторяем
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+  return false
+}
+
+start({ name: 'api', cmd: 'npm run server:dev', color: '\x1b[35m' })
+console.log(`Жду готовности API (${API_HEALTH})…`)
+
+const ready = await waitForApi(Date.now() + API_WAIT_MS)
+console.log(
+  ready
+    ? 'API готов — запускаю Vite'
+    : 'API не ответил за 30 с — запускаю Vite всё равно (проверь лог [api])',
+)
+
+start({ name: 'web', cmd: 'npm run dev', color: '\x1b[36m' })
 console.log('web: http://127.0.0.1:5173  api: http://127.0.0.1:3000  (Ctrl+C — остановить оба)')
 
 const shutdown = () => {

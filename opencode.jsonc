@@ -41,13 +41,19 @@
 
   // MCP-серверы. Сейчас подключён официальный shadcn MCP для работы
   // с каталогом UI-компонентов (использует components.json в корне).
+  //
+  // ВАЖНО: пакет называется `shadcn`, MCP-сервер запускается подкомандой
+  // `mcp`: `npx -y shadcn@latest mcp`. Имя `@shadcn/ui/mcp` невалидно
+  // (npm: EINVALIDPACKAGENAME) — из-за него процесс падал с
+  // "MCP error -32000: Connection closed".
+  // Проверка: `npx -y shadcn@latest mcp --help`
   // Подробнее — docs/mcp.md.
   "mcp": {
     "shadcn": {
       "type": "local",
-      "command": ["npx", "-y", "@shadcn/ui/mcp@latest"],
+      "command": ["npx", "-y", "shadcn@latest", "mcp"],
       "enabled": true,
-      "timeout": 30000
+      "timeout": 60000
     }
   }
 }

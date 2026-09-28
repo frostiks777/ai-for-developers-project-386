@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AvailabilityPreview } from '@/components/availability-preview'
+import { TimeZoneSelect } from '@/components/timezone-select'
 import { cn } from '@/lib/utils'
 import type { AvailabilityRange, AvailabilitySettings } from '@/types/availability-settings'
 
@@ -260,9 +262,11 @@ export function AvailabilitySettingsForm({
             updateInterval(weekday, position, { startMinute: timeToMinute(event.target.value) })
           }}
           className={cn(
-            'h-8 w-[64px] shrink-0 rounded-md border bg-transparent px-1.5 text-[13px]',
+            'h-11 w-[112px] shrink-0 rounded-md border bg-transparent px-2 text-sm',
             startError ? 'border-destructive' : 'border-input',
           )}
+          step={600}
+          lang="ru"
         />
         <span className="text-muted-foreground">–</span>
         <input
@@ -276,9 +280,11 @@ export function AvailabilitySettingsForm({
             updateInterval(weekday, position, { endMinute: timeToMinute(event.target.value) })
           }}
           className={cn(
-            'h-8 w-[64px] shrink-0 rounded-md border bg-transparent px-1.5 text-[13px]',
+            'h-11 w-[112px] shrink-0 rounded-md border bg-transparent px-2 text-sm',
             endError ? 'border-destructive' : 'border-input',
           )}
+          step={600}
+          lang="ru"
         />
       </>
     )
@@ -286,10 +292,18 @@ export function AvailabilitySettingsForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-        <Globe className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-        Часовой пояс: {draft.timeZone}
-      </p>
+      <div className="flex flex-col gap-1">
+        <TimeZoneSelect
+          value={draft.timeZone}
+          onChange={(timeZone) => setDraft((prev) => ({ ...prev, timeZone }))}
+          labelIcon={<Globe className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />}
+        />
+        <p className="text-[13px] text-muted-foreground">
+          Часы ниже — в этом поясе. Гости видят их в своём.
+        </p>
+      </div>
+
+      <AvailabilityPreview settings={draft} />
 
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((preset) => (

@@ -637,9 +637,16 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(422).send({ error: message })
     }
 
+    // Пояс правил хранится у хоста (ADR-0024): при изменении — сохраняем в hosts.timezone,
+    // затем пересобираем будущие свободные слоты в новом поясе.
+    const requestedZone = parsed.data.timeZone
+    if (isValidTimeZone(requestedZone) && requestedZone !== host.timezone) {
+      await db.update(hosts).set({ timezone: requestedZone }).where(eq(hosts.id, host.id))
+    }
+
     await saveAvailabilitySettings(host.id, parsed.data)
 
-    return loadAvailabilitySettings(host.id, host.timezone)
+    return loadAvailabilitySettings(host.id, requestedZone)
   })
 
   // ── API v1: типы встреч ──────────────────────────────────────────────

@@ -5,7 +5,7 @@
 
 ## Status
 
-Accepted — 2026-09-23. (Ветка `feat/redesign-a-d-themes` смержена в `main`.)
+Accepted — 2026-09-23. (Ветка `feat/redesign-a-d-themes` смержена в `main`.) Дополнен [ADR-0023](0023-redesign-v2-mint.md) — раскладки и токены v2 заменяют визуальный слой v1.
 
 ## Context
 
