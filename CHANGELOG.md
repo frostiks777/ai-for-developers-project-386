@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.22.0...v1.22.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **panel:** derive week preview days from rules and align grid to the card ([#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76)) ([885a073](https://github.com/frostiks777/ai-for-developers-project-386/commit/885a07329419a29281552b5b9b1ea502981c5b39))
+* **ui:** add calendar favicon and stop mobile overflow in panel tabs and hosts ([4182f1f](https://github.com/frostiks777/ai-for-developers-project-386/commit/4182f1f960ce439e203fdbf6085bd0b157a237c5))
+
 ## [1.22.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.3...v1.22.0) (2026-09-28)
 
 
