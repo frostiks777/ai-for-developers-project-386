@@ -287,7 +287,7 @@ describe('HomePage: мобильная раскладка', () => {
     window.matchMedia = originalMatchMedia
   })
 
-  it('показывает ленту дат и форму записи', async () => {
+  it('мобильный мастер: день → время → контакты', async () => {
     const mobileSlot: TimeSlot = {
       id: 1,
       startAt: new Date(2099, 8, 24, 10, 0).toISOString(),
@@ -296,11 +296,19 @@ describe('HomePage: мобильная раскладка', () => {
     }
     vi.stubGlobal('fetch', mockFetch([mobileSlot]))
 
+    const user = userEvent.setup()
     renderHomePage()
 
     const dateKey = toDateKeyInZone(new Date(mobileSlot.startAt), defaultTimeZone)
 
-    expect(await screen.findByRole('button', { name: dateKey })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: dateKey }))
+    await user.click(
+      await screen.findByRole('button', {
+        name: formatTimeInZone(mobileSlot.startAt, defaultTimeZone),
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Далее' }))
+
     expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
   })
 })

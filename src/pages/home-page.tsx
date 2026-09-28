@@ -8,7 +8,7 @@ import { AppHeader } from '@/components/app-header'
 import { AppShell } from '@/components/app-shell'
 import { BookingForm } from '@/components/booking-form'
 import { BookingSuccess } from '@/components/booking-success'
-import { DateStrip } from '@/components/date-strip'
+import { BookingWizard } from '@/components/booking-wizard'
 import { EventTypePicker } from '@/components/event-type-picker'
 import { SlotGroups } from '@/components/slot-groups'
 import { TimezoneCard } from '@/components/timezone-card'
@@ -514,47 +514,37 @@ export default function HomePage() {
           </div>
           )
         ) : (
-          <div className="flex flex-col gap-5">
-            {hostBlurb}
-            {typePicker}
-            {rules}
-
+          <div className="mx-auto w-full max-w-md">
             {isLoading ? (
               <DaysSkeleton />
-            ) : (
-              !error &&
-              slots.length > 0 && (
-                <DateStrip
-                  slots={slots}
-                  selectedDate={activeDate ?? ''}
-                  timeZone={timeZone}
-                  onSelectDate={handleSelectDate}
-                />
-              )
-            )}
-
-            <div>
-              <TimezoneCard timeZone={timeZone} onTimeZoneChange={setTimeZone} />
-            </div>
-
-            <section>{slotsBlock}</section>
-
-            <BookingForm
-              slot={selectedSlot}
-              hostSlug={slug ?? ''}
-              eventTypeId={selectedTypeId}
-              eventTypeTitle={selectedType?.title ?? null}
-              timeZone={timeZone}
-              variant="step"
-              onBooked={handleBooked}
-              onConflict={handleConflict}
-            />
-
-            {!isLoading && !error && slots.length === 0 && (
+            ) : error ? (
+              <div className="rounded-xl border bg-card p-6 text-center">
+                <p className="font-medium">Не удалось загрузить слоты</p>
+                <Button className="mt-4" variant="outline" onClick={() => refetch()}>
+                  Повторить
+                </Button>
+              </div>
+            ) : slots.length === 0 ? (
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CalendarX className="size-4" strokeWidth={1.8} aria-hidden="true" />
                 Свободных слотов нет
               </p>
+            ) : (
+              <BookingWizard
+                slots={slots}
+                timeZone={timeZone}
+                onTimeZoneChange={setTimeZone}
+                eventTypes={eventTypes}
+                selectedTypeId={selectedTypeId}
+                onSelectType={handleSelectType}
+                selectedTypeTitle={selectedType?.title ?? null}
+                hostSlug={slug ?? ''}
+                hostName={hostName}
+                selectedSlot={selectedSlot}
+                onSelectSlot={(slot) => setSelectedSlotId(slot.id)}
+                onBooked={handleBooked}
+                onConflict={handleConflict}
+              />
             )}
           </div>
         )}
