@@ -49,8 +49,11 @@ export function HostsEditor() {
   }
 
   return (
-    <div className="grid gap-6">
-      <ul className="grid gap-2">
+    // min-w-0 на обоих уровнях сетки: grid-элементы по умолчанию имеют
+    // min-width:auto, поэтому одна не переносящаяся кнопка растягивала колонку
+    // на всю ширину кнопки и уводила за край экрана и карточки, и форму (#66).
+    <div className="grid min-w-0 gap-6">
+      <ul className="grid min-w-0 gap-2">
         {hosts.map((host) => {
           const isActive = host.slug === activeSlug || host.id === activeSlug
 
@@ -58,7 +61,7 @@ export function HostsEditor() {
             <li
               key={host.id}
               className={cn(
-                'flex items-center justify-between gap-3 rounded-xl border bg-background px-4 py-3',
+                'flex min-w-0 items-center justify-between gap-3 rounded-xl border bg-background px-4 py-3',
                 isActive && 'border-primary/60 bg-accent/40',
               )}
             >
@@ -69,7 +72,7 @@ export function HostsEditor() {
                 </p>
               </div>
               {isActive ? (
-                <span className="flex items-center gap-1 text-[13px] font-medium text-primary">
+                <span className="flex shrink-0 items-center gap-1 text-[13px] font-medium text-primary">
                   <Check className="size-4" strokeWidth={2} aria-hidden="true" />
                   Активный
                 </span>
@@ -78,6 +81,7 @@ export function HostsEditor() {
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="shrink-0 whitespace-nowrap"
                   onClick={() => setActiveSlug(host.slug)}
                 >
                   Сделать активным
@@ -88,12 +92,12 @@ export function HostsEditor() {
         })}
       </ul>
 
-      <form onSubmit={handleCreate} className="grid gap-3">
+      <form onSubmit={handleCreate} className="grid min-w-0 gap-3">
         <p className="flex items-center gap-2 font-medium">
           <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
           Новый организатор
         </p>
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid min-w-0 gap-3 lg:grid-cols-2">
           <div className="grid gap-1.5">
             <Label htmlFor="host-name">Имя</Label>
             <Input

@@ -189,7 +189,9 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
                   onChange={(event) => setSearch(event.target.value)}
                   placeholder="Поиск по имени и email"
                   aria-label="Поиск по имени и email"
-                  className="h-9 w-[240px]"
+                  // На мобильном поиск занимает всю ширину, табы уходят на
+                  // следующую строку и делят её поровну (см. BookingFilter)
+                  className="h-9 w-full sm:w-[240px]"
                 />
                 <BookingFilter value={filter} onChange={setFilter} />
               </div>
