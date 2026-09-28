@@ -144,4 +144,26 @@ describe('AvailabilitySettingsForm', () => {
 
     expect(container.querySelectorAll('[data-state="meeting"]')).toHaveLength(1)
   })
+
+  // Регресс #49: строка дня не должна выходить за правый край на 360 px —
+  // поля времени ужимаются, кнопки строки крупнее на мобильном.
+  it('ужимает поля времени и крупнит кнопки строки дня на узком экране', () => {
+    render(<AvailabilitySettingsForm settings={settings} isSaving={false} onSave={vi.fn()} />)
+
+    const start = screen.getByLabelText('Пн: начало 1')
+    const end = screen.getByLabelText('Пн: конец 1')
+
+    for (const input of [start, end]) {
+      expect(input).toHaveClass('min-w-0', 'flex-1')
+      expect(input.className).not.toContain('shrink-0')
+      // фиксированная ширина только на sm+ (там места хватает)
+      expect(input.className).toContain('sm:w-[112px]')
+      // группа полей держит минимум, иначе поля «вылезают» под кнопки строки
+      expect(input.parentElement).toHaveClass('min-w-[208px]')
+    }
+
+    // кнопки строки крупнее на мобильном (touch-цель), компактные на десктопе
+    expect(screen.getByLabelText('Добавить интервал: Пн')).toHaveClass('h-9', 'w-9', 'sm:h-7')
+    expect(screen.getByLabelText('Скопировать интервал: Пн')).toHaveClass('h-9', 'w-9')
+  })
 })

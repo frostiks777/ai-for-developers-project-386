@@ -189,7 +189,8 @@ export function BlocksEditor({ slug }: BlocksEditorProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
+      {/* На узком экране текст и кнопка в столбик, иначе текст сжимается в узкую колонку (#49) */}
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <p className="text-[13px] text-muted-foreground">
           Отпуск, личные дела — гости не увидят эти слоты
         </p>

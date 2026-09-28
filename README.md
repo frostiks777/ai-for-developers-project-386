@@ -133,16 +133,17 @@ curl http://127.0.0.1:3000/health
 # {"status":"ok"}
 
 curl http://127.0.0.1:3000/api/v1/hosts/default/slots
-# [{"id":1,"startAt":"2026-09-24T07:00:00.000Z","durationMin":30,"isBooked":false}]
+# {"slots":[{"id":1,"startAt":"2026-09-24T07:00:00.000Z","durationMin":30,"isBooked":false}]}
 
 curl -X POST http://127.0.0.1:3000/api/v1/hosts/default/bookings \
   -H 'Content-Type: application/json' \
-  -d '{"eventTypeId":"<uuid>","slotId":1,"clientName":"Иван","clientEmail":"ivan@example.com","consentAccepted":true}'
-# 201 {"id":"<uuid>","status":"confirmed",...}
+  -H 'Idempotency-Key: demo-1' \
+  -d '{"eventTypeId":"default-consultation","startAt":"2026-09-24T07:00:00.000Z","clientName":"Иван","clientEmail":"ivan@example.com","consentAccepted":true}'
+# 201 {"id":"<uuid>","status":"confirmed",...}   (id = токен для ссылок переноса/отмены)
 
 curl -X POST http://127.0.0.1:3000/api/v1/hosts/default/bookings \
   -H 'Content-Type: application/json' \
-  -d '{"eventTypeId":"<uuid>","slotId":1,"clientName":"Иван","clientEmail":"not-an-email","consentAccepted":true}'
+  -d '{"eventTypeId":"default-consultation","startAt":"2026-09-24T07:00:00.000Z","clientName":"Иван","clientEmail":"not-an-email","consentAccepted":true}'
 # 422 {"error":{"code":"VALIDATION_ERROR","message":"Неверный email"}}
 ```
 
