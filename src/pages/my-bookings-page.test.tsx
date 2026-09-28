@@ -43,6 +43,25 @@ describe('MyBookingsPage', () => {
     expect(screen.getByRole('link', { name: 'Отменить' })).toHaveAttribute('href', '/cancel/token-1')
   })
 
+  it('у прошедшей встречи скрывает отмену, но оставляет перенос', () => {
+    saveMyBooking({
+      id: 'token-past',
+      startAt: '2020-09-24T07:00:00.000Z',
+      durationMin: 45,
+      eventTypeTitle: 'Прошедшая',
+      hostSlug: 'default',
+    })
+
+    renderPage()
+
+    expect(screen.getByText('Прошла')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Отменить' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Перенести' })).toHaveAttribute(
+      'href',
+      '/reschedule/token-past',
+    )
+  })
+
   it('убирает бронь из списка', async () => {
     saveMyBooking({
       id: 'token-1',

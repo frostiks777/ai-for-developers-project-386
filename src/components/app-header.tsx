@@ -128,7 +128,7 @@ export function AppHeader({
           >
             <LayoutDashboard className="size-4" strokeWidth={1.8} aria-hidden="true" />
           </a>
-          {!isMobile && <ThemeToggle />}
+          <ThemeToggle />
         </div>
       </div>
     </header>

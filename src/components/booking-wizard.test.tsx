@@ -73,4 +73,20 @@ describe('BookingWizard', () => {
     expect(onSelectSlot).toHaveBeenCalledWith(slots[0])
     expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
   })
+
+  it('листает доступные дни через выходные, а не соседние календарные', async () => {
+    const gappedSlots: TimeSlot[] = [
+      { id: 1, startAt: '2026-10-02T10:00:00.000Z', durationMin: 30, isBooked: false },
+      { id: 2, startAt: '2026-10-05T10:00:00.000Z', durationMin: 30, isBooked: false },
+    ]
+    const user = userEvent.setup()
+    renderWizard({ slots: gappedSlots })
+
+    await user.click(screen.getByRole('button', { name: '2026-10-02' }))
+    expect(screen.getByText('Пт, 2 октября')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Следующий день' }))
+    expect(screen.getByText('Пн, 5 октября')).toBeInTheDocument()
+    expect(screen.queryByText('Пт, 2 октября')).toBeNull()
+  })
 })

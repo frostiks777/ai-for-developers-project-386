@@ -82,9 +82,11 @@ export default function MyBookingsPage() {
                   <Button variant="outline" size="sm" asChild>
                     <Link to={`/reschedule/${booking.id}`}>Перенести</Link>
                   </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/cancel/${booking.id}`}>Отменить</Link>
-                  </Button>
+                  {!isPast && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/cancel/${booking.id}`}>Отменить</Link>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

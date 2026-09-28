@@ -73,7 +73,7 @@ export function BookingsList({
       await navigator.clipboard.writeText(
         buildGuestMessage(booking, { hostSlug, timeZone: defaultTimeZone }),
       )
-      toast.success('Текст скопирован')
+      toast.success('Текст об отмене скопирован')
     } catch {
       toast.error('Не удалось скопировать текст')
     }
@@ -154,7 +154,7 @@ export function BookingsList({
                           onClick={() => copyGuestText(booking)}
                         >
                           <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                          Скопировать текст для гостя
+                          Скопировать текст об отмене
                         </Button>
                         {showCancel && (
                           <Button
