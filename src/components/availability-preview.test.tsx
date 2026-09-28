@@ -40,4 +40,34 @@ describe('AvailabilityPreview', () => {
 
     expect(screen.getByText('Нет данных для превью')).toBeInTheDocument()
   })
+
+  // Регрессия: колонки Пн–Пт были захардкожены, и добавленные организатором
+  // суббота/воскресенье не появлялись в сетке (#76).
+  it('показывает все дни из правил, а не только Пн–Пт', () => {
+    render(
+      <AvailabilityPreview
+        settings={{
+          ...settings,
+          ranges: [
+            { weekday: 1, startMinute: 600, endMinute: 660 },
+            { weekday: 6, startMinute: 600, endMinute: 660 },
+            { weekday: 7, startMinute: 600, endMinute: 660 },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByRole('columnheader', { name: 'Пн' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Сб' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Вс' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Вт' })).toBeNull()
+  })
+
+  it('не показывает дни, которых нет ни в правилах, ни во встречах', () => {
+    render(<AvailabilityPreview settings={settings} slots={slots} />)
+
+    expect(screen.getByRole('columnheader', { name: 'Пн' })).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Пт' })).toBeNull()
+    expect(screen.queryByRole('columnheader', { name: 'Вс' })).toBeNull()
+  })
 })
