@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.21.2](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.1...v1.21.2) (2026-09-28)
+
+
+### Bug Fixes
+
+* **panel:** refetch bookings when switching panel section ([#69](https://github.com/frostiks777/ai-for-developers-project-386/issues/69)) ([4bbfafc](https://github.com/frostiks777/ai-for-developers-project-386/commit/4bbfafc49ea2f05026c15ad56cc329dbf5e2e847))
+* **panel:** обновлять счётчик и списки при переходе между разделами ([#69](https://github.com/frostiks777/ai-for-developers-project-386/issues/69)) ([3c41b7c](https://github.com/frostiks777/ai-for-developers-project-386/commit/3c41b7c7f94d134cad2a36399e574e0d82578308))
+
 ## [1.21.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.0...v1.21.1) (2026-09-28)
 
 
