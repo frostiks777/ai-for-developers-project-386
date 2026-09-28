@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { toBookingWithSlot } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { AvailabilitySettingsForm } from '@/components/availability-settings-form'
 import { BlocksEditor } from '@/components/blocks-editor'
 import { BookingFilter, type BookingFilterValue } from '@/components/booking-filter'
@@ -149,7 +150,8 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
   if (isDesktop) {
     return (
-      <div className="flex min-h-screen bg-background">
+      <AppShell>
+      <div className="flex min-h-screen">
         <DashboardSidebar bookingCount={upcomingCount} />
         <main className="flex min-w-0 flex-1 flex-col gap-6 p-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -240,11 +242,12 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
           </div>
         </main>
       </div>
+    </AppShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppShell>
       <AppHeader linkTo={`/book/${activeSlug}`} linkLabel="Бронирование" variant="mobile" />
       <main className="mx-auto w-full max-w-md px-4 py-4">
         <div className="flex flex-col gap-3">
@@ -378,6 +381,6 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
           </section>
         )}
       </main>
-    </div>
+    </AppShell>
   )
 }

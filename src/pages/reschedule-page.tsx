@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 
 import { toBookingWithSlot, toTimeSlot } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
+import { AppShell } from '@/components/app-shell'
 import { useActiveHost } from '@/hooks/use-active-host'
 import { MonthCalendar } from '@/components/month-calendar'
 import { TimeZoneSelect } from '@/components/timezone-select'
@@ -84,7 +85,7 @@ export default function ReschedulePage() {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-10">
+    <AppShell className="container mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Перенос встречи</h1>
         <Link
@@ -156,6 +157,6 @@ export default function ReschedulePage() {
           )}
         </>
       )}
-    </div>
+    </AppShell>
   )
 }

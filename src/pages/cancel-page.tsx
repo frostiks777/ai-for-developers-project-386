@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import type { Booking as ApiBooking } from '@/api/generated'
 import { ApiError, api, call } from '@/api/sdk'
+import { AppShell } from '@/components/app-shell'
 import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import {
@@ -89,7 +90,7 @@ export default function CancelPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-xl px-4 py-16">
+    <AppShell className="container mx-auto max-w-xl px-4 py-16">
       <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
         {status === 'done' ? (
           <>
@@ -185,6 +186,6 @@ export default function CancelPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppShell>
   )
 }
