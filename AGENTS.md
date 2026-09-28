@@ -25,7 +25,7 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 ├── src/
 │   ├── components/    # UI-компоненты (в т.ч. ui/ — shadcn)
 │   ├── pages/         # Маршруты/страницы (landing, home/book, my, confirmed, manage-booking, dashboard, 404)
-│   ├── hooks/         # Кастомные хуки (use-availability, use-booking, use-active-host, use-theme, use-time-format, use-media-query, use-booking-view)
+│   ├── hooks/         # Кастомные хуки (use-availability, use-booking, use-active-host, use-theme, use-time-format, use-media-query, use-booking-view, use-turnstile)
 │   ├── utils/         # Утилиты (dates, timezone, calendar, phone, my-bookings, plural, guest-message)
 │   ├── types/         # UI-модели (booking, availability-settings)
 │   ├── api/           # sdk.ts (инстанс ApiV1Client + call/ApiError), mappers.ts, generated/ (не править)
@@ -42,6 +42,8 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   ├── event-types.ts # Типы встреч CRUD
 │   ├── time-blocks.ts # Блокировки времени
 │   ├── availability.ts / availability-settings.ts / rules.ts
+│   ├── captcha.ts      # Cloudflare Turnstile: verifyCaptchaToken, fail-closed (ADR-0025)
+│   ├── rate-limit.ts   # Лимиты по IP + clientIpKey (CF-Connecting-IP) (ADR-0025)
 │   ├── env.ts         # Валидация env (zod)
 │   ├── validation.ts  # zod-схема API (зеркало src/lib/validation.ts)
 │   ├── types.ts       # Типы API

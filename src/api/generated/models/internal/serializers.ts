@@ -5,6 +5,7 @@ import type {
   AvailabilitySettings,
   Booking,
   CancelBookingRequest,
+  CaptchaSettings,
   CreateBookingRequest,
   CreateEventTypeRequest,
   CreateHostRequest,
@@ -477,7 +478,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,guests: jsonArrayStringToTransportTransform(input_.guests),consentAccepted: input_.consentAccepted
+    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,guests: jsonArrayStringToTransportTransform(input_.guests),consentAccepted: input_.consentAccepted,captchaToken: input_.captchaToken
   }!;
 }export function jsonCreateBookingRequestToApplicationTransform(
   input_?: any,
@@ -486,7 +487,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,guests: jsonArrayStringToApplicationTransform(input_.guests),consentAccepted: input_.consentAccepted
+    eventTypeId: input_.eventTypeId,startAt: input_.startAt,clientName: input_.clientName,clientEmail: input_.clientEmail,clientPhone: input_.clientPhone,clientNotes: input_.clientNotes,guests: jsonArrayStringToApplicationTransform(input_.guests),consentAccepted: input_.consentAccepted,captchaToken: input_.captchaToken
   }!;
 }export function jsonArrayTimeBlockToTransportTransform(
   items_?: Array<TimeBlock> | null,
@@ -593,7 +594,7 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    slug: input_.slug,name: input_.name,timeZone: input_.timeZone
+    slug: input_.slug,name: input_.name,timeZone: input_.timeZone,captcha: jsonCaptchaSettingsToTransportTransform(input_.captcha)
   }!;
 }export function jsonHostSettingsToApplicationTransform(
   input_?: any,
@@ -602,7 +603,25 @@ export function decodeBase64(value: string): Uint8Array | undefined {
     return input_ as any;
   }
     return {
-    slug: input_.slug,name: input_.name,timeZone: input_.timeZone
+    slug: input_.slug,name: input_.name,timeZone: input_.timeZone,captcha: jsonCaptchaSettingsToApplicationTransform(input_.captcha)
+  }!;
+}export function jsonCaptchaSettingsToTransportTransform(
+  input_?: CaptchaSettings | null,
+): any {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    provider: input_.provider,required: input_.required,siteKey: input_.siteKey
+  }!;
+}export function jsonCaptchaSettingsToApplicationTransform(
+  input_?: any,
+): CaptchaSettings {
+  if(!input_) {
+    return input_ as any;
+  }
+    return {
+    provider: input_.provider,required: input_.required,siteKey: input_.siteKey
   }!;
 }export function jsonAvailabilityDayToTransportTransform(
   input_?: AvailabilityDay | null,

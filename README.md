@@ -81,6 +81,12 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `PORT` | `3000` | порт Fastify; в проде задаёт платформа |
 | `DATABASE_URL` | — | строка подключения Postgres (Neon); пусто → PGlite (тесты/локальный dev) |
 | `ADMIN_PASSWORD` | — | пароль для входа в `/dashboard` и `/admin/*`; если не задан — панель открыта |
+| `TURNSTILE_SECRET_KEY` | — | секрет Cloudflare Turnstile. **Пока не задан — CAPTCHA выключена**: виджет не показывается, сервер не проверяет токен |
+| `TURNSTILE_SITEKEY` | — | публичный site key, отдаётся гостю в `GET /api/v1/hosts/:slug/settings` |
+| `TURNSTILE_ALLOWED_HOSTNAMES` | — | домены через запятую, которым разрешён site key; пусто — сверка отключена |
+| `RATE_LIMIT_BOOKING_MAX` | `20` | лимит записей/отмен/переносов на IP за минуту |
+| `RATE_LIMIT_READ_MAX` | `300` | лимит публичных чтений на IP за минуту |
+| `RATE_LIMIT_GLOBAL_MAX` | `600` | общий предохранитель на IP за минуту |
 
 Пример — [`.env.example`](.env.example). При первом старте создаются слоты на 14 дней вперёд по правилам хоста: будни 10:00–18:00, слот 30 мин, буферы до/после встречи, бронь не позднее чем за 2 часа до начала ([ADR-0004](docs/adr/0004-slot-generation-rules.md)). Слоты генерируются в часовом поясе хоста ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)), в интерфейсе их можно переключить на любой IANA-пояс.
 
@@ -91,6 +97,34 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 - **Демо-стенд:** `https://calendar-slots-app.onrender.com/dashboard` — пользователь `admin`, пароль **`call-calendar-admin`**.
 - **Локально:** задайте `ADMIN_PASSWORD` в `.env` (см. [`.env.example`](.env.example)) — браузер спросит логин и пароль. Если переменная не задана, панель открыта (удобно для разработки и тестов).
 - **Смена пароля на Render:** Environment → `ADMIN_PASSWORD` → новое значение → сохранить (сервис перезапустится).
+
+## Защита формы записи (CAPTCHA и лимиты)
+
+Публичный эндпоинт записи закрыт двумя независимыми слоями ([ADR-0025](docs/adr/0025-captcha-and-rate-limit.md)).
+
+**CAPTCHA — Cloudflare Turnstile, бесплатный план.** Виджет подтверждает, что запись сделал человек;
+сервер проверяет одноразовый токен через Siteverify API и **не пропускает бронь, если Cloudflare
+недоступен** (fail-closed).
+
+- **Единый переключатель:** CAPTCHA выключена, пока не задан `TURNSTILE_SECRET_KEY`. Без него виджет
+  не рендерится и токен не проверяется — поэтому локальный dev, `npm test` и e2e в CI не зависят от
+  внешнего сервиса. В production без секрета приложение пишет предупреждение в лог.
+- **Локально** можно посмотреть живой виджет с официальными тестовыми ключами Cloudflare
+  (в `.env`): `TURNSTILE_SITEKEY=1x00000000000000000000AA`,
+  `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`.
+- **В Render:** Environment → `TURNSTILE_SITEKEY`, `TURNSTILE_SECRET_KEY`,
+  `TURNSTILE_ALLOWED_HOSTNAMES=calendar-slots-app.onrender.com` → Save & Deploy. Настройка виджета —
+  [dash.cloudflare.com → Turnstile](https://dash.cloudflare.com) → Create a widget: режим **Managed**,
+  вид **Visible**, Pre-clearance **Off**; на бесплатном плане нужно добавить хост
+  `calendar-slots-app.onrender.com` (иначе Cloudflare вернёт ошибку 400020).
+
+**Rate-limit по IP** (`@fastify/rate-limit`, счётчики в памяти процесса): 20 записей/отмен/переносов в
+минуту, 300 публичных чтений, 600 запросов суммарно. При превышении — `429` с кодом `RATE_LIMITED`.
+Значения настраиваются переменными `RATE_LIMIT_*`.
+
+Ключ лимита — реальный IP гостя: заголовок `CF-Connecting-IP`, который перезаписывает Cloudflare, с
+откатом на `request.ip`. Поэтому `trustProxy: true` в `server/app.ts` обязателен — без него адрес
+прокси станет ключом для всех сразу и лимит превратится в глобальный.
 
 ## API
 

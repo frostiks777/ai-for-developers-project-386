@@ -61,6 +61,9 @@ export const createBookingSchema = z.object({
   consentAccepted: z
     .boolean()
     .refine((value) => value === true, 'Нужно согласие на обработку персональных данных'),
+  // Одноразовый токен Cloudflare Turnstile (ADR-0025). Проверяется сервером,
+  // здесь только не даёт отправить заведомо пустое значение.
+  captchaToken: z.string().trim().min(1).optional(),
 })
 
 // Правила доступности организатора (зеркало server/validation.ts)

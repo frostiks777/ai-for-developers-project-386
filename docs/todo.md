@@ -5,13 +5,14 @@
 
 ## Актуальный план (обновлён 2026-09-28)
 
-**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0, v1.21.2). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66), мобильный аудит после v2 закрыт (#49). Все шаги курса закрыты, доки синхронизированы (#72). Открытые issues на 2026-09-28: [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) (enhancement — CAPTCHA).
+**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0, v1.21.2). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66), мобильный аудит после v2 закрыт (#49). Все шаги курса закрыты, доки синхронизированы (#72). Защита публичной записи реализована 2026-09-28 (#46, [ADR-0025](adr/0025-captcha-and-rate-limit.md)). Открытые issues на 2026-09-28: [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76) (bug — суббота в переносе, «Перенести» у прошедших встреч).
 
 **Следующие шаги (в порядке приоритета):**
 
-1. **CAPTCHA в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): выбор провайдера + ADR, серверная верификация токена и rate-limit по IP на публичном `POST /api/v1/hosts/:slug/bookings`.
+1. **Баги страницы переноса и панели** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): убрать «Перенести» у прошедших встреч в панели; разобраться с субботой в списке дней на `/reschedule/:token` (нужен репро).
 2. **Визуальная приёмка v2** (человек): сверить со `docs/design/v2/screenshots/` на 1280×820 и 390×844 в обеих темах (A/B, C1–C4, M, D; UX-кейсы case-01…case-11). Список — `docs/design/v2/README.md`; отличия — в раздел «Отклонения».
-3. **SSL-режим драйвера `pg`** (мелкая): явно задать `sslmode=verify-full` в `.env.example`/`DATABASE_URL`, убрать предупреждение; при необходимости — ADR.
+3. **SSL-режим драйвера `pg`** (мелкая): ✅ закрыт 2026-09-28 — режим нормализуется в `server/env.ts`, предупреждения в логах нет ([Backlog](#backlog-новые-задачи)). Перепроверить после апгрейда `pg` до v9.
+4. **Проверка CAPTCHA в проде:** задать `TURNSTILE_SITEKEY` / `TURNSTILE_SECRET_KEY` / `TURNSTILE_ALLOWED_HOSTNAMES` в Environment Group Render и убедиться, что виджет рендерится, а в логах нет предупреждения «CAPTCHA выключена».
 
 ## Критерии приёмки проекта — статус (проверяет наставник + hexlet-check)
 
@@ -165,8 +166,18 @@
 
 ## Backlog (новые задачи)
 
-- [ ] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): `POST /api/v1/hosts/:slug/bookings` публичный; поле «Гости» принимает произвольные email, а форма — спам/абьюз. Добавить CAPTCHA (напр. Cloudflare Turnstile или hCaptcha) на шаге брони, серверную верификацию токена и rate-limit по IP; показывать/требовать капчу при указании email гостя (или всегда). Выбор провайдера и точки проверки зафиксировать отдельным ADR.
-- [ ] **SSL-режим драйвера Postgres (`pg`)** — при старте API видно предупреждение: `SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'` и намёк, что в `pg-connection-string` v3 / `pg` v9 семантика станет строже. Задача: явно задать SSL-режим в строке подключения (`sslmode=verify-full` для текущего поведения либо `uselibpqcompat=true&sslmode=require` для совместимости с libpq), убрать предупреждение и зафиксировать решение в `docs/adr/` / `.env.example`. Проверить после апгрейда `pg` до v9.
+- [x] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) ✅ 2026-09-28: **Cloudflare Turnstile** (Free, Managed/Visible), **показывается всегда**; выключена, пока не задан `TURNSTILE_SECRET_KEY` (dev/test/e2e не зависят от внешнего сервиса); site key отдаёт `GET /api/v1/hosts/:slug/settings` (`captcha: CaptchaSettings`); серверная проверка в `POST .../bookings` — порядок «реплей по `Idempotency-Key` → zod → CAPTCHA → слоты», fail-closed; легаси `POST /api/bookings` тоже защищён; `RateLimit`-плагин (`@fastify/rate-limit` ≥10): 20/мин запись, 300/мин чтения, 600/мин глобально, ключ — `CF-Connecting-IP` → `request.ip`, `trustProxy: true`. Коды `CAPTCHA_FAILED`/`RATE_LIMITED` добавлены в `api/main.tsp` → OpenAPI + SDK. Тесты: `server/captcha.test.ts` (11), `server/rate-limit.test.ts` (5); [ADR-0025](adr/0025-captcha-and-rate-limit.md).
+- [ ] **Панель и перенос: превью недели, суббота, перенос прошедшей встречи** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): превью «Неделя глазами гостя» растянуто на ширину блока (✅ `src/components/availability-preview.tsx`); ждут: суббота в списке дней на `/reschedule/:token`, «Перенести» у прошедших встреч в панели.
+- [x] **SSL-режим драйвера Postgres (`pg`)** ✅ разобран 2026-09-28 (см. [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76)). Предупреждение `SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'` печатает `pg-connection-string@2.14.0` только из-за наличия `sslmode=require` в строке подключения. **Проверено живым соединением** с Neon (все варианты реально подключились, не только разбор строки):
+
+  | `sslmode` | конфиг клиента | результат |
+  |---|---|---|
+  | `require` (было) | `ssl: {}` | подключается, **печатает предупреждение** |
+  | **`verify-full`** | `ssl: {}` | подключается, **предупреждения нет** — поведение идентичное |
+  | `uselibpqcompat=true&require` | `ssl: {rejectUnauthorized: false}` | подключается без ворнинга, но **слабее** (без проверки сертификата) |
+  | без `sslmode` | TLS выключен | `28000 connection is insecure` |
+
+  **Решение:** нормализовать режим у себя, в `server/env.ts` (`normalizeSslMode`): любой входящий `sslmode` (в том числе `require`, который по умолчанию кладут Neon и Render) заменяется на `verify-full`. Ручная правка строки подключения **не нужна и невозможна** — её формируют Neon и Render. Правка сделана аккуратно: меняется только значение параметра, без пересборки через `new URL()`, иначе пароль в строке перекодировался бы и доступ к БД пропал бы. Обновлены `.env.example`, `docs/ci_cd_render.md`; 7 тестов — `server/env.test.ts`. Проверено на живой БД: сервер поднимается и подключается, предупреждения в логах нет. Перепроверить после апгрейда `pg` до v9 — там `require` станет вести себя как в libpq.
 
 ### Backlog: редизайн v2
 

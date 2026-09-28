@@ -264,6 +264,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Booking'
+        '429':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
       requestBody:
         required: true
         content:
@@ -581,6 +587,26 @@ components:
         reason:
           type: string
           description: Необязательная причина отмены.
+    CaptchaSettings:
+      type: object
+      required:
+        - provider
+        - required
+        - siteKey
+      properties:
+        provider:
+          type: string
+          enum:
+            - turnstile
+          description: Провайдер защиты от ботов. Сейчас всегда turnstile.
+        required:
+          type: boolean
+          description: true — виджет обязателен и токен проверяется; false — CAPTCHA выключена.
+        siteKey:
+          type: string
+          nullable: true
+          description: Публичный site key. null, если CAPTCHA выключена.
+      description: Публичные настройки CAPTCHA для формы записи (ADR-0025).
     CreateBookingRequest:
       type: object
       required:
@@ -612,6 +638,9 @@ components:
         consentAccepted:
           type: boolean
           description: Согласие на обработку персональных данных (обязательно).
+        captchaToken:
+          type: string
+          description: Одноразовый токен Cloudflare Turnstile. Обязателен, когда CAPTCHA включена.
     CreateEventTypeRequest:
       type: object
       required:
@@ -665,6 +694,8 @@ components:
         - NOT_FOUND
         - SLOT_TAKEN
         - CONFLICT
+        - CAPTCHA_FAILED
+        - RATE_LIMITED
     ErrorResponse:
       type: object
       required:
@@ -726,6 +757,7 @@ components:
         - slug
         - name
         - timeZone
+        - captcha
       properties:
         slug:
           type: string
@@ -734,6 +766,10 @@ components:
         timeZone:
           type: string
           description: IANA-пояс хоста, например Europe/Moscow.
+        captcha:
+          allOf:
+            - $ref: '#/components/schemas/CaptchaSettings'
+          description: 'Параметры CAPTCHA: провайдер, обязательность и публичный site key.'
       description: Публичные настройки организатора по slug.
     LocalDate:
       type: string

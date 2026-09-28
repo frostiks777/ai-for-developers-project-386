@@ -80,6 +80,13 @@ export default function HomePage() {
   const [timeZone, setTimeZone] = useState(defaultTimeZone)
   const [minNoticeMin, setMinNoticeMin] = useState<number | null>(null)
   const [horizonDays, setHorizonDays] = useState<number | null>(null)
+  // CAPTCHA (ADR-0025). По умолчанию выключена: если запрос настроек не
+  // прошёл, форма работает как раньше, а сервер всё равно требует токен
+  // только при заданном TURNSTILE_SECRET_KEY.
+  const [captcha, setCaptcha] = useState<{ required: boolean; siteKey: string | null }>({
+    required: false,
+    siteKey: null,
+  })
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { hour12 } = useTimeFormat()
   const { view, setView } = useBookingView()
@@ -101,6 +108,29 @@ export default function HomePage() {
         : slots,
     [slots, activeDate, timeZone],
   )
+
+  useEffect(() => {
+    let isActive = true
+
+    call(api.getHostSettings(slug ?? ''))
+      .then((settings) => {
+        if (isActive) {
+          setCaptcha({
+            required: Boolean(settings?.captcha?.required),
+            siteKey: settings?.captcha?.siteKey ?? null,
+          })
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setCaptcha({ required: false, siteKey: null })
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [slug])
 
   useEffect(() => {
     let isActive = true
@@ -458,6 +488,8 @@ export default function HomePage() {
                   onConflict={handleConflict}
                   suggestions={suggestions}
                   onSelectSuggestion={handleSelectSuggestion}
+                  captchaRequired={captcha.required}
+                  captchaSiteKey={captcha.siteKey}
                 />
               </aside>
             </div>
@@ -543,6 +575,8 @@ export default function HomePage() {
                 onConflict={handleConflict}
                 suggestions={suggestions}
                 onSelectSuggestion={handleSelectSuggestion}
+                captchaRequired={captcha.required}
+                captchaSiteKey={captcha.siteKey}
               />
             </aside>
           </div>
@@ -580,6 +614,8 @@ export default function HomePage() {
                 onSelectSuggestion={handleSelectSuggestion}
                 onBooked={handleBooked}
                 onConflict={handleConflict}
+                captchaRequired={captcha.required}
+                captchaSiteKey={captcha.siteKey}
               />
             )}
           </div>

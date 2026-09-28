@@ -40,7 +40,7 @@ export interface ApiError {
    */
   details?: Record<string, unknown>;
 }
-export type ErrorCode = "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT";
+export type ErrorCode = "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT" | "CAPTCHA_FAILED" | "RATE_LIMITED";
 export interface CreateHostRequest {
   slug: string;
   name: string;
@@ -198,6 +198,10 @@ export interface CreateBookingRequest {
    * Согласие на обработку персональных данных (обязательно).
    */
   consentAccepted: boolean;
+  /**
+   * Одноразовый токен Cloudflare Turnstile. Обязателен, когда CAPTCHA включена.
+   */
+  captchaToken?: string;
 }
 /**
  * Интервал, в который организатор не принимает записи.
@@ -245,6 +249,27 @@ export interface HostSettings {
    * IANA-пояс хоста, например Europe/Moscow.
    */
   timeZone: string;
+  /**
+   * Параметры CAPTCHA: провайдер, обязательность и публичный site key.
+   */
+  captcha: CaptchaSettings;
+}
+/**
+ * Публичные настройки CAPTCHA для формы записи (ADR-0025).
+ */
+export interface CaptchaSettings {
+  /**
+   * Провайдер защиты от ботов. Сейчас всегда turnstile.
+   */
+  provider: "turnstile";
+  /**
+   * true — виджет обязателен и токен проверяется; false — CAPTCHA выключена.
+   */
+  required: boolean;
+  /**
+   * Публичный site key. null, если CAPTCHA выключена.
+   */
+  siteKey: string | null;
 }
 /**
  * Локальная дата (YYYY-MM-DD) в поясе хоста.

@@ -66,6 +66,9 @@ export async function createBooking(
   if (+response.status === 201 && response.headers["content-type"]?.includes("application/json")) {
     return jsonBookingToApplicationTransform(response.body)!;
   }
+  if (+response.status === 429 && response.headers["content-type"]?.includes("application/json")) {
+    return jsonErrorResponseToApplicationTransform(response.body)!;
+  }
   throw createRestError(response);
 }
 ;

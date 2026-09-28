@@ -31,8 +31,9 @@ export function useBooking() {
     } catch (error) {
       const apiError =
         error instanceof ApiError ? error : new ApiError(0, 'Не удалось забронировать звонок')
-      // 409 обрабатывается формой на месте (сообщение + соседние окна), дубль-тост не нужен
-      if (apiError.status !== 409) {
+      // 409 и 422 CAPTCHA_FAILED обрабатываются формой на месте (сообщение +
+      // соседние окна / сброс виджета), дубль-тост не нужен
+      if (apiError.status !== 409 && apiError.code !== 'CAPTCHA_FAILED') {
         toast.error(apiError.message)
       }
       return { ok: false, error: apiError }

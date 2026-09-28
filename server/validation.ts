@@ -31,6 +31,9 @@ export const createBookingSchema = z.object({
     .optional()
     .transform((value) => (value && value.length > 0 ? value : undefined)),
   consentAccepted: z.boolean().optional(),
+  // Легаси-эндпоинт POST /api/bookings тоже проверяет капчу, иначе он был бы
+  // обходом защиты v1-маршрута (ADR-0025).
+  captchaToken: z.string().trim().min(1).optional(),
 })
 
 // Правила доступности организатора (одна строка, см. server/rules.ts)
@@ -145,6 +148,10 @@ export const v1CreateBookingSchema = z.object({
   consentAccepted: z
     .boolean()
     .refine((value) => value === true, 'Нужно согласие на обработку персональных данных'),
+  // Одноразовый токен Cloudflare Turnstile (ADR-0025). Обязателен по факту,
+  // когда на сервере задан TURNSTILE_SECRET_KEY; в схеме остаётся optional,
+  // чтобы выключенная капча не ломала текущие вызовы.
+  captchaToken: z.string().trim().min(1).optional(),
 })
 
 export const v1RescheduleBookingSchema = z.object({

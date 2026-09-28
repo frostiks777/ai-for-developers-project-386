@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SlotSuggestions } from '@/components/slot-suggestions'
+import { TurnstileField } from '@/components/turnstile-field'
 import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
 import { useTimeFormat } from '@/hooks/use-time-format'
@@ -32,6 +33,10 @@ interface BookingFormProps {
   onSelectSuggestion?: (slot: TimeSlot) => void
   onBooked: (booking: CreatedBooking) => void
   onConflict: (slot: TimeSlot) => void
+  // Параметры CAPTCHA из GET /hosts/:slug/settings (ADR-0025).
+  // При required=false виджет не рендерится и токен не отправляется.
+  captchaRequired?: boolean
+  captchaSiteKey?: string | null
 }
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
@@ -63,6 +68,8 @@ export function BookingForm({
   onSelectSuggestion,
   onBooked,
   onConflict,
+  captchaRequired = false,
+  captchaSiteKey = null,
 }: BookingFormProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -75,6 +82,11 @@ export function BookingForm({
   const [isExtraOpen, setIsExtraOpen] = useState(false)
   const [conflict, setConflict] = useState(false)
   const [idempotencyKey, setIdempotencyKey] = useState(() => createIdempotencyKey())
+  // CAPTCHA (ADR-0025): токен приходит из виджета, resetSignal заставляет
+  // виджет выдать новый токен после отказа сервера.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaError, setCaptchaError] = useState<string | null>(null)
+  const [captchaReset, setCaptchaReset] = useState(0)
   const { isSubmitting, bookSlot } = useBooking()
   const { hour12 } = useTimeFormat()
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -113,8 +125,13 @@ export function BookingForm({
     comment,
     guests,
     consentAccepted: consent,
+    captchaToken: captchaToken ?? undefined,
   })
-  const isFormValid = parseResult.success && slot !== null && eventTypeId !== null
+  // CAPTCHA включена на сервере, но гость ещё не прошёл виджет — отправка
+  // заблокирована, иначе сервер вернул бы 422 CAPTCHA_FAILED.
+  const captchaSatisfied = !captchaRequired || Boolean(captchaToken)
+  const isFormValid =
+    parseResult.success && slot !== null && eventTypeId !== null && captchaSatisfied
   const issues = parseResult.success ? [] : parseResult.error.issues
   const nameError =
     name.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'name')?.message ?? null) : null
@@ -133,6 +150,9 @@ export function BookingForm({
   if (!consent) {
     missing.push('отметьте согласие')
   }
+  if (!captchaSatisfied) {
+    missing.push('подтвердите, что вы не робот')
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -142,6 +162,7 @@ export function BookingForm({
     }
 
     setConflict(false)
+    setCaptchaError(null)
 
     const result = await bookSlot(
       hostSlug,
@@ -154,6 +175,7 @@ export function BookingForm({
         clientNotes: comment.trim() || undefined,
         guests: guests.length > 0 ? guests : undefined,
         consentAccepted: consent,
+        captchaToken: captchaToken ?? undefined,
       },
       { idempotencyKey },
     )
@@ -176,6 +198,13 @@ export function BookingForm({
     if (result.error.status === 409) {
       setConflict(true)
       onConflict(slot)
+    }
+
+    // Токен одноразовый: после отказа сервера виджет должен выдать новый,
+    // иначе повторная отправка получит тот же израсходованный токен.
+    if (result.error.code === 'CAPTCHA_FAILED') {
+      setCaptchaError(result.error.message)
+      setCaptchaReset((signal) => signal + 1)
     }
   }
 
@@ -404,6 +433,22 @@ export function BookingForm({
           <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
             Для этого организатора не настроены типы встреч — бронирование недоступно.
           </p>
+        )}
+
+        {captchaRequired && (
+          <div className="space-y-1">
+            <TurnstileField
+              siteKey={captchaSiteKey}
+              required={captchaRequired}
+              onTokenChange={setCaptchaToken}
+              resetSignal={captchaReset}
+            />
+            {captchaError && (
+              <p role="alert" className="text-[13px] text-destructive">
+                {captchaError}
+              </p>
+            )}
+          </div>
         )}
 
         <div className="mt-auto pt-3">

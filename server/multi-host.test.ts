@@ -60,7 +60,12 @@ describe('Мульти-хост (ADR-0018)', () => {
 
     const byId = await app.inject({ method: 'GET', url: `/api/v1/hosts/${hostId}/settings` })
     expect(byId.statusCode).toBe(200)
-    expect(byId.json()).toEqual({ slug: 'default', name: 'Организатор', timeZone: 'UTC' })
+    expect(byId.json()).toEqual({
+      slug: 'default',
+      name: 'Организатор',
+      timeZone: 'UTC',
+      captcha: { provider: 'turnstile', required: false, siteKey: null },
+    })
   })
 
   it('слоты изолированы по хостам', async () => {

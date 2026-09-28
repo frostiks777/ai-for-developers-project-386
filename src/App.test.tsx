@@ -10,6 +10,7 @@ const settings: HostSettings = {
   slug: 'default',
   name: 'Организатор',
   timeZone: 'UTC',
+  captcha: { provider: 'turnstile', required: false, siteKey: null },
 }
 
 const slot = {

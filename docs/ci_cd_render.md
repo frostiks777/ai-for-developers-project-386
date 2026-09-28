@@ -18,7 +18,7 @@
 
 | Переменная | Значение в проде | Комментарий |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://…?sslmode=require` | на Render приходит из **Environment Group `DB`** (см. `render.yaml`) |
+| `DATABASE_URL` | `postgresql://…?sslmode=require` | на Render приходит из **Environment Group `DB`** (см. `render.yaml`). Значение `sslmode` менять не нужно — нормализуется в `verify-full` на старте сервера |
 | `PORT` | `10000` | Render задаёт порт; сервер читает `process.env.PORT` |
 | `ADMIN_PASSWORD` | пароль организатора | в Blueprint задано демо-значение `call-calendar-admin` — **смените** |
 | `NODE_ENV` | `production` | отключает тестовый логгер Fastify |
@@ -37,11 +37,11 @@
 ## 4. База данных Neon
 
 1. <https://console.neon.tech> → новый проект, регион рядом с Render ( frankfurt/berlin ).
-2. Скопировать **pooled connection string** → это и есть `DATABASE_URL`.
+2. Скопировать **pooled connection string** → это и есть `DATABASE_URL`. Значение `sslmode` править **не нужно**: сервер приводит его к `verify-full` сам (`server/env.ts`, `normalizeSslMode`), потому что и Neon, и Render формируют ссылку сами и по умолчанию кладут `sslmode=require`, на который `pg-connection-string` ругается предупреждением. Подробности — в [ADR-0013](adr/0013-postgres-migration.md) и бэклоге `docs/todo.md`.
 3. На Render: **Environment Groups** → создать группу (например `DB`) и добавить в неё `DATABASE_URL`; в `render.yaml` он подхватывается через `fromGroup: DB`.
 4. Схему создавать вручную не нужно: при старте сервера выполняются идемпотентные миграции `server/db/migrate.ts`, а при старте с пустой БД сидируются дефолтный хост, тип встречи и слоты по правилам доступности.
 
-Проверка соединения: `curl https://<host>/health` → `{"status":"ok"}`; если в логах видно SSL-предупреждение `pg` — см. бэклог в `docs/todo.md` (пункт про `sslmode=verify-full`).
+Проверка соединения: `curl https://<host>/health` → `{"status":"ok"}`. SSL-предупреждение `pg` в логах быть не должно — режим приводится к `verify-full` в `server/env.ts` (ADR-0013).
 
 ## 5. Обновление и откат
 
