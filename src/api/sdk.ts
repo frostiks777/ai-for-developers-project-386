@@ -43,11 +43,16 @@ export const api = new ApiV1Client({
 
 export class ApiError extends Error {
   readonly status: number
+  // Машиночитаемый код из контракта (`{ error: { code } }`): например
+  // CAPTCHA_FAILED. Без него форма не отличит отказ капчи от обычной
+  // ошибки валидации — оба приходят как 422.
+  readonly code: string | null
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code: string | null = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -84,15 +89,42 @@ function messageFromBody(body: unknown): string | null {
   return null
 }
 
+// Достаёт машиночитаемый код ошибки из v1-конверта `{ error: { code } }`.
+// Легаси-формат `{ error: 'текст' } }` кода не несёт.
+function codeFromBody(body: unknown): string | null {
+  const parsed = typeof body === 'string' ? safeParseJson(body) : body
+
+  if (parsed === null || typeof parsed !== 'object') {
+    return null
+  }
+
+  const error = (parsed as { error?: unknown }).error
+
+  if (error !== null && typeof error === 'object' && 'code' in error) {
+    const code = (error as { code: unknown }).code
+    return typeof code === 'string' && code.trim() !== '' ? code : null
+  }
+
+  return null
+}
+
+function safeParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
 // Разворачивает результат SDK-операции: на успех возвращает модель,
-// на ошибку — ApiError с сообщением из ответа.
+// на ошибку — ApiError с сообщением и кодом из ответа.
 export async function call<T>(promise: Promise<T | ErrorResponse>): Promise<T> {
   try {
     return (await promise) as T
   } catch (error) {
     if (error instanceof RestError) {
       const message = messageFromBody(error.body) ?? `Ошибка запроса: ${error.status}`
-      throw new ApiError(Number(error.status), message)
+      throw new ApiError(Number(error.status), message, codeFromBody(error.body))
     }
 
     throw error

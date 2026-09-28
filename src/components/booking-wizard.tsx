@@ -45,6 +45,9 @@ interface BookingWizardProps {
   onSelectSuggestion?: (slot: TimeSlot) => void
   onBooked: (booking: CreatedBooking) => void
   onConflict: (slot: TimeSlot) => void
+  // CAPTCHA (ADR-0025) — пробрасывается в форму на шаге «Контакты».
+  captchaRequired?: boolean
+  captchaSiteKey?: string | null
 }
 
 export function BookingWizard({
@@ -63,6 +66,8 @@ export function BookingWizard({
   onSelectSuggestion,
   onBooked,
   onConflict,
+  captchaRequired = false,
+  captchaSiteKey = null,
 }: BookingWizardProps) {
   const { hour12 } = useTimeFormat()
   const [step, setStep] = useState<Step>('day')
@@ -329,6 +334,8 @@ export function BookingWizard({
         onSelectSuggestion={onSelectSuggestion}
         onBooked={onBooked}
         onConflict={onConflict}
+        captchaRequired={captchaRequired}
+        captchaSiteKey={captchaSiteKey}
       />
     </div>
   )

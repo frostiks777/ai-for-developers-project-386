@@ -54,6 +54,18 @@ union ErrorCode {
   "NOT_FOUND",
   "SLOT_TAKEN",
   "CONFLICT",
+  "CAPTCHA_FAILED",
+  "RATE_LIMITED",
+}
+
+/** Публичные настройки CAPTCHA для формы записи (ADR-0025). */
+model CaptchaSettings {
+  @doc("Провайдер защиты от ботов. Сейчас всегда turnstile.")
+  provider: "turnstile";
+  @doc("true — виджет обязателен и токен проверяется; false — CAPTCHA выключена.")
+  required: boolean;
+  @doc("Публичный site key. null, если CAPTCHA выключена.")
+  siteKey: string | null;
 }
 
 /** Публичные настройки организатора по slug. */
@@ -62,6 +74,8 @@ model HostSettings {
   name: string;
   @doc("IANA-пояс хоста, например Europe/Moscow.")
   timeZone: string;
+  @doc("Параметры CAPTCHA: провайдер, обязательность и публичный site key.")
+  captcha: CaptchaSettings;
 }
 
 /** Организатор (хост) в мульти-хост-модели. */
@@ -215,6 +229,8 @@ model CreateBookingRequest {
   guests?: string[];
   @doc("Согласие на обработку персональных данных (обязательно).")
   consentAccepted: boolean;
+  @doc("Одноразовый токен Cloudflare Turnstile. Обязателен, когда CAPTCHA включена.")
+  captchaToken?: string;
 }
 
 model RescheduleBookingRequest {
@@ -327,7 +343,7 @@ namespace ApiV1 {
       @path slug: HostSlug,
       @header("Idempotency-Key") idempotencyKey?: string,
       @body body: CreateBookingRequest,
-    ): { @statusCode statusCode: 201; @body body: Booking } | ErrorResponse;
+    ): { @statusCode statusCode: 201; @body body: Booking } | { @statusCode statusCode: 429; @body body: ErrorResponse } | ErrorResponse;
   }
 
   @route("/hosts/{slug}/blocks")

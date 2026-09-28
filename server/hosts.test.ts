@@ -20,7 +20,13 @@ describe('GET /api/v1/hosts/:slug/settings', () => {
     const response = await app.inject({ method: 'GET', url: '/api/v1/hosts/default/settings' })
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({ slug: 'default', name: 'Организатор', timeZone: 'UTC' })
+    expect(response.json()).toEqual({
+      slug: 'default',
+      name: 'Организатор',
+      timeZone: 'UTC',
+      // CAPTCHA выключена, пока не задан TURNSTILE_SECRET_KEY (ADR-0025)
+      captcha: { provider: 'turnstile', required: false, siteKey: null },
+    })
   })
 
   it('отвечает 404 на неизвестный slug', async () => {

@@ -3,9 +3,11 @@ import { randomUUID, timingSafeEqual } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
+import rateLimit from '@fastify/rate-limit'
 import { and, eq, gte, or } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
+import { captchaSiteKey, isCaptchaEnabled, verifyCaptchaToken } from './captcha'
 import { env } from './env'
 import { bookings, eventTypes, hosts, slots } from './db/schema'
 import {
@@ -30,6 +32,14 @@ import {
 } from './event-types'
 import { dateKeyInZone, dateKeyPattern, isValidTimeZone } from './hosts'
 import { loadAvailabilityRules, regenerateFutureSlots, saveAvailabilityRules } from './rules'
+import {
+  bookingRateLimit,
+  clientIpKey,
+  globalRateLimit,
+  mutationRateLimit,
+  publicReadRateLimit,
+  rateLimitErrorResponse,
+} from './rate-limit'
 import {
   createTimeBlock,
   deleteTimeBlock,
@@ -161,8 +171,25 @@ const isAuthorizedAdmin = (authorization: string | undefined, password: string):
 
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
-  // В тестах логи Fastify не нужны (vitest выставляет NODE_ENV=test)
-  const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
+  // В тестах логи fastify не нужны (vitest выставляет NODE_ENV=test)
+  // trustProxy обязателен для rate-limit по IP: без него request.ip у всех
+  // гостей одинаков (адрес прокси), и лимит превращается в глобальный (ADR-0025).
+  // Подробности про CF-Connecting-IP и почему не подбираем число хопов —
+  // в server/rate-limit.ts (clientIpKey).
+  const app = Fastify({
+    logger: process.env.NODE_ENV !== 'test',
+    trustProxy: true,
+  })
+
+  // Лимиты задаются на конкретных маршрутах (global: false), кроме общего
+  // предохранителя, который нужен на всех путях, включая несуществующие.
+  await app.register(rateLimit, {
+    global: false,
+    max: globalRateLimit().max,
+    timeWindow: globalRateLimit().timeWindow,
+    keyGenerator: clientIpKey,
+    errorResponseBuilder: rateLimitErrorResponse,
+  })
 
   // Гейт панели организатора. Без ADMIN_PASSWORD доступ открыт (локальный dev,
   // тесты, e2e); в продакшене пароль задаётся переменной окружения.
@@ -197,6 +224,15 @@ export async function buildApp(): Promise<FastifyInstance> {
   const defaultHost = async () => (await db.select().from(hosts).limit(1))[0]
 
   app.get('/health', () => ({ status: 'ok' }))
+
+  // CAPTCHA выключена, пока не задан TURNSTILE_SECRET_KEY. В продакшене это
+  // почти наверняка ошибка конфигурации — предупреждаем громко, но не падаем
+  // (тем же приёмом, что и для ADMIN_PASSWORD в ADR-0017).
+  if (env.NODE_ENV === 'production' && !isCaptchaEnabled()) {
+    app.log.warn(
+      'CAPTCHA выключена: не задан TURNSTILE_SECRET_KEY. Публичная запись брони не защищена от ботов (ADR-0025).',
+    )
+  }
 
   // Слоты хоста в будущем с признаком занятости, отсортированные по startAt.
   // Слоты, пересекающиеся с ручными блокировками, не выдаются.
@@ -264,59 +300,74 @@ export async function buildApp(): Promise<FastifyInstance> {
       .orderBy(slots.startAt)
   })
 
-  app.post('/api/bookings', async (request, reply) => {
-    const parsed = createBookingSchema.safeParse(request.body)
+  app.post(
+    '/api/bookings',
+    { config: { rateLimit: bookingRateLimit() } },
+    async (request, reply) => {
+      const parsed = createBookingSchema.safeParse(request.body)
 
-    if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
-      return reply.code(422).send({ error: message })
-    }
-
-    const { slotId, name, phone, email, comment } = parsed.data
-
-    const slotRows = await db.select().from(slots).where(eq(slots.id, slotId)).limit(1)
-    const slot = slotRows[0]
-    if (!slot) {
-      return reply.code(404).send({ error: 'Слот не найден' })
-    }
-
-    if (slot.startAt < new Date().toISOString()) {
-      return reply.code(400).send({ error: 'Слот уже прошёл' })
-    }
-
-    if (slot.startAt < new Date(Date.now() + (await minNoticeMs(slot.hostId))).toISOString()) {
-      return reply.code(400).send({ error: 'Слот уже недоступен' })
-    }
-
-    try {
-      const created = (
-        await db
-          .insert(bookings)
-          .values({
-            hostId: slot.hostId,
-            slotId,
-            name,
-            phone: phone ?? null,
-            email,
-            comment: comment ?? null,
-            cancelToken: randomUUID(),
-            startAt: slot.startAt,
-            endAt: new Date(
-              new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
-            ).toISOString(),
-          })
-          .returning()
-      )[0]
-
-      return reply.code(201).send(created)
-    } catch (error) {
-      if (isUniqueViolation(error)) {
-        return reply.code(409).send({ error: 'Слот уже занят' })
+      if (!parsed.success) {
+        const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+        return reply.code(422).send({ error: message })
       }
 
-      throw error
-    }
-  })
+      // Легаси-эндпоинт не входит в контракт v1, но остаётся публичным —
+      // иначе он был бы очевидным обходом CAPTCHA (ADR-0025).
+      const captcha = await verifyCaptchaToken(
+        (request.body as { captchaToken?: string } | undefined)?.captchaToken,
+        request.ip,
+      )
+
+      if (!captcha.ok) {
+        return reply.code(422).send({ error: { code: 'CAPTCHA_FAILED', message: captcha.reason } })
+      }
+
+      const { slotId, name, phone, email, comment } = parsed.data
+
+      const slotRows = await db.select().from(slots).where(eq(slots.id, slotId)).limit(1)
+      const slot = slotRows[0]
+      if (!slot) {
+        return reply.code(404).send({ error: 'Слот не найден' })
+      }
+
+      if (slot.startAt < new Date().toISOString()) {
+        return reply.code(400).send({ error: 'Слот уже прошёл' })
+      }
+
+      if (slot.startAt < new Date(Date.now() + (await minNoticeMs(slot.hostId))).toISOString()) {
+        return reply.code(400).send({ error: 'Слот уже недоступен' })
+      }
+
+      try {
+        const created = (
+          await db
+            .insert(bookings)
+            .values({
+              hostId: slot.hostId,
+              slotId,
+              name,
+              phone: phone ?? null,
+              email,
+              comment: comment ?? null,
+              cancelToken: randomUUID(),
+              startAt: slot.startAt,
+              endAt: new Date(
+                new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+              ).toISOString(),
+            })
+            .returning()
+        )[0]
+
+        return reply.code(201).send(created)
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          return reply.code(409).send({ error: 'Слот уже занят' })
+        }
+
+        throw error
+      }
+    },
+  )
 
   // Отмена брони организатором — слот снова становится свободным
   app.delete('/api/bookings/:id', async (request, reply) => {
@@ -336,7 +387,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Публичная отмена брони по токену из ссылки на экране успеха
-  app.post('/api/bookings/cancel', async (request, reply) => {
+  app.post(
+    '/api/bookings/cancel',
+    { config: { rateLimit: mutationRateLimit() } },
+    async (request, reply) => {
     const parsed = cancelBookingSchema.safeParse(request.body)
 
     if (!parsed.success) {
@@ -378,7 +432,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Перенос брони на другой слот по токену; старый слот освобождается
-  app.post('/api/bookings/reschedule', async (request, reply) => {
+  app.post(
+    '/api/bookings/reschedule',
+    { config: { rateLimit: mutationRateLimit() } },
+    async (request, reply) => {
     const parsed = rescheduleBookingSchema.safeParse(request.body)
 
     if (!parsed.success) {
@@ -553,18 +610,38 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // Публичные настройки хоста по контракту HostSettings
-  app.get('/api/v1/hosts/:slug/settings', async (request, reply) => {    const { slug } = request.params as { slug: string }
-    const host = await findHost(slug)
+  app.get(
+    '/api/v1/hosts/:slug/settings',
+    { config: { rateLimit: publicReadRateLimit() } },
+    async (request, reply) => {
+      const { slug } = request.params as { slug: string }
+      const host = await findHost(slug)
 
-    if (!host) {
-      return reply.code(404).send({ error: 'Хост не найден' })
-    }
+      if (!host) {
+        return reply.code(404).send({ error: 'Хост не найден' })
+      }
 
-    return { slug: host.slug, name: host.name, timeZone: host.timezone }
-  })
+      const captchaRequired = isCaptchaEnabled()
+
+      return {
+        slug: host.slug,
+        name: host.name,
+        timeZone: host.timezone,
+        // CAPTCHA выключена, пока не задан TURNSTILE_SECRET_KEY (ADR-0025).
+        captcha: {
+          provider: 'turnstile',
+          required: captchaRequired,
+          siteKey: captchaRequired ? captchaSiteKey() : null,
+        },
+      }
+    },
+  )
 
   // Слоты хоста; необязательные ?date=YYYY-MM-DD, ?timezone=IANA, ?eventTypeId=
-  app.get('/api/v1/hosts/:slug/slots', async (request, reply) => {
+  app.get(
+    '/api/v1/hosts/:slug/slots',
+    { config: { rateLimit: publicReadRateLimit() } },
+    async (request, reply) => {
     const { slug } = request.params as { slug: string }
     const host = await findHost(slug)
 
@@ -609,19 +686,24 @@ export async function buildApp(): Promise<FastifyInstance> {
       }))
 
     return { timeZone, date: date ?? null, slots }
-  })
+    },
+  )
 
   // ── API v1: диапазоны доступности ────────────────────────────────────
-  app.get('/api/v1/hosts/:slug/availability', async (request, reply) => {
-    const { slug } = request.params as { slug: string }
-    const host = await findHost(slug)
+  app.get(
+    '/api/v1/hosts/:slug/availability',
+    { config: { rateLimit: publicReadRateLimit() } },
+    async (request, reply) => {
+      const { slug } = request.params as { slug: string }
+      const host = await findHost(slug)
 
-    if (!host) {
-      return reply.code(404).send({ error: 'Хост не найден' })
-    }
+      if (!host) {
+        return reply.code(404).send({ error: 'Хост не найден' })
+      }
 
-    return loadAvailabilitySettings(host.id, host.timezone)
-  })
+      return loadAvailabilitySettings(host.id, host.timezone)
+    },
+  )
 
   app.put('/api/v1/hosts/:slug/availability', async (request, reply) => {
     const { slug } = request.params as { slug: string }
@@ -650,16 +732,20 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // ── API v1: типы встреч ──────────────────────────────────────────────
-  app.get('/api/v1/hosts/:slug/event-types', async (request, reply) => {
-    const { slug } = request.params as { slug: string }
-    const host = await findHost(slug)
+  app.get(
+    '/api/v1/hosts/:slug/event-types',
+    { config: { rateLimit: publicReadRateLimit() } },
+    async (request, reply) => {
+      const { slug } = request.params as { slug: string }
+      const host = await findHost(slug)
 
-    if (!host) {
-      return reply.code(404).send({ error: 'Хост не найден' })
-    }
+      if (!host) {
+        return reply.code(404).send({ error: 'Хост не найден' })
+      }
 
-    return listEventTypes(host.id)
-  })
+      return listEventTypes(host.id)
+    },
+  )
 
   app.post('/api/v1/hosts/:slug/event-types', async (request, reply) => {
     const { slug } = request.params as { slug: string }
@@ -742,75 +828,93 @@ export async function buildApp(): Promise<FastifyInstance> {
     return rows.map((row) => toBooking(row, host.slug, host.timezone))
   })
 
-  app.post('/api/v1/hosts/:slug/bookings', async (request, reply) => {
-    const { slug } = request.params as { slug: string }
-    const host = await findHost(slug)
+  app.post(
+    '/api/v1/hosts/:slug/bookings',
+    { config: { rateLimit: bookingRateLimit() } },
+    async (request, reply) => {
+      const { slug } = request.params as { slug: string }
+      const host = await findHost(slug)
 
-    if (!host) {
-      return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
-    }
-
-    const idempotencyKey =
-      typeof request.headers['idempotency-key'] === 'string'
-        ? request.headers['idempotency-key']
-        : undefined
-
-    if (idempotencyKey) {
-      const existing = await findBookingByIdempotencyKey(idempotencyKey)
-
-      if (existing) {
-        return reply.code(201).send(toBooking(existing, host.slug, host.timezone))
+      if (!host) {
+        return reply.code(404).send(v1Error('NOT_FOUND', 'Хост не найден'))
       }
-    }
 
-    const parsed = v1CreateBookingSchema.safeParse(request.body)
-    if (!parsed.success) {
-      const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
-      return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
-    }
+      const idempotencyKey =
+        typeof request.headers['idempotency-key'] === 'string'
+          ? request.headers['idempotency-key']
+          : undefined
 
-    const eventType = await findEventType(host.id, parsed.data.eventTypeId)
-    if (!eventType) {
-      return reply.code(404).send(v1Error('NOT_FOUND', 'Тип встречи не найден'))
-    }
+      // Реплей по Idempotency-Key возвращаем до проверки CAPTCHA: токен одноразовый,
+      // повторная верификация израсходованного токена вернула бы ложный отказ.
+      if (idempotencyKey) {
+        const existing = await findBookingByIdempotencyKey(idempotencyKey)
 
-    if (Number.isNaN(Date.parse(parsed.data.startAt))) {
-      return reply.code(422).send(v1Error('VALIDATION_ERROR', 'Неверный формат времени'))
-    }
+        if (existing) {
+          return reply.code(201).send(toBooking(existing, host.slug, host.timezone))
+        }
+      }
 
-    const slot = await findSlotByStartAt(host.id, parsed.data.startAt)
-    if (!slot) {
-      return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
-    }
+      const parsed = v1CreateBookingSchema.safeParse(request.body)
+      if (!parsed.success) {
+        const message = parsed.error.issues[0]?.message ?? 'Невалидное тело запроса'
+        return reply.code(422).send(v1Error('VALIDATION_ERROR', message))
+      }
 
-    if (slot.startAt < new Date(Date.now() + (await minNoticeMs(host.id))).toISOString()) {
-      return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
-    }
+      // CAPTCHA проверяется после разбора тела, но до бизнес-логики слотов:
+      // мусорный запрос не должен стоить сетевого вызова к Cloudflare (ADR-0025).
+      const captcha = await verifyCaptchaToken(
+        parsed.data.captchaToken,
+        request.ip,
+        idempotencyKey,
+      )
 
-    if (await findActiveBookingForSlot(slot.id)) {
-      return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
-    }
+      if (!captcha.ok) {
+        return reply.code(422).send(v1Error('CAPTCHA_FAILED', captcha.reason))
+      }
 
-    const slotInterval = {
-      startAt: slot.startAt,
-      endAt: new Date(
-        new Date(slot.startAt).getTime() + eventType.durationMin * 60_000,
-      ).toISOString(),
-    }
+      const eventType = await findEventType(host.id, parsed.data.eventTypeId)
+      if (!eventType) {
+        return reply.code(404).send(v1Error('NOT_FOUND', 'Тип встречи не найден'))
+      }
 
-    if (isBlocked(slotInterval, await listBlockIntervals(host.id))) {
-      return reply.code(409).send(v1Error('CONFLICT', 'Время заблокировано организатором'))
-    }
+      if (Number.isNaN(Date.parse(parsed.data.startAt))) {
+        return reply.code(422).send(v1Error('VALIDATION_ERROR', 'Неверный формат времени'))
+      }
 
-    const created = await createBookingV1(
-      host.id,
-      { ...parsed.data, idempotencyKey },
-      slot,
-      eventType.durationMin,
-    )
+      const slot = await findSlotByStartAt(host.id, parsed.data.startAt)
+      if (!slot) {
+        return reply.code(404).send(v1Error('NOT_FOUND', 'Слот не найден'))
+      }
 
-    return reply.code(201).send(toBooking(created, host.slug, host.timezone))
-  })
+      if (slot.startAt < new Date(Date.now() + (await minNoticeMs(host.id))).toISOString()) {
+        return reply.code(409).send(v1Error('CONFLICT', 'Слот уже недоступен'))
+      }
+
+      if (await findActiveBookingForSlot(slot.id)) {
+        return reply.code(409).send(v1Error('SLOT_TAKEN', 'Слот уже занят'))
+      }
+
+      const slotInterval = {
+        startAt: slot.startAt,
+        endAt: new Date(
+          new Date(slot.startAt).getTime() + eventType.durationMin * 60_000,
+        ).toISOString(),
+      }
+
+      if (isBlocked(slotInterval, await listBlockIntervals(host.id))) {
+        return reply.code(409).send(v1Error('CONFLICT', 'Время заблокировано организатором'))
+      }
+
+      const created = await createBookingV1(
+        host.id,
+        { ...parsed.data, idempotencyKey },
+        slot,
+        eventType.durationMin,
+      )
+
+      return reply.code(201).send(toBooking(created, host.slug, host.timezone))
+    },
+  )
 
   // ── API v1: блокировки времени ───────────────────────────────────────
   app.get('/api/v1/hosts/:slug/blocks', async (request, reply) => {
@@ -880,7 +984,10 @@ export async function buildApp(): Promise<FastifyInstance> {
     return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
 
-  app.post('/api/v1/bookings/:bookingId/cancel', async (request, reply) => {
+  app.post(
+    '/api/v1/bookings/:bookingId/cancel',
+    { config: { rateLimit: mutationRateLimit() } },
+    async (request, reply) => {
     const { bookingId } = request.params as { bookingId: string }
     const booking = await findBookingByPublicId(bookingId)
 
@@ -907,7 +1014,10 @@ export async function buildApp(): Promise<FastifyInstance> {
     )
   })
 
-  app.post('/api/v1/bookings/:bookingId/reschedule', async (request, reply) => {
+  app.post(
+    '/api/v1/bookings/:bookingId/reschedule',
+    { config: { rateLimit: mutationRateLimit() } },
+    async (request, reply) => {
     const { bookingId } = request.params as { bookingId: string }
     const booking = await findBookingByPublicId(bookingId)
 

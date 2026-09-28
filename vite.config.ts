@@ -38,6 +38,17 @@ export default defineConfig({
       DATABASE_URL: '',
       // Ускоряет старт: PGlite инициализируется в одном потоке
       NODE_ENV: 'test',
+      // CAPTCHA выключена в тестах (ADR-0025). process.loadEnvFile не
+      // перезаписывает уже заданные переменные, поэтому локальный .env с
+      // боевыми ключами не может включить капчу в наборе тестов.
+      TURNSTILE_SITEKEY: '',
+      TURNSTILE_SECRET_KEY: '',
+      // Лимиты запросов подняты до несущественности: наборы тестов делают
+      // десятки POST подряд с одного адреса и не должны упираться в счётчик.
+      // Боевые значения — в server/rate-limit.ts (ADR-0025).
+      RATE_LIMIT_BOOKING_MAX: '100000',
+      RATE_LIMIT_READ_MAX: '100000',
+      RATE_LIMIT_GLOBAL_MAX: '100000',
     },
   },
 })

@@ -278,6 +278,18 @@ export interface components {
             /** @description Необязательная причина отмены. */
             reason?: string;
         };
+        /** @description Публичные настройки CAPTCHA для формы записи (ADR-0025). */
+        CaptchaSettings: {
+            /**
+             * @description Провайдер защиты от ботов. Сейчас всегда turnstile.
+             * @enum {string}
+             */
+            provider: "turnstile";
+            /** @description true — виджет обязателен и токен проверяется; false — CAPTCHA выключена. */
+            required: boolean;
+            /** @description Публичный site key. null, если CAPTCHA выключена. */
+            siteKey: string | null;
+        };
         CreateBookingRequest: {
             eventTypeId: string;
             /** @description Желаемое начало слота (UTC ISO 8601). */
@@ -290,6 +302,8 @@ export interface components {
             guests?: string[];
             /** @description Согласие на обработку персональных данных (обязательно). */
             consentAccepted: boolean;
+            /** @description Одноразовый токен Cloudflare Turnstile. Обязателен, когда CAPTCHA включена. */
+            captchaToken?: string;
         };
         CreateEventTypeRequest: {
             slug: string;
@@ -312,7 +326,7 @@ export interface components {
             reason?: string;
         };
         /** @enum {string} */
-        ErrorCode: "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT";
+        ErrorCode: "VALIDATION_ERROR" | "NOT_FOUND" | "SLOT_TAKEN" | "CONFLICT" | "CAPTCHA_FAILED" | "RATE_LIMITED";
         /** @description Тело ответа с ошибкой: конверт `{ error: ApiError }`. */
         ErrorResponse: {
             error: components["schemas"]["ApiError"];
@@ -346,6 +360,8 @@ export interface components {
             name: string;
             /** @description IANA-пояс хоста, например Europe/Moscow. */
             timeZone: string;
+            /** @description Параметры CAPTCHA: провайдер, обязательность и публичный site key. */
+            captcha: components["schemas"]["CaptchaSettings"];
         };
         /**
          * Format: date
@@ -735,6 +751,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Booking"];
+                };
+            };
+            /** @description Client error */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

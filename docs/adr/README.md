@@ -57,3 +57,4 @@
 | [0022](0022-private-bookings-list.md) | Список броней доступен только организатору | Accepted | 2026-09-28 |
 | [0023](0023-redesign-v2-mint.md) | Редизайн v2 — «Мята и солнце», запись без автовыбора | Accepted | 2026-09-28 |
 | [0024](0024-slots-in-host-timezone.md) | Слоты генерируются в поясе организатора | Accepted | 2026-09-28 |
+| [0025](0025-captcha-and-rate-limit.md) | Защита публичной записи: Cloudflare Turnstile и rate-limit по IP | Accepted | 2026-09-28 |

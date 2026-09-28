@@ -18,3 +18,9 @@ services:
       # Демо-пароль панели организатора (см. README → «Доступ организатора»)
       - key: ADMIN_PASSWORD
         value: call-calendar-admin
+      # Cloudflare Turnstile (ADR-0025). CAPTCHA выключена, пока не задан
+      # TURNSTILE_SECRET_KEY. Настоящие ключи НЕ коммитим — задать в
+      # Environment Group (Render → Environment → Add). Здесь только напоминание:
+      #   TURNSTILE_SITEKEY=0x4AAAA...
+      #   TURNSTILE_SECRET_KEY=0x4AAAA...
+      #   TURNSTILE_ALLOWED_HOSTNAMES=calendar-slots-app.onrender.com

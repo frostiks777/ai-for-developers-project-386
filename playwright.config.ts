@@ -21,6 +21,12 @@ export default defineConfig({
       PORT: '3100',
       DATABASE_URL: '',
       NODE_ENV: 'test',
+      // CAPTCHA выключена в e2e (ADR-0025): иначе виджет Cloudflare
+      // отрендерился бы в headless-браузере, а сервер ходил бы в сеть.
+      // Чтобы прогнать e2e с настоящей проверкой — задайте dummy-ключи
+      // 1x00000000000000000000AA / 1x0000000000000000000000000000000AA.
+      TURNSTILE_SITEKEY: '',
+      TURNSTILE_SECRET_KEY: '',
     },
     reuseExistingServer: false,
     timeout: 180_000,
