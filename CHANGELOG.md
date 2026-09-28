@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.21.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.20.0...v1.21.0) (2026-09-28)
+
+
+### Features
+
+* **api:** generate slots in host time zone ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([92074b4](https://github.com/frostiks777/ai-for-developers-project-386/commit/92074b442d044fb05ed9e6263c6225959ad0ac2c))
+* redesign v2 «Мята и солнце» (этапы 3–13) ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([e7a56ba](https://github.com/frostiks777/ai-for-developers-project-386/commit/e7a56ba14ef6c202ec460156204817546b25dbc4))
+* **ui:** add v2 tokens, ambient background and glass surfaces ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([e023cc4](https://github.com/frostiks777/ai-for-developers-project-386/commit/e023cc4d41abec82811ae9c5d89f731e5a797750))
+* **ui:** add week view to desktop booking ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([47f2deb](https://github.com/frostiks777/ai-for-developers-project-386/commit/47f2deb70b8b9d3499a0f995c49a015291fa109b))
+* **ui:** keep form data and suggest nearby slots on conflict ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([eec5a16](https://github.com/frostiks777/ai-for-developers-project-386/commit/eec5a163e798a69a4f31c6fdf6bd9cf88f2a08ba))
+* **ui:** landing formats and my bookings in v2 style ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([b356ea8](https://github.com/frostiks777/ai-for-developers-project-386/commit/b356ea85d5a1e18991cf4d4be2ee38761d48e542))
+* **ui:** mobile booking wizard ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([d69d90a](https://github.com/frostiks777/ai-for-developers-project-386/commit/d69d90ac73db6bd68694f68d7869edd5b7f5d324))
+* **ui:** redesign desktop booking as single-screen days view ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([4c6ffd5](https://github.com/frostiks777/ai-for-developers-project-386/commit/4c6ffd5ba970c8e04e254e40d1cd5abcf62fac8a))
+* **ui:** restyle booking success ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([dcb5d52](https://github.com/frostiks777/ai-for-developers-project-386/commit/dcb5d52c25a70e52ab7ea5779f74f0944e641e0e))
+* **ui:** split organizer panel into screens and add overview ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([e7da573](https://github.com/frostiks777/ai-for-developers-project-386/commit/e7da57384f5c0c87563be3a080c0e5641797d53d))
+* **ui:** unified manage booking page ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([7189747](https://github.com/frostiks777/ai-for-developers-project-386/commit/718974743956a7718542cbd4b363883cc6a93c59))
+
+
+### Bug Fixes
+
+* **agents:** correct shadcn mcp package name to fix connection closed ([9308040](https://github.com/frostiks777/ai-for-developers-project-386/commit/930804027366faca9c7a5de284a3f8aa52dbf860))
+* **dev:** wait for API health before starting Vite ([#53](https://github.com/frostiks777/ai-for-developers-project-386/issues/53)) ([ae1543a](https://github.com/frostiks777/ai-for-developers-project-386/commit/ae1543ad5464a02f488fdef36eceed3f3d83c4d0))
+* **panel:** show meetings in guest week preview ([#52](https://github.com/frostiks777/ai-for-developers-project-386/issues/52)) ([ac2e9cc](https://github.com/frostiks777/ai-for-developers-project-386/commit/ac2e9cc5278794cfaf9275f8f74a0f12446ae045))
+* **test:** exclude nested node_modules and .opencode from vitest discovery ([0f0be20](https://github.com/frostiks777/ai-for-developers-project-386/commit/0f0be2098ead2506b156e718c82a6ff03c694be3))
+
 ## [1.20.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.19.1...v1.20.0) (2026-09-28)
 
 
