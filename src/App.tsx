@@ -6,7 +6,6 @@ import { useActiveHost } from '@/hooks/use-active-host'
 import CancelPage from '@/pages/cancel-page'
 import ConfirmedPage from '@/pages/confirmed-page'
 import DashboardPage from '@/pages/dashboard-page'
-import EventsPage from '@/pages/events-page'
 import HomePage from '@/pages/home-page'
 import LandingPage from '@/pages/landing-page'
 import MyBookingsPage from '@/pages/my-bookings-page'
@@ -40,7 +39,6 @@ export function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/book/:slug" element={<BookingRoute />} />
-          <Route path="/events" element={<EventsPage />} />
           <Route path="/my" element={<MyBookingsPage />} />
           <Route path="/booking/:uuid/confirmed" element={<ConfirmedPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />

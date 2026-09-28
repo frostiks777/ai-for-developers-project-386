@@ -82,7 +82,6 @@ export default function ConfirmedPage() {
 
   const tabs = [
     { to: `/book/${activeSlug}`, label: 'Записаться', active: false },
-    { to: '/events', label: 'Предстоящие события', active: false },
     { to: '/my', label: 'Мои встречи', active: false },
   ]
 

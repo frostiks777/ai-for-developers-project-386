@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-09-25.
+Accepted — 2026-09-25. Пункт 6 в части публичного чтения `GET /api/v1/hosts/:slug/bookings` заменён [ADR-0022](0022-private-bookings-list.md) — 2026-09-28.
 
 ## Context
 

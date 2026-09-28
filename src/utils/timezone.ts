@@ -81,6 +81,19 @@ export function formatDayShortTitle(dateKey: string): string {
   return title.charAt(0).toUpperCase() + title.slice(1)
 }
 
+// Сокращённый день недели по календарной дате: «Пн».
+// Через Date.UTC и timeZone: 'UTC', иначе полночь смещается в локальном поясе
+// (баг: 2026-09-28 в Europe/Moscow превращался в 27 сентября, воскресенье).
+export function formatWeekdayShort(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number)
+  const title = new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'UTC',
+    weekday: 'short',
+  }).format(new Date(Date.UTC(year, month - 1, day)))
+
+  return title.charAt(0).toUpperCase() + title.slice(1)
+}
+
 // Дата для диалога брони с годом: «Чт, 24 сентября 2026»
 export function formatDialogDate(dateKey: string): string {
   const [year, month, day] = dateKey.split('-').map(Number)
@@ -113,4 +126,41 @@ export function timeZoneOptionLabel(timeZone: string): string {
   const offset = parts.find((part) => part.type === 'timeZoneName')?.value
 
   return offset ? `${timeZone} (${offset})` : timeZone
+}
+
+// Предложный падеж для частых поясов: «по Москве», «по Берлину».
+// Для остальных — «по {IANA}».
+const zoneCityPrepositional: Record<string, string> = {
+  UTC: 'UTC',
+  'Europe/Moscow': 'Москве',
+  'Europe/Berlin': 'Берлину',
+  'Europe/Kiev': 'Киеву',
+  'Asia/Almaty': 'Алматы',
+  'Asia/Tbilisi': 'Тбилиси',
+  'America/New_York': 'Нью-Йорку',
+  'Asia/Dubai': 'Дубаю',
+  'Europe/London': 'Лондону',
+  'Europe/Paris': 'Парижу',
+  'Asia/Yekaterinburg': 'Екатеринбургу',
+  'Asia/Novosibirsk': 'Новосибирску',
+}
+
+// Смещение пояса в формате UTC+3 / UTC+5:30 / UTC+0
+export function formatZoneOffsetLabel(timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' })
+    .formatToParts(new Date())
+  const offset = parts.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT'
+
+  if (offset === 'GMT' || offset === 'UTC') {
+    return 'UTC+0'
+  }
+
+  return offset.replace('GMT', 'UTC')
+}
+
+// «по Москве (UTC+3)» — подпись пояса гостя
+export function formatZoneShort(timeZone: string): string {
+  const label = zoneCityPrepositional[timeZone] ?? timeZone
+
+  return `по ${label} (${formatZoneOffsetLabel(timeZone)})`
 }
