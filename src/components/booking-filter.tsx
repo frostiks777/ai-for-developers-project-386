@@ -15,7 +15,13 @@ const options: Array<{ value: BookingFilterValue; label: string }> = [
 
 export function BookingFilter({ value, onChange }: BookingFilterProps) {
   return (
-    <div role="tablist" aria-label="Статус" className="inline-flex rounded-lg bg-secondary p-0.5">
+    // На мобильном табы занимают всю ширину и делят её поровну: иначе группа
+    // inline-flex не может сжаться и «Отменённые» вылезает за карточку.
+    <div
+      role="tablist"
+      aria-label="Статус"
+      className="flex w-full min-w-0 rounded-lg bg-secondary p-0.5 sm:w-auto sm:inline-flex"
+    >
       {options.map((option) => {
         const isActive = option.value === value
 
@@ -27,7 +33,7 @@ export function BookingFilter({ value, onChange }: BookingFilterProps) {
             aria-selected={isActive}
             onClick={() => onChange(option.value)}
             className={cn(
-              'h-9 rounded-md px-3.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              'h-9 min-w-0 flex-1 rounded-md px-2 text-[12px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex-none sm:px-3.5 sm:text-[13px]',
               isActive ? 'bg-segment-active font-semibold text-foreground shadow-sm' : 'text-muted-foreground',
             )}
           >
