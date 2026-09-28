@@ -3,6 +3,18 @@
 Аудит соответствия `docs/code_artifact.md` (спека Hexlet) и текущего MVP.
 Репозиторий реализует упрощённый вариант на стеке из `AGENTS.md` (Vite + Fastify + SQLite + Drizzle); отклонение от спеки зафиксировано в `docs/architecture.md`.
 
+## Актуальный план (обновлён 2026-09-28)
+
+**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66). Открыты только issues [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49) (bug, P1) и [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) (enhancement).
+
+**Следующие шаги (в порядке приоритета):**
+
+1. **Ревью мобильной вёрстки** — [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49): повторный Playwright-прогон 9 маршрутов × 2 темы × 2 ширины (390×844, 360×800) после v2; закрыть то, что уже починил редизайн, остаток оформить отдельными issue. Проверить горизонтальную прокрутку на 360 px.
+2. **Визуальная приёмка v2** (человек): сверить со `docs/design/v2/screenshots/` на 1280×820 и 390×844 в обеих темах (A/B, C1–C4, M, D; UX-кейсы case-01…case-11). Список — `docs/design/v2/README.md`; отличия — в раздел «Отклонения».
+3. **Синхронизировать `MEMORY.md`** с v2 и мобильным батчем (проверить хеши коммитов и релизы; отметить ветку смерженной).
+4. **SSL-режим драйвера `pg`** (мелкая): явно задать `sslmode=verify-full` в `.env.example`/`DATABASE_URL`, убрать предупреждение; при необходимости — ADR.
+5. **CAPTCHA в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): выбор провайдера + ADR, серверная верификация токена и rate-limit по IP на публичном `POST /api/v1/hosts/:slug/bookings`.
+
 ## Критерии приёмки проекта — статус (проверяет наставник + hexlet-check)
 
 Легенда: ✅ done · 🟡 partial · ❌ missing. Источник — `docs/course-steps.md`.
@@ -163,6 +175,7 @@
 > Старт 2026-09-28 (ветка `feat/redesign-v2-mint`, issue [#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)):
 > пакет дизайна перенесён в `docs/design/v2/`, ADR-0022…0024 лежат в `docs/adr/` (Proposed),
 > скилл `apply-design-v2` — в `.agents/skills/`. Этап 0 выполнен.
+> **Завершено 2026-09-28:** этапы 0–13 влиты в `main` (PR #54), issue #48 закрыт; мобильные правки приёмки — PR #63, #67.
 
 - [x] **Этап 0 — подготовка** — ветка `feat/redesign-v2-mint`, пакет в [`docs/design/v2/`](design/v2/), ADR-0022…0024 в [`docs/adr/`](adr/) (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
 - [x] **Этап 1** — контакты гостей только для организатора ([ADR-0022](adr/0022-private-bookings-list.md)): `GET /bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, вкладка и `events-page` удалены.
@@ -179,7 +192,7 @@
 - [x] **Этап 12** — лендинг и «Мои встречи»: имя организатора без дубля, одна CTA `bg-highlight`, блок «Форматы встречи» (`/book/:slug?type=…`), карточки `glass`.
 - [x] **Этап 13** — документация: ADR-0022…0024 → Accepted, ADR-0007 дополнен ADR-0023, `docs/design/README.md` (v2 — текущий, v1 — история), «Отклонения» в `docs/design/v2/README.md`; `MEMORY.md`/`docs/todo.md`/`README.md` синхронизированы. Визуальная приёмка — за человеком.
 - [x] **ADRs v2** — [`docs/adr/`](adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone) — **Accepted** 2026-09-28.
-- [ ] **Макеты/скриншоты v2** — `docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking) — визуальная приёмка человеком.
+- [ ] **Макеты/скриншоты v2** — `docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking) — визуальная приёмка человеком (см. «Актуальный план», шаг 2).
 - [ ] **Архив v1** — [`docs/design/`](design/): старый пакет оставлен как история (см. `docs/design/README.md`).
 
 ## Ключевые расхождения со спекой
