@@ -156,6 +156,7 @@
 ## Backlog (новые задачи)
 
 - [ ] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): `POST /api/v1/hosts/:slug/bookings` публичный; поле «Гости» принимает произвольные email, а форма — спам/абьюз. Добавить CAPTCHA (напр. Cloudflare Turnstile или hCaptcha) на шаге брони, серверную верификацию токена и rate-limit по IP; показывать/требовать капчу при указании email гостя (или всегда). Выбор провайдера и точки проверки зафиксировать отдельным ADR.
+- [ ] **SSL-режим драйвера Postgres (`pg`)** — при старте API видно предупреждение: `SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'` и намёк, что в `pg-connection-string` v3 / `pg` v9 семантика станет строже. Задача: явно задать SSL-режим в строке подключения (`sslmode=verify-full` для текущего поведения либо `uselibpqcompat=true&sslmode=require` для совместимости с libpq), убрать предупреждение и зафиксировать решение в `docs/adr/` / `.env.example`. Проверить после апгрейда `pg` до v9.
 
 ### Backlog: редизайн v2
 
