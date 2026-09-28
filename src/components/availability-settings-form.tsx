@@ -252,8 +252,10 @@ export function AvailabilitySettingsForm({
     const startError = errors.get(`${weekday}:${position}:start`)
     const endError = errors.get(`${weekday}:${position}:end`)
 
+    // Обёртка держит минимальную ширину пары полей: если места в строке не хватает,
+    // переносится вся группа, а поля не «вылезают» под кнопки (#49).
     return (
-      <>
+      <div className="flex min-w-[208px] flex-1 items-center gap-1 sm:min-w-0 sm:flex-none">
         <input
           type="time"
           aria-label={`${label}: начало ${position + 1}`}
@@ -265,13 +267,13 @@ export function AvailabilitySettingsForm({
             updateInterval(weekday, position, { startMinute: timeToMinute(event.target.value) })
           }}
           className={cn(
-            'h-11 w-[112px] shrink-0 rounded-md border bg-transparent px-2 text-sm',
+            'h-11 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm sm:w-[112px] sm:flex-none',
             startError ? 'border-destructive' : 'border-input',
           )}
           step={600}
           lang="ru"
         />
-        <span className="text-muted-foreground">–</span>
+        <span className="shrink-0 text-muted-foreground">–</span>
         <input
           type="time"
           aria-label={`${label}: конец ${position + 1}`}
@@ -283,13 +285,13 @@ export function AvailabilitySettingsForm({
             updateInterval(weekday, position, { endMinute: timeToMinute(event.target.value) })
           }}
           className={cn(
-            'h-11 w-[112px] shrink-0 rounded-md border bg-transparent px-2 text-sm',
+            'h-11 min-w-0 flex-1 rounded-md border bg-transparent px-2 text-sm sm:w-[112px] sm:flex-none',
             endError ? 'border-destructive' : 'border-input',
           )}
           step={600}
           lang="ru"
         />
-      </>
+      </div>
     )
   }
 
@@ -332,7 +334,7 @@ export function AvailabilitySettingsForm({
 
           return (
             <div key={value} className="flex flex-col gap-2">
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"
                   role="switch"
@@ -363,38 +365,41 @@ export function AvailabilitySettingsForm({
                 {isEnabled ? (
                   <>
                     {renderTimeInputs(value, label, 0, ranges[0])}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Добавить интервал: ${label}`}
-                      onClick={() => addInterval(value)}
-                      className="h-7 w-7 shrink-0"
-                    >
-                      <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Скопировать интервал: ${label}`}
-                      onClick={() => openCopy(value)}
-                      className="h-7 w-7 shrink-0"
-                    >
-                      <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                    </Button>
-                    {ranges.length > 1 && (
+                    {/* На узком экране группа переносится на вторую строку и прижимается вправо */}
+                    <div className="flex shrink-0 items-center gap-1 max-sm:ml-auto">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label={`Убрать интервал: ${label} 1`}
-                        onClick={() => removeInterval(value, 0)}
-                        className="h-7 w-7 shrink-0"
+                        aria-label={`Добавить интервал: ${label}`}
+                        onClick={() => addInterval(value)}
+                        className="h-9 w-9 shrink-0 sm:h-7 sm:w-7"
                       >
-                        <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                        <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
                       </Button>
-                    )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Скопировать интервал: ${label}`}
+                        onClick={() => openCopy(value)}
+                        className="h-9 w-9 shrink-0 sm:h-7 sm:w-7"
+                      >
+                        <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                      </Button>
+                      {ranges.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Убрать интервал: ${label} 1`}
+                          onClick={() => removeInterval(value, 0)}
+                          className="h-9 w-9 shrink-0 sm:h-7 sm:w-7"
+                        >
+                          <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                        </Button>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <span className="text-sm text-muted-foreground">Недоступен</span>
@@ -421,7 +426,7 @@ export function AvailabilitySettingsForm({
                         size="icon"
                         aria-label={`Убрать интервал: ${label} ${position + 1}`}
                         onClick={() => removeInterval(value, position)}
-                        className="h-7 w-7 shrink-0"
+                        className="h-9 w-9 shrink-0 sm:h-7 sm:w-7"
                       >
                         <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
                       </Button>
