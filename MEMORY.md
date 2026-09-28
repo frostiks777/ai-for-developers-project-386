@@ -313,15 +313,25 @@
 67. 📌 **Backlog: защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): публичный `POST .../bookings` + поле «Гости» (произвольные email) → CAPTCHA, серверная верификация и rate-limit по IP; выбор провайдера — отдельным ADR. Зафиксировано в `docs/todo.md` (Backlog).
 68. ✅ **AGENTS.md:** добавлен обязательный пункт «задачи и баги — только через GitHub Issue» (метка `bug` для багов, номер в коммите, закрытие после пуша).
 69. ✅ **Аудит мобильной вёрстки (2026-09-28)** — [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49) (метка `bug`, P1): Playwright-прогон 9 маршрутов × 2 темы × 2 ширины (390×844, 360×800) + интерактивные состояния; скриншоты и замеры в `docs/artefacts/` (коммит `ee63b9e`). Найденные дефекты: шапка шире экрана (~535 px), наложение табов панели, пересечение текста/кнопки в «Блокировках», обрезка ленты дат, блоки успеха за краем, `/my` без токенов оформления, ландшафтная шапка-«островок». Часть перекрывается редизайном v2.
-70. ⏳ **Редизайн v2 «Мята и солнце»** — [#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48), ветка `feat/redesign-v2-mint`:
+70. ✅ **Редизайн v2 «Мята и солнце»** — [#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48), ветка `feat/redesign-v2-mint` (смержена, закрыта):
     - **Этап 0** (`6e7e54d`): пакет в `docs/design/v2/`, ADR-0022…0024 в `docs/adr/` (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
     - **Этап 1** (`e3328f5`, `335c8e1`): `fix(api): require admin auth for bookings list and redirect /events` + `feat(web): move upcoming events into organizer panel` ([ADR-0022](docs/adr/0022-private-bookings-list.md)); `GET /api/v1/hosts/:slug/bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, `events-page` и вкладка удалены, ADR-0017 п.6 помечен заменённым.
     - **Этап 2** (`2f4e6de`): `fix(web): correct weekday labels and show cancel time in guest zone` — `formatWeekdayShort` (TDD: падающий тест на 2026-09-28 → Пн), `formatZoneShort`/`formatZoneOffsetLabel` (словарь предложного падежа), `date-strip` и `cancel-page` обновлены.
-    - **Этапы 3–12** (`e023cc4`, `4c6ffd5`, `47f2deb`, `d69d90a`, `dcb5d52`, `eec5a16`, `7189747`, `e7da573`, `92074b4`, текущий): токены/фон/стекло/шапка; десктоп «Дни»; «Неделя»; мобильный мастер; экран успеха; 409 + подсказки; страница управления встречей; панель-разделы + «Обзор»; пояс правил доступности ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)); лендинг (имя без дубля, CTA `bg-highlight`, блок «Форматы встречи» `/book/:slug?type=…`) и «Мои встречи» (`glass`).
-    - **Этап 13** (текущий): ADR-0022…0024 → **Accepted** (2026-09-28), ADR-0007 дополнен ADR-0023, `docs/adr/README.md` обновлён; `docs/design/README.md` — v2 как текущий дизайн, v1 как история; «Отклонения» в `docs/design/v2/README.md`; `docs/todo.md`/`MEMORY.md` синхронизированы. Визуальная приёмка со `screenshots/` — за человеком.
-    - **Фиксы по ходу** (issues #52, #53, коммиты `ac2e9cc`, `ae1543a`): «Неделя глазами гостя» показывает встречи (`AvailabilityPreview` принимает `slots`, `bg-primary`, `data-state=meeting`; `weekdayAndMinuteInZone`); `dev-all.mjs` ждёт `/health` API до старта Vite (гонка ECONNREFUSED).
+    - **Этапы 3–12** (`e023cc4`, `4c6ffd5`, `47f2deb`, `d69d90a`, `dcb5d52`, `eec5a16`, `7189747`, `e7da573`, `92074b4`, `b356ea8`): токены/фон/стекло/шапка; десктоп «Дни»; «Неделя»; мобильный мастер; экран успеха; 409 + подсказки; страница управления встречей; панель-разделы + «Обзор»; пояс правил доступности ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)); лендинг (имя без дубля, CTA `bg-highlight`, блок «Форматы встречи» `/book/:slug?type=…`) и «Мои встречи» (`glass`).
+    - **Этап 13** (`82c9c73`): ADR-0022…0024 → **Accepted** (2026-09-28), ADR-0007 дополнен ADR-0023, `docs/adr/README.md` обновлён; `docs/design/README.md` — v2 как текущий дизайн, v1 как история; «Отклонения» в `docs/design/v2/README.md`.
+    - **Итог:** этапы 0–13 влиты в `main` (PR [#54](https://github.com/frostiks777/ai-for-developers-project-386/pull/54), merge `e7a56ba`), issue #48 закрыт. Визуальная приёмка со `screenshots/` — за человеком (см. «Актуальный план» в `docs/todo.md`).
     - Проверки: lint 0, typecheck чисто, **266/266 тестов** (47 файлов), build ✓.
-    - Осталось: визуальная сверка со `screenshots/` (человек) и мерж ветки `feat/redesign-v2-mint` в `main`.
+71. ✅ **Мобильные правки приёмки (2026-09-28)** — issues #56–#62 (PR [#63](https://github.com/frostiks777/ai-for-developers-project-386/pull/63), merge `4124ff6`) и #65–#66 (PR [#67](https://github.com/frostiks777/ai-for-developers-project-386/pull/67), merge `976f1f2`); релизы v1.21.0:
+    - #52/#53 (`ac2e9cc`, `ae1543a`): «Неделя глазами гостя» в панели показывает встречи (`AvailabilityPreview` принимает `slots`, `bg-primary`, `data-state=meeting`; `weekdayAndMinuteInZone`); `dev-all.mjs` ждёт `GET /health` API до старта Vite (гонка ECONNREFUSED).
+    - #56/#62: мобильный мастер листает только доступные даты; выбранное время на любой дате открывает шаг анкеты (`selectedSlot` ищется среди всех слотов).
+    - #57: превью доступности показывает занятые окна (`DashboardPage` грузит слоты и передаёт в форму).
+    - #58: табы разделов мобильной панели переносятся (`flex-wrap`).
+    - #59: кнопка «Скопировать текст об отмене».
+    - #60: у прошедших встреч в `/my` скрыта «Отменить».
+    - #61: «Тема» доступна в мобильной шапке (`AppHeader` больше не прячет `ThemeToggle`) — отклонение от §1.2 зафиксировано.
+    - #65: мастер сохраняет поля при смене даты (шаги смонтированы, неактивные скрыты атрибутом `hidden`).
+    - #66: поля формы «Хосты» на всю ширину на мобильных (`lg:grid-cols-2` вместо `sm:`).
+    - Проверки: lint 0, typecheck чисто, **271/271 тестов** (47 файлов), build ✓, CI/e2e — зелёные.
 
 ## Что осталось (следующие шаги)
 
