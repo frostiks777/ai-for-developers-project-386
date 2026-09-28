@@ -159,7 +159,7 @@ export default function HomePage() {
 
   const selectedType = eventTypes.find((type) => type.id === selectedTypeId) ?? null
   const activeTypes = eventTypes.filter((type) => type.isActive)
-  const selectedSlot = visibleSlots.find((slot) => slot.id === selectedSlotId) ?? null
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId) ?? null
   const freeCount = visibleSlots.filter((slot) => !slot.isBooked).length
   const durationMin = slots[0]?.durationMin ?? null
 

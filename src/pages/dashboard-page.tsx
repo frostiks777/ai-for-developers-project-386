@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { toBookingWithSlot } from '@/api/mappers'
+import { toBookingWithSlot, toTimeSlot } from '@/api/mappers'
 import { ApiError, api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
 import { AppShell } from '@/components/app-shell'
@@ -20,7 +20,7 @@ import { useActiveHost } from '@/hooks/use-active-host'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 import type { AvailabilitySettings } from '@/types/availability-settings'
-import type { BookingWithSlot } from '@/types/booking'
+import type { BookingWithSlot, TimeSlot } from '@/types/booking'
 
 function applySelection(
   bookings: BookingWithSlot[],
@@ -82,6 +82,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
   const [bookingsError, setBookingsError] = useState<string | null>(null)
 
   const [settings, setSettings] = useState<AvailabilitySettings | null>(null)
+  const [slots, setSlots] = useState<TimeSlot[]>([])
   const [isSavingRules, setIsSavingRules] = useState(false)
   const [rulesError, setRulesError] = useState<string | null>(null)
 
@@ -117,6 +118,14 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
         setRulesError(null)
       } catch {
         setRulesError('Не удалось загрузить настройки доступности')
+      }
+    })()
+    void (async () => {
+      try {
+        const day = await call(api.listSlots(activeSlug))
+        setSlots(day.slots.map(toTimeSlot))
+      } catch {
+        setSlots([])
       }
     })()
   }, [loadBookings, activeSlug])
@@ -208,6 +217,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
                 settings={settings}
                 isSaving={isSavingRules}
                 onSave={handleSaveRules}
+                slots={slots}
               />
             )}
           </section>
@@ -264,7 +274,7 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
         <div
           role="tablist"
           aria-label="Разделы панели"
-          className="mt-4 flex gap-1 overflow-x-auto rounded-xl bg-secondary p-0.5"
+          className="mt-4 flex flex-wrap gap-1 rounded-xl bg-secondary p-0.5"
         >
           {(
             [

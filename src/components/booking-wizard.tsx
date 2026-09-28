@@ -10,7 +10,6 @@ import { SlotGroups } from '@/components/slot-groups'
 import { TimeZoneSelect } from '@/components/timezone-select'
 import { useTimeFormat } from '@/hooks/use-time-format'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
-import { addDays } from '@/utils/dates'
 import { pluralRu } from '@/utils/plural'
 import {
   formatDayShortTitle,
@@ -219,8 +218,9 @@ export function BookingWizard({
 
   if (step === 'time') {
     const dateIndex = effectiveDate ? dateKeys.indexOf(effectiveDate) : -1
-    const canPrev = dateIndex > 0
-    const canNext = dateIndex >= 0 && dateIndex < dateKeys.length - 1
+    const prevDate = dateIndex > 0 ? dateKeys[dateIndex - 1] : null
+    const nextDate =
+      dateIndex >= 0 && dateIndex < dateKeys.length - 1 ? dateKeys[dateIndex + 1] : null
     const startAt = effectiveDate ? formatDayShortTitle(effectiveDate) : ''
 
     return (
@@ -244,10 +244,10 @@ export function BookingWizard({
           <DaySwitcher
             dateTitle={startAt}
             subtitle={`${freeCount} ${pluralRu(freeCount, ['свободное окно', 'свободных окна', 'свободных окон'])} · ${formatZoneShort(timeZone)}`}
-            onPrev={() => setActiveDate(addDays(effectiveDate, -1))}
-            onNext={() => setActiveDate(addDays(effectiveDate, 1))}
-            canPrev={canPrev}
-            canNext={canNext}
+            onPrev={() => prevDate && setActiveDate(prevDate)}
+            onNext={() => nextDate && setActiveDate(nextDate)}
+            canPrev={prevDate !== null}
+            canNext={nextDate !== null}
           />
         )}
 
