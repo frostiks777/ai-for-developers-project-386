@@ -42,6 +42,8 @@ interface BookingWizardProps {
   hostName: string
   selectedSlot: TimeSlot | null
   onSelectSlot: (slot: TimeSlot) => void
+  suggestions?: TimeSlot[]
+  onSelectSuggestion?: (slot: TimeSlot) => void
   onBooked: (booking: CreatedBooking) => void
   onConflict: (slot: TimeSlot) => void
 }
@@ -58,6 +60,8 @@ export function BookingWizard({
   hostName,
   selectedSlot,
   onSelectSlot,
+  suggestions = [],
+  onSelectSuggestion,
   onBooked,
   onConflict,
 }: BookingWizardProps) {
@@ -325,6 +329,8 @@ export function BookingWizard({
         eventTypeTitle={selectedTypeTitle}
         timeZone={timeZone}
         variant="step"
+        suggestions={suggestions}
+        onSelectSuggestion={onSelectSuggestion}
         onBooked={onBooked}
         onConflict={onConflict}
       />

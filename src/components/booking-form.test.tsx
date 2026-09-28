@@ -18,8 +18,13 @@ const slot: TimeSlot = {
 
 const onBooked = vi.fn()
 const onConflict = vi.fn()
+const onSelectSuggestion = vi.fn()
 
-function renderForm(eventTypeId: string | null = 'type-1') {
+const suggestions: TimeSlot[] = [
+  { id: 2, startAt: '2026-09-22T08:00:00.000Z', durationMin: 30, isBooked: false },
+]
+
+function renderForm(eventTypeId: string | null = 'type-1', withSuggestions = false) {
   return render(
     <BookingForm
       slot={slot}
@@ -28,6 +33,8 @@ function renderForm(eventTypeId: string | null = 'type-1') {
       eventTypeTitle="Консультация"
       timeZone="UTC"
       variant="column"
+      suggestions={withSuggestions ? suggestions : []}
+      onSelectSuggestion={onSelectSuggestion}
       onBooked={onBooked}
       onConflict={onConflict}
     />,
@@ -66,7 +73,6 @@ describe('BookingForm', () => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
   })
-
   it('показывает форму «Ваши данные» и блокирует отправку до заполнения', () => {
     renderForm()
 
@@ -232,6 +238,26 @@ describe('BookingForm', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('ivan@example.com')
     expect(onConflict).toHaveBeenCalledWith(slot)
     expect(onBooked).not.toHaveBeenCalled()
+  })
+
+  it('при 409 показывает ближайшие окна и выбирает их по клику', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ error: { code: 'SLOT_TAKEN', message: 'Слот только что заняли' } }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } },
+        ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const user = userEvent.setup()
+    renderForm('type-1', true)
+
+    await fillValidForm(user)
+    await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
+
+    await user.click(await screen.findByRole('button', { name: '08:00' }))
+    expect(onSelectSuggestion).toHaveBeenCalledWith(suggestions[0])
   })
 
   it('добавляет гостя по Enter и отправляет его в теле запроса', async () => {

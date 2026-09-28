@@ -5,6 +5,7 @@ import { Calendar, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SlotSuggestions } from '@/components/slot-suggestions'
 import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
 import { useTimeFormat } from '@/hooks/use-time-format'
@@ -27,6 +28,8 @@ interface BookingFormProps {
   eventTypeTitle?: string | null
   timeZone: string
   variant?: 'column' | 'step'
+  suggestions?: TimeSlot[]
+  onSelectSuggestion?: (slot: TimeSlot) => void
   onBooked: (booking: CreatedBooking) => void
   onConflict: (slot: TimeSlot) => void
 }
@@ -56,6 +59,8 @@ export function BookingForm({
   eventTypeTitle,
   timeZone,
   variant = 'column',
+  suggestions = [],
+  onSelectSuggestion,
   onBooked,
   onConflict,
 }: BookingFormProps) {
@@ -208,13 +213,23 @@ export function BookingForm({
       </div>
 
       {conflict && (
-        <p
+        <div
           role="alert"
           className="mt-3 rounded-xl border border-highlight/40 bg-highlight/15 px-3 py-2 text-[13px]"
         >
-          <strong>Это время только что заняли.</strong> Выберите соседнее — ваши имя и email
-          сохранены.
-        </p>
+          <p>
+            <strong>Это время только что заняли.</strong> Выберите соседнее — ваши имя и email
+            сохранены.
+          </p>
+          <SlotSuggestions
+            slots={suggestions}
+            timeZone={timeZone}
+            onSelect={(slot) => {
+              setConflict(false)
+              onSelectSuggestion?.(slot)
+            }}
+          />
+        </div>
       )}
 
       <form aria-label="Ваши данные" className="mt-4 flex min-h-0 flex-1 flex-col gap-3" onSubmit={handleSubmit}>
