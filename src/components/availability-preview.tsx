@@ -1,7 +1,10 @@
 import type { AvailabilitySettings } from '@/types/availability-settings'
+import type { TimeSlot } from '@/types/booking'
+import { weekdayAndMinuteInZone } from '@/utils/timezone'
 
 interface AvailabilityPreviewProps {
   settings: AvailabilitySettings
+  slots?: TimeSlot[]
 }
 
 const WEEKDAYS: { value: number; label: string }[] = [
@@ -16,8 +19,9 @@ const minuteToLabel = (minute: number): string =>
   `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
 
 // «Неделя глазами гостя»: сетка Пн–Пт × времена начал по черновику правил.
-// Часы показаны в поясе правил (settings.timeZone).
-export function AvailabilityPreview({ settings }: AvailabilityPreviewProps) {
+// Часы показаны в поясе правил (settings.timeZone). Если переданы слоты,
+// занятые окна (isBooked) помечаются как встречи.
+export function AvailabilityPreview({ settings, slots = [] }: AvailabilityPreviewProps) {
   const step =
     settings.slotDurationMin + settings.bufferBeforeMin + settings.bufferAfterMin
 
@@ -37,6 +41,17 @@ export function AvailabilityPreview({ settings }: AvailabilityPreviewProps) {
 
   if (timeLabels.length === 0) {
     return <p className="text-sm text-muted-foreground">Нет данных для превью</p>
+  }
+
+  const meetings = new Set<string>()
+
+  for (const slot of slots) {
+    if (!slot.isBooked) {
+      continue
+    }
+
+    const { weekday, minute } = weekdayAndMinuteInZone(slot.startAt, settings.timeZone)
+    meetings.add(`${weekday}:${minuteToLabel(minute)}`)
   }
 
   const hasFree = (weekday: number, timeLabel: string): boolean =>
@@ -68,16 +83,28 @@ export function AvailabilityPreview({ settings }: AvailabilityPreviewProps) {
           {timeLabels.map((timeLabel) => (
             <tr key={timeLabel}>
               <td className="pr-1 text-right tabular-nums text-muted-foreground">{timeLabel}</td>
-              {WEEKDAYS.map((day) => (
-                <td
-                  key={`${day.value}:${timeLabel}`}
-                  className={
-                    hasFree(day.value, timeLabel)
-                      ? 'size-4 rounded-[3px] bg-accent'
-                      : 'size-4 rounded-[3px] bg-secondary/40'
-                  }
-                />
-              ))}
+              {WEEKDAYS.map((day) => {
+                const key = `${day.value}:${timeLabel}`
+                const state = meetings.has(key)
+                  ? 'meeting'
+                  : hasFree(day.value, timeLabel)
+                    ? 'free'
+                    : 'off'
+
+                return (
+                  <td
+                    key={key}
+                    data-state={state}
+                    className={
+                      state === 'meeting'
+                        ? 'size-4 rounded-[3px] bg-primary'
+                        : state === 'free'
+                          ? 'size-4 rounded-[3px] bg-accent'
+                          : 'size-4 rounded-[3px] bg-secondary/40'
+                    }
+                  />
+                )
+              })}
             </tr>
           ))}
         </tbody>

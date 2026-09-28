@@ -187,7 +187,7 @@ export function DashboardOverview({ bookings, hostSlug, onCancel }: DashboardOve
           </a>
         </div>
         {settings ? (
-          <AvailabilityPreview settings={settings} />
+          <AvailabilityPreview settings={settings} slots={slots} />
         ) : (
           <p className="text-sm text-muted-foreground">Нет данных для превью</p>
         )}
