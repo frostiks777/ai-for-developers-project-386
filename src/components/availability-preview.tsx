@@ -1,5 +1,6 @@
 import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { TimeSlot } from '@/types/booking'
+import { cn } from '@/lib/utils'
 import { weekdayAndMinuteInZone } from '@/utils/timezone'
 
 interface AvailabilityPreviewProps {
@@ -67,13 +68,25 @@ export function AvailabilityPreview({ settings, slots = [] }: AvailabilityPrevie
     })
 
   return (
-    <div className="overflow-x-auto">
-      <table className="border-separate border-spacing-1 text-[12px]">
+    <div className="w-full overflow-x-auto">
+      {/*
+        Сетка растягивается на ширину блока (table-fixed + w-full), но ячейки
+        не превращаются в широкие полосы на больших экранах: у дня задана
+        своя доля, а у самой клетки — потолок размера. Колонка времени
+        фиксирована, отступы между колонками и строками — border-spacing.
+      */}
+      <table className="w-full table-fixed border-separate border-spacing-1 text-[12px]">
+        <colgroup>
+          <col className="w-14 sm:w-20" />
+          {WEEKDAYS.map((day) => (
+            <col key={day.value} />
+          ))}
+        </colgroup>
         <thead>
           <tr>
             <th />
             {WEEKDAYS.map((day) => (
-              <th key={day.value} className="px-1 text-muted-foreground">
+              <th key={day.value} className="px-1 text-center font-normal text-muted-foreground">
                 {day.label}
               </th>
             ))}
@@ -82,7 +95,9 @@ export function AvailabilityPreview({ settings, slots = [] }: AvailabilityPrevie
         <tbody>
           {timeLabels.map((timeLabel) => (
             <tr key={timeLabel}>
-              <td className="pr-1 text-right tabular-nums text-muted-foreground">{timeLabel}</td>
+              <td className="pr-1 text-right align-middle tabular-nums text-muted-foreground">
+                {timeLabel}
+              </td>
               {WEEKDAYS.map((day) => {
                 const key = `${day.value}:${timeLabel}`
                 const state = meetings.has(key)
@@ -92,17 +107,16 @@ export function AvailabilityPreview({ settings, slots = [] }: AvailabilityPrevie
                     : 'off'
 
                 return (
-                  <td
-                    key={key}
-                    data-state={state}
-                    className={
-                      state === 'meeting'
-                        ? 'size-4 rounded-[3px] bg-primary'
-                        : state === 'free'
-                          ? 'size-4 rounded-[3px] bg-accent'
-                          : 'size-4 rounded-[3px] bg-secondary/40'
-                    }
-                  />
+                  <td key={key} data-state={state} className="h-4 p-0 align-middle">
+                    <span
+                      className={cn(
+                        'block h-4 w-full rounded-[3px]',
+                        state === 'meeting' && 'bg-primary',
+                        state === 'free' && 'bg-accent',
+                        state === 'off' && 'bg-secondary/40',
+                      )}
+                    />
+                  </td>
                 )
               })}
             </tr>
