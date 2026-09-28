@@ -117,21 +117,20 @@ export function BookingWizard({
   const activeTypes = eventTypes.filter((type) => type.isActive)
   const durationMin = slots[0]?.durationMin ?? null
 
-  const progress = (
+  const progressFor = (stepName: Step) => (
     <div className="mb-3">
       <p className="text-[12px] font-semibold tracking-wide text-muted-foreground">
-        ШАГ {STEP_INDEX[step]} ИЗ 3 · {STEP_LABEL[step]}
+        ШАГ {STEP_INDEX[stepName]} ИЗ 3 · {STEP_LABEL[stepName]}
       </p>
       <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-secondary">
-        <div className={`h-full rounded-full bg-gradient-to-r from-primary to-highlight ${PROGRESS_WIDTH[step]}`} />
+        <div className={`h-full rounded-full bg-gradient-to-r from-primary to-highlight ${PROGRESS_WIDTH[stepName]}`} />
       </div>
     </div>
   )
 
-  if (step === 'day') {
-    return (
-      <div className="flex flex-col gap-5">
-        {progress}
+  const dayView = (
+    <div className="flex flex-col gap-5">
+        {progressFor('day')}
 
         <section>
           <p className="text-[13px] text-muted-foreground">{hostName}</p>
@@ -213,19 +212,17 @@ export function BookingWizard({
           )}
         </div>
       </div>
-    )
-  }
+  )
 
-  if (step === 'time') {
     const dateIndex = effectiveDate ? dateKeys.indexOf(effectiveDate) : -1
     const prevDate = dateIndex > 0 ? dateKeys[dateIndex - 1] : null
     const nextDate =
       dateIndex >= 0 && dateIndex < dateKeys.length - 1 ? dateKeys[dateIndex + 1] : null
     const startAt = effectiveDate ? formatDayShortTitle(effectiveDate) : ''
 
-    return (
+    const timeView = (
       <div className="flex flex-col gap-5 pb-28">
-        {progress}
+        {progressFor('time')}
 
         <div className="flex items-center gap-2">
           <button
@@ -235,7 +232,7 @@ export function BookingWizard({
           >
             <ChevronLeft className="size-4" strokeWidth={1.8} aria-hidden="true" /> Дни
           </button>
-          <h2 ref={headingRef} tabIndex={-1} className="truncate text-sm font-semibold">
+          <h2 ref={step === 'time' ? headingRef : undefined} tabIndex={-1} className="truncate text-sm font-semibold">
             {selectedTypeTitle ?? 'Встреча'}
           </h2>
         </div>
@@ -281,12 +278,11 @@ export function BookingWizard({
           </div>
         )}
       </div>
-    )
-  }
+  )
 
-  return (
+  const contactsView = (
     <div className="flex flex-col gap-5 pb-28">
-      {progress}
+      {progressFor('contacts')}
 
       <div className="flex items-center gap-2">
         <button
@@ -296,7 +292,7 @@ export function BookingWizard({
         >
           <ChevronLeft className="size-4" strokeWidth={1.8} aria-hidden="true" /> Время
         </button>
-        <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold">
+        <h2 ref={step === 'contacts' ? headingRef : undefined} tabIndex={-1} className="text-lg font-semibold">
           Ваши данные
         </h2>
       </div>
@@ -335,5 +331,13 @@ export function BookingWizard({
         onConflict={onConflict}
       />
     </div>
+  )
+
+  return (
+    <>
+      <div hidden={step !== 'day'}>{dayView}</div>
+      <div hidden={step !== 'time'}>{timeView}</div>
+      <div hidden={step !== 'contacts'}>{contactsView}</div>
+    </>
   )
 }
