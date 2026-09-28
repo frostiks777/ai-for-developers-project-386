@@ -93,7 +93,7 @@ export function HostsEditor() {
           <Plus className="size-4" strokeWidth={1.8} aria-hidden="true" />
           Новый организатор
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           <div className="grid gap-1.5">
             <Label htmlFor="host-name">Имя</Label>
             <Input
@@ -114,7 +114,7 @@ export function HostsEditor() {
               required
             />
           </div>
-          <div className="grid gap-1.5 sm:col-span-2">
+          <div className="grid gap-1.5 lg:col-span-2">
             <Label htmlFor="host-timezone">Часовой пояс (IANA)</Label>
             <Input
               id="host-timezone"
