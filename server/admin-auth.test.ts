@@ -106,12 +106,37 @@ describe('Basic-auth административных API', () => {
       { method: 'GET' as const, url: '/api/v1/hosts' },
       { method: 'GET' as const, url: '/api/v1/hosts/default/availability' },
       { method: 'GET' as const, url: '/api/v1/hosts/default/event-types' },
-      { method: 'GET' as const, url: '/api/v1/hosts/default/bookings' },
     ]
 
     for (const request of publicRequests) {
       const response = await app.inject(request)
       expect(response.statusCode, `${request.method} ${request.url}`).not.toBe(401)
     }
+  })
+
+  it('закрывает список броней, но не создание (ADR-0022)', async () => {
+    const withoutAuth = await app.inject({ method: 'GET', url: '/api/v1/hosts/default/bookings' })
+    expect(withoutAuth.statusCode).toBe(401)
+
+    const withAuth = await app.inject({
+      method: 'GET',
+      url: '/api/v1/hosts/default/bookings',
+      headers: { authorization: basic('admin', 'secret') },
+    })
+    expect(withAuth.statusCode).toBe(200)
+
+    const createWithoutAuth = await app.inject({
+      method: 'POST',
+      url: '/api/v1/hosts/default/bookings',
+      payload: {},
+    })
+    expect(createWithoutAuth.statusCode).not.toBe(401)
+  })
+
+  it('перенаправляет /events в панель', async () => {
+    const response = await app.inject({ method: 'GET', url: '/events' })
+
+    expect(response.statusCode).toBe(302)
+    expect(response.headers.location).toBe('/admin/bookings')
   })
 })

@@ -123,6 +123,10 @@ const requiresAdminAuth = (method: string, url: string): boolean => {
   if (rest === 'availability') {
     return method !== 'GET'
   }
+  // Список броней — только организатору (ADR-0022); создание брони остаётся публичным
+  if (rest === 'bookings') {
+    return method === 'GET'
+  }
   if (rest === 'blocks' || rest.startsWith('blocks/')) {
     return true
   }
@@ -713,6 +717,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   // ── API v1: брони ────────────────────────────────────────────────────
+  // Список броней закрыт Basic-auth (ADR-0022, см. requiresAdminAuth)
   app.get('/api/v1/hosts/:slug/bookings', async (request, reply) => {
     const { slug } = request.params as { slug: string }
     const host = await findHost(slug)
@@ -943,6 +948,10 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     return toBooking(updated, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
+
+  // /events перенесена в панель (ADR-0022). Редирект серверный, а не <Navigate>:
+  // вход в панель возможен только полной навигацией, иначе браузер не спросит пароль.
+  app.get('/events', (_request, reply) => reply.redirect('/admin/bookings', 302))
 
   // В продакшене Fastify отдаёт собранный Vite-фронтенд из dist/
   const currentDir = path.dirname(fileURLToPath(import.meta.url))
