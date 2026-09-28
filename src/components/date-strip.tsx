@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { cn } from '@/lib/utils'
 import type { TimeSlot } from '@/types/booking'
-import { parseDateKey } from '@/utils/dates'
-import { toDateKeyInZone } from '@/utils/timezone'
+import { formatWeekdayShort, toDateKeyInZone } from '@/utils/timezone'
 
 interface DateStripProps {
   slots: TimeSlot[]
@@ -26,11 +25,7 @@ export function DateStrip({ slots, selectedDate, timeZone, onSelectDate }: DateS
     <div className="flex snap-x gap-2 overflow-x-auto pb-1">
       {dateKeys.map((dateKey) => {
         const isSelected = dateKey === selectedDate
-        const weekday = new Intl.DateTimeFormat('ru-RU', {
-          weekday: 'short',
-          timeZone: 'UTC',
-        }).format(parseDateKey(dateKey))
-        const weekdayLabel = weekday.charAt(0).toUpperCase() + weekday.slice(1)
+        const weekdayLabel = formatWeekdayShort(dateKey)
 
         return (
           <button
@@ -48,9 +43,7 @@ export function DateStrip({ slots, selectedDate, timeZone, onSelectDate }: DateS
             )}
           >
             <span className="text-xs font-semibold">{weekdayLabel}</span>
-            <span className="text-[22px] font-bold leading-none">
-              {parseDateKey(dateKey).getDate()}
-            </span>
+            <span className="text-[22px] font-bold leading-none">{Number(dateKey.slice(8))}</span>
           </button>
         )
       })}
