@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — 2026-09-25.
+Proposed — 2026-09-25; Accepted — 2026-09-28 (ветка `feat/redesign-v2-mint`).
 
 ## Context
 
