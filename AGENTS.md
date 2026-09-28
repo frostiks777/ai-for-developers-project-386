@@ -142,6 +142,7 @@ OpenCode-скилы — повторно используемые workflow, ко
   - `plan` — превращает задачу в атомарный пронумерованный чек-лист с проверками.
   - `ponytail` — принудительная проверка «можно ли решить без нового кода/зависимости/абстракции». *(Файл есть в `.agents/skills/`; в текущей версии opencode id не активируется через `skill` tool — содержимое всё равно служит справочником.)*
   - `tdd` — сначала failing-тест, потом минимум кода для зелёного, потом рефакторинг.
+  - `telegram-bridge` — личный Telegram-мост согласований (`telegram-bot/`, в `.gitignore`): отправка через `notify.mjs`, решения из `decisions.jsonl`.
   - `verify` — финальный прогон `lint`/`typecheck`/`test`/`build` перед отметкой задачи как «готово».
 - Чтобы добавить новый скил: создать `.agents/skills/<имя>/SKILL.md`; имя в frontmatter должно совпадать с именем директории.
 - В этом проекте используем **только** `.agents/skills/`. `.opencode/skills/` и `.claude/skills/` больше не применять.
@@ -198,3 +199,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/notify.ps1 "За
 - **Не слать на каждый шаг** и не слать просто так — только случаи 1 и 2 выше.
 - Текст — короткий, по-русски, без секретов.
 - Скрипт использует WinRT-тип `Windows.UI.Notifications` — его видит только `powershell.exe` (5.1); `pwsh` 7 без projection падает с «Unable to find type».
+
+## Telegram-мост (согласования с телефона)
+
+Личный мост в `telegram-bot/` (в `.gitignore`, в git не коммитится). Полный workflow — в скилле `telegram-bridge` (`.agents/skills/telegram-bridge/SKILL.md`).
+
+- Отправка: `node telegram-bot/notify.mjs "Заголовок" "Текст"`; вопрос с кнопками ✅/⛔: добавить `--id <qid>`.
+- Слушать ответы: `node telegram-bot/bot.mjs` (long-polling); решения падают в `telegram-bot/decisions.jsonl` (последняя строка с нужным `qid`).
+- Команды с телефона: `/ping`, `/status`, `/approve <id>`, `/deny <id>` (меню регистрируется через `node telegram-bot/setup-menu.mjs`).
+- Те же 2 случая, что и у тоста: блокер/решение и успешный релиз. Секреты в чат не слать.
