@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.3](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.2...v1.21.3) (2026-09-28)
+
+
+### Bug Fixes
+
+* **panel:** keep day row and blocks header inside narrow screens ([#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49)) ([#74](https://github.com/frostiks777/ai-for-developers-project-386/issues/74)) ([8b49dda](https://github.com/frostiks777/ai-for-developers-project-386/commit/8b49dda0578ad5d9cdd840133d3342a997415b2e))
+
 ## [1.21.2](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.1...v1.21.2) (2026-09-28)
 
 
