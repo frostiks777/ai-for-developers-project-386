@@ -131,4 +131,17 @@ describe('AvailabilitySettingsForm', () => {
 
     expect(screen.getByLabelText('Открыто на, дней')).toHaveValue(30)
   })
+
+  it('показывает занятые слоты в превью', () => {
+    const { container } = render(
+      <AvailabilitySettingsForm
+        settings={{ ...settings, ranges: [{ weekday: 1, startMinute: 600, endMinute: 660 }] }}
+        isSaving={false}
+        onSave={vi.fn()}
+        slots={[{ id: 1, startAt: '2026-09-28T10:00:00.000Z', durationMin: 30, isBooked: true }]}
+      />,
+    )
+
+    expect(container.querySelectorAll('[data-state="meeting"]')).toHaveLength(1)
+  })
 })
