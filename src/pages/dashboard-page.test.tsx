@@ -260,6 +260,51 @@ describe('DashboardPage: разделы', () => {
       expect(body.ranges.filter((range) => range.weekday === 1)).toHaveLength(2)
     })
   })
+
+  it('перезапрашивает брони при смене раздела, чтобы счётчик видел новые заявки', async () => {
+    const future = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    let rows: BookingWithSlot[] = [{ ...booking, startAt: future }]
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = requestPath(input)
+      const method = init?.method ?? 'GET'
+
+      if (url === '/api/v1/hosts/default/bookings' && method === 'GET') {
+        return jsonResponse(rows.map(toApi))
+      }
+      if (url === '/api/v1/hosts/default/availability') {
+        return jsonResponse(defaultSettings)
+      }
+      if (url === '/api/v1/hosts/default/event-types') {
+        return jsonResponse([eventType])
+      }
+      if (url.startsWith('/api/v1/hosts/default/slots')) {
+        return jsonResponse({ timeZone: 'UTC', date: null, slots: [] })
+      }
+
+      return jsonResponse({ error: 'Не найдено' }, 404)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <DashboardPage initialSection="overview" />
+      </MemoryRouter>,
+    )
+
+    const sidebar = await screen.findByRole('navigation', { name: 'Панель организатора' })
+    await waitFor(() => expect(within(sidebar).getByText('1')).toBeInTheDocument())
+
+    rows = [...rows, { ...booking, id: 'token-2', name: 'Мария', startAt: future }]
+
+    rerender(
+      <MemoryRouter>
+        <DashboardPage initialSection="bookings" />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => expect(within(sidebar).getByText('2')).toBeInTheDocument())
+  })
 })
 
 describe('DashboardPage: обзор', () => {

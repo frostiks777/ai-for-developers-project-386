@@ -111,7 +111,6 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
 
   useEffect(() => {
     setSettings(null)
-    void loadBookings()
     void (async () => {
       try {
         setSettings(await call(api.availabilityClient.getAvailability(activeSlug)))
@@ -128,7 +127,14 @@ export default function DashboardPage({ initialSection }: DashboardPageProps) {
         setSlots([])
       }
     })()
-  }, [loadBookings, activeSlug])
+  }, [activeSlug])
+
+  // Разделы панели — один и тот же компонент, поэтому при клиентской навигации
+  // инстанс переиспользуется: перезапрашиваем брони при смене раздела, иначе
+  // счётчик и списки не увидят новые заявки гостей.
+  useEffect(() => {
+    void loadBookings()
+  }, [section, loadBookings])
 
   const handleCancel = async (booking: BookingWithSlot) => {
     try {
