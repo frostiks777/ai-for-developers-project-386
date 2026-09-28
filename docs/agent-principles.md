@@ -89,4 +89,4 @@
 
 ### MCP-инструменты
 
-В `opencode.jsonc` подключён MCP-сервер `shadcn` (официальный `@shadcn/ui/mcp`), который даёт агенту доступ к каталогу компонентов через `components.json`. Подробности, fallback-политика и правила добавления новых MCP — в `docs/mcp.md`.
+В `opencode.jsonc` подключён MCP-сервер `shadcn` (пакет `shadcn`, запускается как `npx -y shadcn@latest mcp`), который даёт агенту доступ к каталогу компонентов через `components.json`. Подробности, fallback-политика и правила добавления новых MCP — в `docs/mcp.md`.
