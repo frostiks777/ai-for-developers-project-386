@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.21.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.0...v1.21.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **panel:** clarify copy text is about cancellation ([#59](https://github.com/frostiks777/ai-for-developers-project-386/issues/59)) ([5fa5a01](https://github.com/frostiks777/ai-for-developers-project-386/commit/5fa5a011fea50d61dbd2f6813a8f28bde19f5b51))
+* **panel:** full-width host form fields on mobile ([#66](https://github.com/frostiks777/ai-for-developers-project-386/issues/66)) ([95cf3e3](https://github.com/frostiks777/ai-for-developers-project-386/commit/95cf3e36102d6f684f26e9c8c12b9156eb52ff59))
+* **ui:** show theme toggle on mobile header ([#61](https://github.com/frostiks777/ai-for-developers-project-386/issues/61)) ([2b9517e](https://github.com/frostiks777/ai-for-developers-project-386/commit/2b9517e60f04864dc4e4dceaf506d0e24efaa2aa))
+* **web:** hide cancel for past meetings in my bookings ([#60](https://github.com/frostiks777/ai-for-developers-project-386/issues/60)) ([5daa965](https://github.com/frostiks777/ai-for-developers-project-386/commit/5daa965f48d0004a78127401184ebe7179a4bad3))
+* **web:** keep wizard form data when switching date ([#65](https://github.com/frostiks777/ai-for-developers-project-386/issues/65)) ([44193ce](https://github.com/frostiks777/ai-for-developers-project-386/commit/44193cebc3621435daa7a2ce48f5c3b90215fc22))
+* **web:** mobile wizard dates, availability slots and panel tabs ([#56](https://github.com/frostiks777/ai-for-developers-project-386/issues/56), [#57](https://github.com/frostiks777/ai-for-developers-project-386/issues/57), [#58](https://github.com/frostiks777/ai-for-developers-project-386/issues/58), [#62](https://github.com/frostiks777/ai-for-developers-project-386/issues/62)) ([3decb4d](https://github.com/frostiks777/ai-for-developers-project-386/commit/3decb4d46126741647d4efe15f619394a0b7c881))
+* **web:** мобильные правки [#65](https://github.com/frostiks777/ai-for-developers-project-386/issues/65)-[#66](https://github.com/frostiks777/ai-for-developers-project-386/issues/66) ([976f1f2](https://github.com/frostiks777/ai-for-developers-project-386/commit/976f1f2258f54602202d9d5a8640d3d110346b84))
+* **web:** мобильные правки приёмки ([#56](https://github.com/frostiks777/ai-for-developers-project-386/issues/56)-[#62](https://github.com/frostiks777/ai-for-developers-project-386/issues/62)) ([4124ff6](https://github.com/frostiks777/ai-for-developers-project-386/commit/4124ff69fad3f2b0f9963d2be5d74f9e0401f302))
+
 ## [1.21.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.20.0...v1.21.0) (2026-09-28)
 
 
