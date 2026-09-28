@@ -363,7 +363,7 @@
 | Причина отмены | `bookings.cancellationReason` + модалка на `/cancel/:token` | ТЗ §2.1; `POST /api/v1/bookings/:id/cancel` принимает `{reason}` |
 | Процессные скиллы (локальные) | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
 | Процессные скиллы (плагин) | [obra/superpowers](https://github.com/obra/superpowers) через `opencode.jsonc` → `plugins` (V2 git-spec) | Дополнительные 14 скилов: `brainstorming`, `systematic-debugging`, `test-driven-development`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `using-git-worktrees`, `verification-before-completion`, `using-superpowers`, `diagnosing-superpowers`. Приоритет V2: проектные → персональные → superpowers (локальные `ponytail` и др. не страдают). |
-| MCP для UI | [`@shadcn/ui/mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Доступ к каталогу компонентов через `components.json` |
+| MCP для UI | [`shadcn mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Пакет `shadcn` (не `@shadcn/ui/mcp`); доступ к каталогу компонентов через `components.json` |
 | Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP (`docs/ci_cd.md`) не используется |
 | Фронт в проде | `@fastify/static` раздаёт `dist/` из Fastify | Один контейнер, same-origin `/api` без CORS |
 | Порт в проде | `process.env.PORT` (fallback 3000) | Требование Render; хост `0.0.0.0` |
