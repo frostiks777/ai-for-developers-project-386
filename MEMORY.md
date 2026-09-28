@@ -312,6 +312,13 @@
     - Тесты: `server/multi-host.test.ts`, `src/components/booking-dialog.test.tsx`. Проверки: lint 0, typecheck чисто, **230/230 тестов**, build ✓.
 67. 📌 **Backlog: защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46): публичный `POST .../bookings` + поле «Гости» (произвольные email) → CAPTCHA, серверная верификация и rate-limit по IP; выбор провайдера — отдельным ADR. Зафиксировано в `docs/todo.md` (Backlog).
 68. ✅ **AGENTS.md:** добавлен обязательный пункт «задачи и баги — только через GitHub Issue» (метка `bug` для багов, номер в коммите, закрытие после пуша).
+69. ✅ **Аудит мобильной вёрстки (2026-09-28)** — [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49) (метка `bug`, P1): Playwright-прогон 9 маршрутов × 2 темы × 2 ширины (390×844, 360×800) + интерактивные состояния; скриншоты и замеры в `docs/artefacts/` (коммит `ee63b9e`). Найденные дефекты: шапка шире экрана (~535 px), наложение табов панели, пересечение текста/кнопки в «Блокировках», обрезка ленты дат, блоки успеха за краем, `/my` без токенов оформления, ландшафтная шапка-«островок». Часть перекрывается редизайном v2.
+70. ⏳ **Редизайн v2 «Мята и солнце»** — [#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48), ветка `feat/redesign-v2-mint`:
+    - **Этап 0** (`6e7e54d`): пакет в `docs/design/v2/`, ADR-0022…0024 в `docs/adr/` (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
+    - **Этап 1** (`e3328f5`, `335c8e1`): `fix(api): require admin auth for bookings list and redirect /events` + `feat(web): move upcoming events into organizer panel` ([ADR-0022](docs/adr/0022-private-bookings-list.md)); `GET /api/v1/hosts/:slug/bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, `events-page` и вкладка удалены, ADR-0017 п.6 помечен заменённым.
+    - **Этап 2** (`2f4e6de`): `fix(web): correct weekday labels and show cancel time in guest zone` — `formatWeekdayShort` (TDD: падающий тест на 2026-09-28 → Пн), `formatZoneShort`/`formatZoneOffsetLabel` (словарь предложного падежа), `date-strip` и `cancel-page` обновлены.
+    - Проверки: lint 0, typecheck чисто, **236/236 тестов**, build ✓, e2e 2/2.
+    - Осталось: этапы 3–13 (токены/фон/стекло, «Дни»/«Неделя», мастер, форма, успех, 409, страница управления, панель, пояс правил, лендинг/«Мои встречи», документация).
 
 ## Что осталось (следующие шаги)
 
