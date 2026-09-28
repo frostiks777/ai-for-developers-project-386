@@ -9,10 +9,15 @@
 
 **Следующие шаги (в порядке приоритета):**
 
-1. **Баги страницы переноса и панели** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): убрать «Перенести» у прошедших встреч в панели; разобраться с субботой в списке дней на `/reschedule/:token` (нужен репро).
-2. **Визуальная приёмка v2** (человек): сверить со `docs/design/v2/screenshots/` на 1280×820 и 390×844 в обеих темах (A/B, C1–C4, M, D; UX-кейсы case-01…case-11). Список — `docs/design/v2/README.md`; отличия — в раздел «Отклонения».
-3. **SSL-режим драйвера `pg`** (мелкая): ✅ закрыт 2026-09-28 — режим нормализуется в `server/env.ts`, предупреждения в логах нет ([Backlog](#backlog-новые-задачи)). Перепроверить после апгрейда `pg` до v9.
-4. **Проверка CAPTCHA в проде:** задать `TURNSTILE_SITEKEY` / `TURNSTILE_SECRET_KEY` / `TURNSTILE_ALLOWED_HOSTNAMES` в Environment Group Render и убедиться, что виджет рендерится, а в логах нет предупреждения «CAPTCHA выключена».
+1. **Сменить `ADMIN_PASSWORD` в Render.** ⚠️ Важно: демо-пароль `call-calendar-admin` лежит в `render.yaml`, то есть в публичном репозитории — значит панель организатора на живом стенде открыта любому, кто посмотрел исходники. Задать свой в Environment Group и убрать демо-значение из `render.yaml`.
+2. **Включить CAPTCHA в проде:** задать `TURNSTILE_SITEKEY` / `TURNSTILE_SECRET_KEY` / `TURNSTILE_ALLOWED_HOSTNAMES` в Environment Group Render. До этого капча в проде выключена (в логах будет предупреждение «CAPCHA выключена») — см. [ADR-0025](adr/0025-captcha-and-rate-limit.md).
+3. **«Перенести» у прошедших встреч** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): кнопка живёт не в `bookings-list.tsx` (там уже поправлены «Скопировать текст об отмене» и «Отменить»), а в другом виде панели — найти компонент со «Перенести»/«Удалить» и убрать перенос для прошедших.
+4. **Проверить шифрование соединения с БД.** При диагностике `pg` сервер отдавал `current_setting('ssl') = off` и `pg_stat_ssl.ssl = false`. Если это боевая БД, соединение может идти открытым текстом. Проверка: `SELECT ssl, version, cipher FROM pg_stat_ssl WHERE pid = pg_backend_pid();`
+5. **SSL-режим драйвера `pg`**: ✅ закрыт 2026-09-28 — режим нормализуется в `server/env.ts`, предупреждения в логах нет ([Backlog](#backlog-новые-задачи)). Перепроверить после апгрейда `pg` до v9.
+
+**Разобрано 2026-09-28 (не требует действий):** «суббота в переносе» из [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76) — оказалось, в правилах доступности хоста были включены суббота/воскресенье, поэтому слоты (и дни) генерировались для них, и страница переноса вела себя правильно. Врёт было превью недели: там был захардкожен список Пн–Пт, теперь колонки берутся из правил.
+
+> ✅ **Визуальная приёмка редизайна v2 «Мята и солнце» пройдена 2026-09-28** — проверено человеком вручную, расхождений не найдено (ADR-0023, `docs/design/v2/`). Пункт снят с плана.
 
 ## Критерии приёмки проекта — статус (проверяет наставник + hexlet-check)
 
@@ -167,7 +172,7 @@
 ## Backlog (новые задачи)
 
 - [x] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) ✅ 2026-09-28: **Cloudflare Turnstile** (Free, Managed/Visible), **показывается всегда**; выключена, пока не задан `TURNSTILE_SECRET_KEY` (dev/test/e2e не зависят от внешнего сервиса); site key отдаёт `GET /api/v1/hosts/:slug/settings` (`captcha: CaptchaSettings`); серверная проверка в `POST .../bookings` — порядок «реплей по `Idempotency-Key` → zod → CAPTCHA → слоты», fail-closed; легаси `POST /api/bookings` тоже защищён; `RateLimit`-плагин (`@fastify/rate-limit` ≥10): 20/мин запись, 300/мин чтения, 600/мин глобально, ключ — `CF-Connecting-IP` → `request.ip`, `trustProxy: true`. Коды `CAPTCHA_FAILED`/`RATE_LIMITED` добавлены в `api/main.tsp` → OpenAPI + SDK. Тесты: `server/captcha.test.ts` (11), `server/rate-limit.test.ts` (5); [ADR-0025](adr/0025-captcha-and-rate-limit.md).
-- [ ] **Панель и перенос: превью недели, суббота, перенос прошедшей встречи** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): превью «Неделя глазами гостя» растянуто на ширину блока (✅ `src/components/availability-preview.tsx`); ждут: суббота в списке дней на `/reschedule/:token`, «Перенести» у прошедших встреч в панели.
+- [ ] **Панель и перенос: превью недели, суббота, перенос прошедшей встречи** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): превью «Неделя глазами гостя» растянуто на ширину блока ✅, добавлены дни из правил (был захардкожен Пн–Пт) ✅, снят левый отступ сетки ✅; ждёт: убрать «Перенести» у прошедших встреч (компонент не `bookings-list.tsx`).
 - [x] **SSL-режим драйвера Postgres (`pg`)** ✅ разобран 2026-09-28 (см. [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76)). Предупреждение `SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'` печатает `pg-connection-string@2.14.0` только из-за наличия `sslmode=require` в строке подключения. **Проверено живым соединением** с Neon (все варианты реально подключились, не только разбор строки):
 
   | `sslmode` | конфиг клиента | результат |
