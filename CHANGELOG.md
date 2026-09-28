@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.19.1...v1.20.0) (2026-09-28)
+
+
+### Features
+
+* redesign v2 mint — stages 0-2 ([#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)) ([#50](https://github.com/frostiks777/ai-for-developers-project-386/issues/50)) ([079662c](https://github.com/frostiks777/ai-for-developers-project-386/commit/079662c7698f2f7003d14da3633925f28d6ff4ba))
+
 ## [1.19.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.19.0...v1.19.1) (2026-09-25)
 
 
