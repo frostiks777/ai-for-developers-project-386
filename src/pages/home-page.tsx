@@ -222,7 +222,6 @@ export default function HomePage() {
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
           { to: `/book/${slug ?? activeSlug}`, label: 'Записаться', active: true },
-          { to: '/events', label: 'Предстоящие события', active: false },
           { to: '/my', label: 'Мои встречи', active: false },
         ]}
       />
