@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom'
 import type { EventType } from '@/api/generated'
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { BookingBar } from '@/components/booking-bar'
 import { BookingDialog } from '@/components/booking-dialog'
 import { BookingSuccess } from '@/components/booking-success'
@@ -217,7 +218,7 @@ export default function HomePage() {
   )
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
+    <AppShell className="h-screen overflow-hidden">
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
@@ -479,6 +480,6 @@ export default function HomePage() {
           refetch()
         }}
       />
-    </div>
+    </AppShell>
   )
 }

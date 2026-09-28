@@ -6,6 +6,7 @@ import type { Booking as ApiBooking, EventType } from '@/api/generated'
 import { toCreatedBooking } from '@/api/mappers'
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
@@ -87,13 +88,13 @@ export default function ConfirmedPage() {
 
   if (isLoading || error || !booking) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <AppShell>
         <AppHeader variant={isDesktop ? 'desktop' : 'mobile'} tabs={tabs} />
         <main className="mx-auto w-full max-w-[600px] flex-1 px-4 py-16 text-center">
           {isLoading && <p className="text-sm text-muted-foreground">Загрузка…</p>}
           {!isLoading && error && <p className="text-sm text-destructive">{error}</p>}
         </main>
-      </div>
+      </AppShell>
     )
   }
 
@@ -112,7 +113,7 @@ export default function ConfirmedPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <AppShell>
       <AppHeader variant={isDesktop ? 'desktop' : 'mobile'} tabs={tabs} />
 
       <main className="mx-auto w-full max-w-[600px] flex-1 px-4 py-10 lg:px-6 lg:py-14">
@@ -175,6 +176,6 @@ export default function ConfirmedPage() {
           Время указано в поясе {booking.timeZone ?? defaultTimeZone}.
         </p>
       </main>
-    </div>
+    </AppShell>
   )
 }

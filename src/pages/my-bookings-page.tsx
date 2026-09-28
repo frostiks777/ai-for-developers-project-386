@@ -3,6 +3,7 @@ import { CalendarClock, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { AppHeader } from '@/components/app-header'
+import { AppShell } from '@/components/app-shell'
 import { useActiveHost } from '@/hooks/use-active-host'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
@@ -21,7 +22,7 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <AppShell>
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
@@ -99,6 +100,6 @@ export default function MyBookingsPage() {
           })}
         </ul>
       </main>
-    </div>
+    </AppShell>
   )
 }
