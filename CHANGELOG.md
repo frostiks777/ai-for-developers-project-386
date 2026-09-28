@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.3...v1.22.0) (2026-09-28)
+
+
+### Features
+
+* **security:** protect public booking with Turnstile and per-IP rate limit ([#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46)) ([05c923b](https://github.com/frostiks777/ai-for-developers-project-386/commit/05c923b082e925e271e2416d980d8e2d60c35b3d))
+
+
+### Bug Fixes
+
+* **panel:** stretch week preview and hide cancel actions on past bookings ([#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76)) ([b502e08](https://github.com/frostiks777/ai-for-developers-project-386/commit/b502e0892107aeedeecd581f7ac2f967f6752984))
+
 ## [1.21.3](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.21.2...v1.21.3) (2026-09-28)
 
 
