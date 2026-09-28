@@ -164,8 +164,8 @@
 > скилл `apply-design-v2` — в `.agents/skills/`. Этап 0 выполнен.
 
 - [x] **Этап 0 — подготовка** — ветка `feat/redesign-v2-mint`, пакет в [`docs/design/v2/`](design/v2/), ADR-0022…0024 в [`docs/adr/`](adr/) (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
-- [ ] **Этап 1** — контакты гостей только для организатора ([ADR-0022](adr/0022-private-bookings-list.md)).
-- [ ] **Этап 2** — баги времени (дни недели, пояс гостя при отмене).
+- [x] **Этап 1** — контакты гостей только для организатора ([ADR-0022](adr/0022-private-bookings-list.md)): `GET /bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, вкладка и `events-page` удалены.
+- [x] **Этап 2** — баги времени: `formatWeekdayShort` (дни недели в ленте), пояс гостя при отмене (`formatZoneShort`).
 - [ ] **Этапы 3–13** — редизайн по [`docs/design/v2/implementation-plan.md`](design/v2/implementation-plan.md).
 - [ ] **ADRs v2** — [`design/docs/design/v2/adr/`](../design/docs/design/v2/adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone).
 - [ ] **Макеты/скриншоты v2** — `design/docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking).
