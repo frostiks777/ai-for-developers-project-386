@@ -1,19 +1,22 @@
-import { Calendar, Mail, MessageSquare, Phone } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, ChevronDown, Copy, Mail, MessageSquare, Phone } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import type { BookingWithSlot } from '@/types/booking'
+import { buildGuestMessage } from '@/utils/guest-message'
 import {
   defaultTimeZone,
   formatDayTitle,
   formatTimeInZone,
   toDateKeyInZone,
 } from '@/utils/timezone'
-
 interface BookingsListProps {
   bookings: BookingWithSlot[]
   onCancel: (booking: BookingWithSlot) => void
   showCancel?: boolean
+  hostSlug?: string
 }
 
 function endTimeIso(booking: BookingWithSlot): string {
@@ -45,8 +48,14 @@ function groupByDay(bookings: BookingWithSlot[]): Array<{ dateKey: string; items
     }))
 }
 
-export function BookingsList({ bookings, onCancel, showCancel = true }: BookingsListProps) {
+export function BookingsList({
+  bookings,
+  onCancel,
+  showCancel = true,
+  hostSlug = 'default',
+}: BookingsListProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   if (bookings.length === 0) {
     return (
@@ -59,6 +68,17 @@ export function BookingsList({ bookings, onCancel, showCancel = true }: Bookings
     )
   }
 
+  const copyGuestText = async (booking: BookingWithSlot) => {
+    try {
+      await navigator.clipboard.writeText(
+        buildGuestMessage(booking, { hostSlug, timeZone: defaultTimeZone }),
+      )
+      toast.success('Текст скопирован')
+    } catch {
+      toast.error('Не удалось скопировать текст')
+    }
+  }
+
   const groups = groupByDay(bookings)
 
   return (
@@ -69,103 +89,97 @@ export function BookingsList({ bookings, onCancel, showCancel = true }: Bookings
             {formatDayTitle(group.dateKey)}
           </h3>
           <ul className="flex flex-col gap-2">
-            {group.items.map((booking) =>
-              isDesktop ? (
-                <li
-                  key={booking.id}
-                  className="flex items-center gap-5 rounded-xl border bg-card p-4"
-                >
-                  <div className="w-[92px] shrink-0">
-                    <div className="text-lg font-semibold">
+            {group.items.map((booking) => {
+              const isExpanded = expandedId === booking.id
+
+              return (
+                <li key={booking.id} className="rounded-xl border bg-card">
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    onClick={() => setExpandedId(isExpanded ? null : booking.id)}
+                    className="flex w-full items-center gap-4 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <div className="w-[70px] shrink-0 text-[15px] font-bold tabular-nums">
                       {formatTimeInZone(booking.startAt, defaultTimeZone)}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      до {formatTimeInZone(endTimeIso(booking), defaultTimeZone)}
-                    </div>
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-base font-semibold">{booking.name}</span>
-                      {booking.eventTypeTitle && (
-                        <span className="inline-flex h-6 items-center rounded-full bg-accent px-2.5 text-xs font-medium text-accent-foreground">
-                          {booking.eventTypeTitle}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <Mail className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
-                        {booking.email}
-                      </span>
-                      {booking.phone && (
-                        <span className="flex items-center gap-1.5">
-                          <Phone className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
-                          {booking.phone}
-                        </span>
-                      )}
-                    </div>
-                    {booking.comment && (
-                      <div className="flex items-start gap-1.5 text-sm">
-                        <MessageSquare
-                          className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
-                          strokeWidth={1.8}
-                          aria-hidden="true"
-                        />
-                        {booking.comment}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[15px] font-semibold">{booking.name}</div>
+                      <div className="truncate text-[13px] text-muted-foreground">
+                        {booking.eventTypeTitle ?? 'Встреча'} · {booking.durationMin} мин
                       </div>
-                    )}
-                  </div>
-                  {showCancel && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      onClick={() => onCancel(booking)}
-                    >
-                      Отменить
-                    </Button>
-                  )}
-                </li>
-              ) : (
-                <li
-                  key={booking.id}
-                  className="flex flex-col gap-1.5 rounded-2xl border bg-card p-4"
-                >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[17px] font-bold">
-                      {formatTimeInZone(booking.startAt, defaultTimeZone)} –{' '}
-                      {formatTimeInZone(endTimeIso(booking), defaultTimeZone)}
-                    </span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {booking.durationMin} мин
-                    </span>
-                  </div>
-                  <div className="text-[15px] font-semibold">{booking.name}</div>
-                  {booking.eventTypeTitle && (
-                    <div className="text-[13px] text-muted-foreground">
-                      {booking.eventTypeTitle}
+                    </div>
+                    <ChevronDown
+                      className={`size-4 shrink-0 text-muted-foreground transition-transform ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`}
+                      strokeWidth={1.8}
+                      aria-hidden="true"
+                    />
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t px-4 py-3">
+                      <div className="flex flex-col gap-1.5 text-[13px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Mail className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+                          {booking.email}
+                        </span>
+                        {booking.phone && (
+                          <span className="flex items-center gap-1.5">
+                            <Phone className="size-3.5" strokeWidth={1.8} aria-hidden="true" />
+                            {booking.phone}
+                          </span>
+                        )}
+                        {booking.comment && (
+                          <span className="flex items-start gap-1.5">
+                            <MessageSquare
+                              className="mt-0.5 size-3.5 shrink-0"
+                              strokeWidth={1.8}
+                              aria-hidden="true"
+                            />
+                            {booking.comment}
+                          </span>
+                        )}
+                        <span className="tabular-nums">
+                          до {formatTimeInZone(endTimeIso(booking), defaultTimeZone)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10"
+                          onClick={() => copyGuestText(booking)}
+                        >
+                          <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                          Скопировать текст для гостя
+                        </Button>
+                        {showCancel && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive"
+                            onClick={() => onCancel(booking)}
+                          >
+                            Отменить
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   )}
-                  <div className="text-[13px] text-muted-foreground">{booking.email}</div>
-                  {booking.phone && (
-                    <div className="text-[13px] text-muted-foreground">{booking.phone}</div>
-                  )}
-                  {booking.comment && (
-                    <div className="text-sm">«{booking.comment}»</div>
-                  )}
-                  {showCancel && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-1.5 h-11 w-full rounded-xl border-destructive-border text-destructive hover:bg-accent hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      onClick={() => onCancel(booking)}
-                    >
-                      Отменить
-                    </Button>
+
+                  {isDesktop && showCancel && !isExpanded && (
+                    <div className="sr-only">
+                      <Button type="button" onClick={() => onCancel(booking)}>
+                        Отменить
+                      </Button>
+                    </div>
                   )}
                 </li>
-              ),
-            )}
+              )
+            })}
           </ul>
         </section>
       ))}

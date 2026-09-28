@@ -1,83 +1,54 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 
 import { DashboardSidebar } from './dashboard-sidebar'
 
-function renderSidebar() {
+function renderSidebar(initialPath = '/dashboard') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialPath]}>
       <DashboardSidebar bookingCount={2} />
-      <section id="bookings">Встречи</section>
-      <section id="availability">Доступность</section>
-      <section id="blocks">Блокировки</section>
     </MemoryRouter>,
   )
 }
 
 describe('DashboardSidebar', () => {
-  it('скроллит к секции встреч по клику', async () => {
-    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-    const user = userEvent.setup()
+  it('ведёт на маршрут раздела доступности', () => {
     renderSidebar()
 
-    await user.click(screen.getByRole('link', { name: /Встречи/ }))
-
-    expect(scrollIntoView).toHaveBeenCalledTimes(1)
-    expect(scrollIntoView.mock.instances[0]).toBe(screen.getByText('Встречи', { selector: 'section' }))
-    expect(window.location.hash).toBe('#bookings')
-
-    scrollIntoView.mockRestore()
+    expect(screen.getByRole('link', { name: /Доступность/ })).toHaveAttribute(
+      'href',
+      '/admin/availability',
+    )
   })
 
-  it('скроллит к секции доступности по клику на ссылку', async () => {
-    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-    const user = userEvent.setup()
+  it('ведёт на маршрут списка встреч и показывает счётчик', () => {
     renderSidebar()
 
-    await user.click(screen.getByRole('link', { name: 'Доступность' }))
-
-    expect(scrollIntoView).toHaveBeenCalledTimes(1)
-    expect(scrollIntoView.mock.instances[0]).toBe(screen.getByText('Доступность', { selector: 'section' }))
-    expect(window.location.hash).toBe('#availability')
-
-    scrollIntoView.mockRestore()
+    const link = screen.getByRole('link', { name: /Обзор/ })
+    expect(link).toHaveAttribute('href', '/dashboard')
+    expect(link).toHaveTextContent('2')
+    expect(screen.getByRole('link', { name: /Все встречи/ })).toHaveAttribute(
+      'href',
+      '/admin/bookings',
+    )
   })
 
-  it('скроллит к секции блокировок по клику на ссылку', async () => {
-    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-    const user = userEvent.setup()
-    renderSidebar()
+  it('выделяет активный раздел', () => {
+    renderSidebar('/admin/blocks')
 
-    await user.click(screen.getByRole('link', { name: 'Блокировки' }))
-
-    expect(scrollIntoView).toHaveBeenCalledTimes(1)
-    expect(scrollIntoView.mock.instances[0]).toBe(screen.getByText('Блокировки', { selector: 'section' }))
-    expect(window.location.hash).toBe('#blocks')
-
-    scrollIntoView.mockRestore()
+    expect(screen.getByRole('link', { name: 'Блокировки' })).toHaveClass('bg-accent')
   })
 
   it('логотип ведёт на главную страницу', () => {
     renderSidebar()
 
-    const logo = screen.getByRole('link', { name: 'На главную' })
-    expect(logo).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'На главную' })).toHaveAttribute('href', '/')
   })
 
-  it('не ломается, если целевой секции нет', async () => {
-    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-    const user = userEvent.setup()
+  it('показывает ссылку для записи и кнопку копирования', () => {
+    renderSidebar()
 
-    render(
-      <MemoryRouter>
-        <DashboardSidebar bookingCount={0} />
-      </MemoryRouter>,
-    )
-
-    await user.click(screen.getByRole('link', { name: 'Типы встреч' }))
-
-    expect(scrollIntoView).not.toHaveBeenCalled()
-    scrollIntoView.mockRestore()
+    expect(screen.getByText('Ссылка для записи')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Скопировать/ })).toBeInTheDocument()
   })
 })
