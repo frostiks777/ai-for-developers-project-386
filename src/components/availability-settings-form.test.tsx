@@ -36,10 +36,11 @@ describe('AvailabilitySettingsForm', () => {
     expect(screen.getByLabelText('Пн: начало 1')).toHaveValue('14:00')
   })
 
-  it('показывает часовой пояс в шапке карточки', () => {
+  it('показывает выбор часового пояса правил', () => {
     render(<AvailabilitySettingsForm settings={settings} isSaving={false} onSave={vi.fn()} />)
 
-    expect(screen.getByText('Часовой пояс: UTC')).toBeInTheDocument()
+    expect(screen.getByLabelText('Часовой пояс')).toBeInTheDocument()
+    expect(screen.getByText('Часы ниже — в этом поясе. Гости видят их в своём.')).toBeInTheDocument()
   })
 
   it('переключает день тогглом, убирая и возвращая интервалы', async () => {

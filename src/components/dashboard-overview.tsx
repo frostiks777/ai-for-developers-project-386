@@ -7,6 +7,7 @@ import { AvailabilityPreview } from '@/components/availability-preview'
 import { BookingsList } from '@/components/bookings-list'
 import { Button } from '@/components/ui/button'
 import { useMediaQuery } from '@/hooks/use-media-query'
+import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot, TimeSlot } from '@/types/booking'
 import { toDateKey } from '@/utils/dates'
 import { pluralRu } from '@/utils/plural'
@@ -44,7 +45,7 @@ function formatShortTime(iso: string): string {
 export function DashboardOverview({ bookings, hostSlug, onCancel }: DashboardOverviewProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const [slots, setSlots] = useState<TimeSlot[]>([])
-  const [clientTz, setClientTz] = useState(defaultTimeZone)
+  const [settings, setSettings] = useState<AvailabilitySettings | null>(null)
 
   useEffect(() => {
     let isActive = true
@@ -70,13 +71,13 @@ export function DashboardOverview({ bookings, hostSlug, onCancel }: DashboardOve
     let isActive = true
 
     call(api.availabilityClient.getAvailability(hostSlug))
-      .then((settings) => {
-        if (isActive && settings.timeZone) {
-          setClientTz(settings.timeZone)
+      .then((loaded) => {
+        if (isActive) {
+          setSettings(loaded)
         }
       })
       .catch(() => {
-        // пояс правил недоступен — показываем локальный
+        // настройки недоступны — превью и баннер скрыты
       })
 
     return () => {
@@ -121,14 +122,15 @@ export function DashboardOverview({ bookings, hostSlug, onCancel }: DashboardOve
   ]
 
   const todayTitle = formatDayTitle(todayKey)
-  const mismatch = clientTz !== defaultTimeZone
+  const mismatch = settings !== null && settings.timeZone !== defaultTimeZone
 
   return (
     <div className="flex flex-col gap-6">
-      {mismatch && (
+      {mismatch && settings && (
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-highlight/50 bg-highlight/15 p-3.5 text-[13px]">
           <span>
-            <strong>Часы работы заданы в {clientTz}.</strong> Гости видят их в своём поясе.
+            <strong>Часы работы заданы в {formatClientTz(settings.timeZone)}.</strong> Гости видят
+            их в своём поясе.
           </span>
           <Button
             type="button"
@@ -136,7 +138,7 @@ export function DashboardOverview({ bookings, hostSlug, onCancel }: DashboardOve
             className="h-9"
             onClick={() => toast.info('Пояс правил можно изменить в «Доступности»')}
           >
-            Считать по {formatClientTz(clientTz)}
+            Считать по {formatClientTz(settings.timeZone)}
           </Button>
         </div>
       )}
@@ -184,7 +186,11 @@ export function DashboardOverview({ bookings, hostSlug, onCancel }: DashboardOve
             Заблокировать время
           </a>
         </div>
-        <AvailabilityPreview slots={slots} />
+        {settings ? (
+          <AvailabilityPreview settings={settings} />
+        ) : (
+          <p className="text-sm text-muted-foreground">Нет данных для превью</p>
+        )}
       </section>
     </div>
   )

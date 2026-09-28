@@ -1,52 +1,55 @@
-import { useMemo } from 'react'
-
-import type { TimeSlot } from '@/types/booking'
-import { defaultTimeZone, formatTimeInZone } from '@/utils/timezone'
+import type { AvailabilitySettings } from '@/types/availability-settings'
 
 interface AvailabilityPreviewProps {
-  slots: TimeSlot[]
+  settings: AvailabilitySettings
 }
 
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']
+const WEEKDAYS: { value: number; label: string }[] = [
+  { value: 1, label: 'Пн' },
+  { value: 2, label: 'Вт' },
+  { value: 3, label: 'Ср' },
+  { value: 4, label: 'Чт' },
+  { value: 5, label: 'Пт' },
+]
 
-// «Неделя глазами гостя»: тепловая сетка Пн–Пт × времена начала
-export function AvailabilityPreview({ slots }: AvailabilityPreviewProps) {
-  const { days, times, freeSet } = useMemo(() => {
-    const daySet = new Set<string>()
-    const timeSet = new Set<string>()
-    const free = new Set<string>()
+const minuteToLabel = (minute: number): string =>
+  `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
 
-    for (const slot of slots) {
-      const date = new Date(slot.startAt)
-      const weekday = new Intl.DateTimeFormat('ru-RU', {
-        timeZone: defaultTimeZone,
-        weekday: 'short',
-      }).format(date)
-      const label = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace('.', '')
+// «Неделя глазами гостя»: сетка Пн–Пт × времена начал по черновику правил.
+// Часы показаны в поясе правил (settings.timeZone).
+export function AvailabilityPreview({ settings }: AvailabilityPreviewProps) {
+  const step =
+    settings.slotDurationMin + settings.bufferBeforeMin + settings.bufferAfterMin
 
-      if (!WEEKDAYS.includes(label)) {
-        continue
-      }
+  const times = new Set<string>()
 
-      const time = formatTimeInZone(slot.startAt, defaultTimeZone)
-      daySet.add(label)
-      timeSet.add(time)
-
-      if (!slot.isBooked) {
-        free.add(`${label}:${time}`)
-      }
+  for (const range of settings.ranges) {
+    for (
+      let minute = range.startMinute;
+      minute + settings.slotDurationMin <= range.endMinute;
+      minute += step
+    ) {
+      times.add(minuteToLabel(minute))
     }
+  }
 
-    return {
-      days: WEEKDAYS.filter((day) => daySet.has(day)),
-      times: Array.from(timeSet).sort().slice(0, 20),
-      freeSet: free,
-    }
-  }, [slots])
+  const timeLabels = Array.from(times).sort()
 
-  if (days.length === 0 || times.length === 0) {
+  if (timeLabels.length === 0) {
     return <p className="text-sm text-muted-foreground">Нет данных для превью</p>
   }
+
+  const hasFree = (weekday: number, timeLabel: string): boolean =>
+    settings.ranges.some((range) => {
+      const [hours, minutes] = timeLabel.split(':').map(Number)
+      const minute = hours * 60 + minutes
+
+      return (
+        range.weekday === weekday &&
+        minute >= range.startMinute &&
+        minute + settings.slotDurationMin <= range.endMinute
+      )
+    })
 
   return (
     <div className="overflow-x-auto">
@@ -54,22 +57,22 @@ export function AvailabilityPreview({ slots }: AvailabilityPreviewProps) {
         <thead>
           <tr>
             <th />
-            {days.map((day) => (
-              <th key={day} className="px-1 text-muted-foreground">
-                {day}
+            {WEEKDAYS.map((day) => (
+              <th key={day.value} className="px-1 text-muted-foreground">
+                {day.label}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {times.map((time) => (
-            <tr key={time}>
-              <td className="pr-1 text-right tabular-nums text-muted-foreground">{time}</td>
-              {days.map((day) => (
+          {timeLabels.map((timeLabel) => (
+            <tr key={timeLabel}>
+              <td className="pr-1 text-right tabular-nums text-muted-foreground">{timeLabel}</td>
+              {WEEKDAYS.map((day) => (
                 <td
-                  key={`${day}:${time}`}
+                  key={`${day.value}:${timeLabel}`}
                   className={
-                    freeSet.has(`${day}:${time}`)
+                    hasFree(day.value, timeLabel)
                       ? 'size-4 rounded-[3px] bg-accent'
                       : 'size-4 rounded-[3px] bg-secondary/40'
                   }
