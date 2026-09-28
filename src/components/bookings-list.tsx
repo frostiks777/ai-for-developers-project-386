@@ -91,6 +91,9 @@ export function BookingsList({
           <ul className="flex flex-col gap-2">
             {group.items.map((booking) => {
               const isExpanded = expandedId === booking.id
+              // Тот же признак, что делит вкладки панели (dashboard-page.tsx):
+              // начало прошло — встречу уже не отменить и не перенести.
+              const isPast = Date.parse(booking.startAt) < Date.now()
 
               return (
                 <li key={booking.id} className="rounded-xl border bg-card">
@@ -146,27 +149,31 @@ export function BookingsList({
                         </span>
                       </div>
 
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-10"
-                          onClick={() => copyGuestText(booking)}
-                        >
-                          <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
-                          Скопировать текст об отмене
-                        </Button>
-                        {showCancel && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive"
-                            onClick={() => onCancel(booking)}
-                          >
-                            Отменить
-                          </Button>
-                        )}
-                      </div>
+                      {(!isPast || showCancel) && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {!isPast && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10"
+                              onClick={() => copyGuestText(booking)}
+                            >
+                              <Copy className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                              Скопировать текст об отмене
+                            </Button>
+                          )}
+                          {showCancel && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 border-destructive-border text-destructive hover:bg-accent hover:text-destructive"
+                              onClick={() => onCancel(booking)}
+                            >
+                              Отменить
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
