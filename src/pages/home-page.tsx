@@ -13,14 +13,17 @@ import { EventTypePicker } from '@/components/event-type-picker'
 import { SlotGroups } from '@/components/slot-groups'
 import { TimezoneCard } from '@/components/timezone-card'
 import { TwoWeekGrid } from '@/components/two-week-grid'
+import { ViewToggle } from '@/components/view-toggle'
+import { WeekGrid } from '@/components/week-grid'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
 import { useActiveHost } from '@/hooks/use-active-host'
 import { useAvailability } from '@/hooks/use-availability'
+import { useBookingView } from '@/hooks/use-booking-view'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useTimeFormat } from '@/hooks/use-time-format'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
-import { toDateKey } from '@/utils/dates'
+import { addDays, parseDateKey, startOfWeek, toDateKey } from '@/utils/dates'
 import { saveMyBooking } from '@/utils/my-bookings'
 import { pluralRu } from '@/utils/plural'
 import {
@@ -50,6 +53,14 @@ function DaysSkeleton() {
   )
 }
 
+function formatMonthDay(dateKey: string): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'long',
+  }).format(parseDateKey(dateKey))
+}
+
 export default function HomePage() {
   const { slug } = useParams<{ slug: string }>()
   const { activeSlug, hosts } = useActiveHost()
@@ -68,6 +79,8 @@ export default function HomePage() {
   const [horizonDays, setHorizonDays] = useState<number | null>(null)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { hour12 } = useTimeFormat()
+  const { view, setView } = useBookingView()
+  const [weekStartOverride, setWeekStartOverride] = useState<string | null>(null)
 
   const activeHost = hosts.find((item) => item.slug === slug || item.id === slug) ?? null
   const hostName = activeHost?.name?.trim() || host.name
@@ -137,6 +150,27 @@ export default function HomePage() {
   const freeCount = visibleSlots.filter((slot) => !slot.isBooked).length
   const durationMin = slots[0]?.durationMin ?? null
 
+  const firstDayKey = slotDates[0] ?? null
+  const lastDayKey = slotDates[slotDates.length - 1] ?? null
+  const baseWeekStart = firstDayKey ? startOfWeek(firstDayKey) : null
+  const weekStart = weekStartOverride ?? (activeDate ? startOfWeek(activeDate) : baseWeekStart)
+  const weekEnd = weekStart ? addDays(weekStart, 6) : null
+  const canPrevWeek = Boolean(weekStart && baseWeekStart && weekStart > baseWeekStart)
+  const canNextWeek = Boolean(weekStart && lastDayKey && addDays(weekStart, 6) < lastDayKey)
+  const weekFreeCount = useMemo(() => {
+    if (!weekStart) {
+      return 0
+    }
+
+    const end = addDays(weekStart, 7)
+
+    return slots.filter((slot) => {
+      const key = toDateKeyInZone(new Date(slot.startAt), timeZone)
+
+      return !slot.isBooked && key >= weekStart && key < end
+    }).length
+  }, [slots, weekStart, timeZone])
+
   const horizonEnd = useMemo(() => {
     if (horizonDays === null) {
       return null
@@ -183,6 +217,7 @@ export default function HomePage() {
     setSelectedTypeId(type.id)
     setSelectedSlotId(null)
     setSelectedDate(null)
+    setWeekStartOverride(null)
   }
 
   const handleSelectDate = (dateKey: string) => {
@@ -327,6 +362,74 @@ export default function HomePage() {
             />
           </div>
         ) : isDesktop ? (
+          view === 'week' ? (
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+              <section className="glass rounded-card p-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  {activeTypes.length > 0 && (
+                    <EventTypePicker
+                      types={activeTypes}
+                      selectedId={selectedTypeId}
+                      onSelect={handleSelectType}
+                      layout="chips"
+                    />
+                  )}
+                  <div className="ml-auto flex flex-wrap items-center gap-3">
+                    {weekStart && weekEnd && (
+                      <div className="text-right">
+                        <p className="text-[15px] font-semibold">
+                          {formatMonthDay(weekStart)} – {formatMonthDay(weekEnd)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {weekFreeCount} окон · время по {timeZone}
+                        </p>
+                      </div>
+                    )}
+                    <ViewToggle value={view} onChange={setView} />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  {isLoading ? (
+                    <DaysSkeleton />
+                  ) : error ? (
+                    <div className="rounded-xl border bg-card p-6 text-center">
+                      <p className="font-medium">Не удалось загрузить слоты</p>
+                      <Button className="mt-4" variant="outline" onClick={() => refetch()}>
+                        Повторить
+                      </Button>
+                    </div>
+                  ) : (
+                    slots.length > 0 &&
+                    weekStart && (
+                      <WeekGrid
+                        slots={slots}
+                        weekStart={weekStart}
+                        timeZone={timeZone}
+                        selectedSlotId={selectedSlotId}
+                        onSelect={(slot) => setSelectedSlotId(slot.id)}
+                        onPrevWeek={() => setWeekStartOverride(addDays(weekStart, -7))}
+                        onNextWeek={() => setWeekStartOverride(addDays(weekStart, 7))}
+                        canPrev={canPrevWeek}
+                        canNext={canNextWeek}
+                      />
+                    )
+                  )}
+                </div>
+              </section>
+              <aside className="glass rounded-card bg-card/35 p-6">
+                <BookingForm
+                  slot={selectedSlot}
+                  hostSlug={slug ?? ''}
+                  eventTypeId={selectedTypeId}
+                  eventTypeTitle={selectedType?.title ?? null}
+                  timeZone={timeZone}
+                  variant="column"
+                  onBooked={handleBooked}
+                  onConflict={handleConflict}
+                />
+              </aside>
+            </div>
+          ) : (
           <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)_340px] xl:grid-cols-[260px_minmax(0,1fr)_380px]">
             <aside className="glass rounded-card p-5">
               {hostBlurb}
@@ -345,6 +448,7 @@ export default function HomePage() {
             <section className="glass rounded-card p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Выберите день</h2>
+                <ViewToggle value={view} onChange={setView} />
               </div>
 
               {isLoading ? (
@@ -408,6 +512,7 @@ export default function HomePage() {
               />
             </aside>
           </div>
+          )
         ) : (
           <div className="flex flex-col gap-5">
             {hostBlurb}

@@ -305,6 +305,26 @@ describe('HomePage: мобильная раскладка', () => {
   })
 })
 
+describe('HomePage: вид «Неделя»', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    window.localStorage.clear()
+  })
+
+  it('переключается на неделю и сохраняет выбор в localStorage', async () => {
+    vi.stubGlobal('fetch', mockFetch())
+
+    const user = userEvent.setup()
+    renderHomePage()
+
+    await user.click(await screen.findByRole('tab', { name: 'Неделя' }))
+
+    expect(await screen.findByRole('button', { name: 'Предыдущая неделя' })).toBeInTheDocument()
+    expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
+    expect(window.localStorage.getItem('call-calendar-booking-view')).toBe('week')
+  })
+})
+
 describe('HomePage: выбор типа встречи', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
