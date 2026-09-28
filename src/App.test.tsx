@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 import type { HostSettings } from '@/api/generated'
 import { jsonResponse, requestPath } from '@/test/http'
+import { defaultTimeZone, toDateKeyInZone } from '@/utils/timezone'
 import { App } from './App'
 
 const settings: HostSettings = {
@@ -84,7 +85,9 @@ describe('App', () => {
     vi.stubGlobal('fetch', mockFetch())
     renderApp('/book/default')
 
-    expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
+    const dateKey = toDateKeyInZone(new Date(slot.startAt), defaultTimeZone)
+    expect(await screen.findByRole('button', { name: dateKey })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Выберите время' })).toBeDisabled()
   })
 
   it('на неизвестном хосте показывает «Страница не найдена»', async () => {
@@ -98,6 +101,7 @@ describe('App', () => {
     vi.stubGlobal('fetch', mockFetch())
     renderApp('/book/11111111-2222-3333-4444-555555555555')
 
-    expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
+    const dateKey = toDateKeyInZone(new Date(slot.startAt), defaultTimeZone)
+    expect(await screen.findByRole('button', { name: dateKey })).toBeInTheDocument()
   })
 })

@@ -31,7 +31,10 @@ export function useBooking() {
     } catch (error) {
       const apiError =
         error instanceof ApiError ? error : new ApiError(0, 'Не удалось забронировать звонок')
-      toast.error(apiError.message)
+      // 409 обрабатывается формой на месте (сообщение + соседние окна), дубль-тост не нужен
+      if (apiError.status !== 409) {
+        toast.error(apiError.message)
+      }
       return { ok: false, error: apiError }
     } finally {
       setIsSubmitting(false)

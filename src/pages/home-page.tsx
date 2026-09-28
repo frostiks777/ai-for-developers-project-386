@@ -1,76 +1,58 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Clock, Globe, Video } from 'lucide-react'
+import { CalendarX, Clock, Hourglass, Video } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 
 import type { EventType } from '@/api/generated'
 import { api, call } from '@/api/sdk'
 import { AppHeader } from '@/components/app-header'
 import { AppShell } from '@/components/app-shell'
-import { BookingBar } from '@/components/booking-bar'
-import { BookingDialog } from '@/components/booking-dialog'
+import { BookingForm } from '@/components/booking-form'
 import { BookingSuccess } from '@/components/booking-success'
 import { DateStrip } from '@/components/date-strip'
-import { useActiveHost } from '@/hooks/use-active-host'
-import { HostInfo } from '@/components/host-info'
-import { MonthCalendar } from '@/components/month-calendar'
-import { SlotGrid } from '@/components/slot-grid'
-import { TimeFormatToggle } from '@/components/time-format-toggle'
-import { TimeZoneSelect } from '@/components/timezone-select'
+import { EventTypePicker } from '@/components/event-type-picker'
+import { SlotGroups } from '@/components/slot-groups'
+import { TimezoneCard } from '@/components/timezone-card'
+import { TwoWeekGrid } from '@/components/two-week-grid'
 import { Button } from '@/components/ui/button'
 import { host } from '@/config/host'
+import { useActiveHost } from '@/hooks/use-active-host'
 import { useAvailability } from '@/hooks/use-availability'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useTimeFormat } from '@/hooks/use-time-format'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
-import { parseDateKey } from '@/utils/dates'
+import { toDateKey } from '@/utils/dates'
 import { saveMyBooking } from '@/utils/my-bookings'
 import { pluralRu } from '@/utils/plural'
 import {
   defaultTimeZone,
-  formatDayShortTitle,
   formatDayTitle,
-  formatTimeRange,
+  formatTimeInZone,
   toDateKeyInZone,
 } from '@/utils/timezone'
-import { cn } from '@/lib/utils'
 
-function CalendarSkeleton() {
+function SlotsSkeleton() {
   return (
-    <div aria-hidden="true">
-      <div className="h-7 w-40 animate-pulse rounded-lg bg-muted" />
-      <div className="mt-6 flex items-center justify-between">
-        <div className="h-6 w-32 animate-pulse rounded-lg bg-muted" />
-        <div className="flex gap-2">
-          <div className="size-11 animate-pulse rounded-full bg-muted" />
-          <div className="size-11 animate-pulse rounded-full bg-muted" />
-        </div>
-      </div>
-      <div className="mt-5 grid grid-cols-7 justify-items-center gap-y-1">
-        {Array.from({ length: 35 }, (_, index) => (
-          <div key={index} className="size-[52px] animate-pulse rounded-full bg-muted" />
-        ))}
-      </div>
+    <div aria-hidden="true" className="grid grid-cols-5 gap-2">
+      {Array.from({ length: 10 }, (_, index) => (
+        <div key={index} className="h-[46px] animate-pulse rounded-[10px] bg-muted" />
+      ))}
     </div>
   )
 }
 
-function SlotsSkeleton() {
+function DaysSkeleton() {
   return (
-    <div aria-hidden="true">
-      <div className="h-6 w-48 animate-pulse rounded-lg bg-muted" />
-      <div className="mt-2 h-4 w-64 animate-pulse rounded-lg bg-muted" />
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        {Array.from({ length: 8 }, (_, index) => (
-          <div key={index} className="h-12 animate-pulse rounded-lg bg-muted" />
-        ))}
-      </div>
+    <div aria-hidden="true" className="grid grid-cols-7 gap-2">
+      {Array.from({ length: 14 }, (_, index) => (
+        <div key={index} className="h-[60px] animate-pulse rounded-xl bg-muted" />
+      ))}
     </div>
   )
 }
 
 export default function HomePage() {
   const { slug } = useParams<{ slug: string }>()
-  const { activeSlug } = useActiveHost()
+  const { activeSlug, hosts } = useActiveHost()
   const [eventTypes, setEventTypes] = useState<EventType[]>([])
   const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null)
   const { slots, isLoading, error, refetch } = useAvailability(
@@ -78,18 +60,20 @@ export default function HomePage() {
     selectedTypeId ?? undefined,
   )
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [bookedBooking, setBookedBooking] = useState<CreatedBooking | null>(null)
   const [bookedSlot, setBookedSlot] = useState<TimeSlot | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [timeZone, setTimeZone] = useState(defaultTimeZone)
   const [minNoticeMin, setMinNoticeMin] = useState<number | null>(null)
-  const [isMonthOpen, setIsMonthOpen] = useState(false)
+  const [horizonDays, setHorizonDays] = useState<number | null>(null)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { hour12 } = useTimeFormat()
 
+  const activeHost = hosts.find((item) => item.slug === slug || item.id === slug) ?? null
+  const hostName = activeHost?.name?.trim() || host.name
+
   const slotDates = useMemo(
-    () => slots.map((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone)),
+    () => slots.map((slot) => toDateKeyInZone(new Date(slot.startAt), timeZone)).sort(),
     [slots, timeZone],
   )
   const activeDate =
@@ -103,22 +87,19 @@ export default function HomePage() {
   )
 
   useEffect(() => {
-    const firstFreeSlot = visibleSlots.find((slot) => !slot.isBooked)
-    setSelectedSlotId(firstFreeSlot?.id ?? null)
-  }, [visibleSlots, slots, activeDate, timeZone])
-
-  useEffect(() => {
     let isActive = true
 
     call(api.availabilityClient.getAvailability(slug ?? ''))
       .then((rules) => {
         if (isActive) {
           setMinNoticeMin(typeof rules?.minNoticeMin === 'number' ? rules.minNoticeMin : null)
+          setHorizonDays(typeof rules?.horizonDays === 'number' ? rules.horizonDays : null)
         }
       })
       .catch(() => {
         if (isActive) {
           setMinNoticeMin(null)
+          setHorizonDays(null)
         }
       })
 
@@ -150,26 +131,64 @@ export default function HomePage() {
     }
   }, [slug])
 
+  const selectedType = eventTypes.find((type) => type.id === selectedTypeId) ?? null
+  const activeTypes = eventTypes.filter((type) => type.isActive)
+  const selectedSlot = visibleSlots.find((slot) => slot.id === selectedSlotId) ?? null
+  const freeCount = visibleSlots.filter((slot) => !slot.isBooked).length
+  const durationMin = slots[0]?.durationMin ?? null
+
+  const horizonEnd = useMemo(() => {
+    if (horizonDays === null) {
+      return null
+    }
+
+    const end = new Date()
+    end.setDate(end.getDate() + horizonDays)
+
+    return toDateKey(end)
+  }, [horizonDays])
+
+  const suggestion = useMemo(() => {
+    const byDate = new Map<string, TimeSlot[]>()
+
+    for (const slot of slots) {
+      if (slot.isBooked) {
+        continue
+      }
+
+      const key = toDateKeyInZone(new Date(slot.startAt), timeZone)
+      const list = byDate.get(key) ?? []
+      list.push(slot)
+      byDate.set(key, list)
+    }
+
+    const keys = Array.from(byDate.keys()).sort()
+
+    for (const key of keys) {
+      if (activeDate !== null && key <= activeDate) {
+        continue
+      }
+
+      const list = byDate.get(key)
+
+      if (list && list.length >= 4) {
+        return { date: key, count: list.length, first: list[0] }
+      }
+    }
+
+    return null
+  }, [slots, timeZone, activeDate])
+
   const handleSelectType = (type: EventType) => {
     setSelectedTypeId(type.id)
     setSelectedSlotId(null)
     setSelectedDate(null)
   }
 
-  const selectedType = eventTypes.find((type) => type.id === selectedTypeId) ?? null
-  const selectedSlot = visibleSlots.find((slot) => slot.id === selectedSlotId) ?? null
-  const freeCount = visibleSlots.filter((slot) => !slot.isBooked).length
-  const durationMin = slots[0]?.durationMin ?? null
-  const monthTitle = activeDate
-    ? (() => {
-        const raw = new Intl.DateTimeFormat('ru-RU', {
-          month: 'long',
-          year: 'numeric',
-        }).format(parseDateKey(activeDate))
-
-        return raw.charAt(0).toUpperCase() + raw.slice(1)
-      })()
-    : ''
+  const handleSelectDate = (dateKey: string) => {
+    setSelectedDate(dateKey)
+    setSelectedSlotId(null)
+  }
 
   const handleBooked = (booking: CreatedBooking) => {
     if (selectedSlot) {
@@ -190,35 +209,104 @@ export default function HomePage() {
   const handleReset = () => {
     setBookedBooking(null)
     setBookedSlot(null)
+    setSelectedSlotId(null)
     refetch()
   }
 
-  const activeTypes = eventTypes.filter((type) => type.isActive)
+  const handleConflict = () => {
+    setSelectedSlotId(null)
+    refetch()
+  }
 
-  const typePicker = activeTypes.length > 0 && (
-    <div role="radiogroup" aria-label="Тип встречи" className="mb-4 flex flex-wrap gap-2">
-      {activeTypes.map((type) => (
-        <button
-          key={type.id}
-          type="button"
-          role="radio"
-          aria-checked={selectedTypeId === type.id}
-          onClick={() => handleSelectType(type)}
-          className={cn(
-            'h-11 rounded-lg border px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            selectedTypeId === type.id
-              ? 'border-primary bg-accent font-semibold text-accent-foreground'
-              : 'border-input bg-card text-muted-foreground hover:bg-accent/60',
-          )}
-        >
-          {type.title} · {type.durationMin} мин
-        </button>
-      ))}
+  const hostBlurb = (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-10 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground">
+          {host.initials}
+        </span>
+        <p className="text-[13px] text-muted-foreground">Организатор</p>
+      </div>
+      <p className="mt-2 truncate font-semibold">{hostName}</p>
     </div>
   )
 
+  const rules = (
+    <ul className="mt-4 grid gap-2 text-[13px] text-muted-foreground">
+      {durationMin !== null && (
+        <li className="flex items-center gap-2">
+          <Clock className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+          {selectedType ? `${selectedType.durationMin} мин` : `${durationMin} мин`}
+        </li>
+      )}
+      <li className="flex items-center gap-2">
+        <Video className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+        Онлайн-звонок, ссылка придёт в подтверждении
+      </li>
+      {minNoticeMin !== null && (
+        <li className="flex items-start gap-2">
+          <Hourglass className="mt-0.5 size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+          Записаться можно не позже чем за {Math.round(minNoticeMin / 60)} ч
+        </li>
+      )}
+    </ul>
+  )
+
+  const typePicker = activeTypes.length > 0 && (
+    <EventTypePicker types={activeTypes} selectedId={selectedTypeId} onSelect={handleSelectType} />
+  )
+
+  const slotsBlock = (
+    <>
+      {isLoading && <SlotsSkeleton />}
+
+      <span className="sr-only" aria-live="polite">
+        Загрузка слотов…
+      </span>
+
+      {!isLoading && error && (
+        <div className="rounded-xl border bg-card p-6 text-center">
+          <p className="font-medium">Не удалось загрузить слоты</p>
+          <Button className="mt-4" variant="outline" onClick={() => refetch()}>
+            Повторить
+          </Button>
+        </div>
+      )}
+
+      {!isLoading && !error && slots.length === 0 && (
+        <div className="rounded-xl border bg-card p-6 text-center">
+          <p className="font-medium">Нет доступных слотов</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Загляните позже — организатор ещё не открыл время.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && !error && activeDate && (
+        <>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-semibold">{formatDayTitle(activeDate)}</h2>
+            <p className="text-[13px] text-muted-foreground" aria-live="polite">
+              {freeCount}{' '}
+              {pluralRu(freeCount, ['свободное окно', 'свободных окна', 'свободных окон'])}
+              {durationMin !== null && ` по ${durationMin} минут`}
+            </p>
+          </div>
+          <div className="mt-4">
+            <SlotGroups
+              slots={visibleSlots}
+              selectedSlotId={selectedSlotId}
+              timeZone={timeZone}
+              columns={isDesktop ? 5 : 3}
+              onSelect={(slot) => setSelectedSlotId(slot.id)}
+            />
+          </div>
+        </>
+      )}
+    </>
+  )
+
   return (
-    <AppShell className="h-screen overflow-hidden">
+    <AppShell className="min-h-screen">
       <AppHeader
         variant={isDesktop ? 'desktop' : 'mobile'}
         tabs={[
@@ -227,259 +315,145 @@ export default function HomePage() {
         ]}
       />
 
-      {isDesktop ? (
-        <main className="mx-auto flex w-full max-w-[1140px] flex-1 min-h-0 flex-col px-4 py-6 lg:px-6 lg:py-8">
-          {!bookedBooking && typePicker}
-          {bookedBooking && bookedSlot ? (
-            <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">
-              <BookingSuccess
-                booking={bookedBooking}
-                slot={bookedSlot}
-                timeZone={timeZone}
-                eventTypeTitle={selectedType?.title ?? null}
-                onReset={handleReset}
-              />
-            </div>
-          ) : (
-            <div className="grid min-h-0 flex-1 overflow-hidden rounded-card border bg-card text-card-foreground shadow-soft lg:grid-cols-[300px_460px_minmax(0,1fr)]">
-              <div className="min-w-0 scrollbar-thin min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
-                <HostInfo
-                  eventType={selectedType}
-                  durationMin={slots[0]?.durationMin ?? null}
-                  minNoticeMin={minNoticeMin}
-                  timeZone={timeZone}
-                  onTimeZoneChange={setTimeZone}
-                />
+      <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6 lg:px-10 lg:py-10">
+        {bookedBooking && bookedSlot ? (
+          <div className="mx-auto max-w-[600px]">
+            <BookingSuccess
+              booking={bookedBooking}
+              slot={bookedSlot}
+              timeZone={timeZone}
+              eventTypeTitle={selectedType?.title ?? null}
+              onReset={handleReset}
+            />
+          </div>
+        ) : isDesktop ? (
+          <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)_340px] xl:grid-cols-[260px_minmax(0,1fr)_380px]">
+            <aside className="glass rounded-card p-5">
+              {hostBlurb}
+              <div className="mt-5">
+                <p className="mb-2 text-[13px] font-semibold text-muted-foreground">
+                  Формат встречи
+                </p>
+                {typePicker}
+              </div>
+              {rules}
+              <div className="mt-5">
+                <TimezoneCard timeZone={timeZone} onTimeZoneChange={setTimeZone} />
+              </div>
+            </aside>
+
+            <section className="glass rounded-card p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold">Выберите день</h2>
               </div>
 
-              <div className="min-w-0 scrollbar-none min-h-0 overflow-y-auto border-b border-border p-6 lg:border-b-0 lg:border-r">
-                {isLoading ? (
-                  <CalendarSkeleton />
-                ) : (
-                  activeDate && (
-                    <MonthCalendar
+              {isLoading ? (
+                <div className="mt-4">
+                  <DaysSkeleton />
+                </div>
+              ) : (
+                !error &&
+                slots.length > 0 && (
+                  <div className="mt-4">
+                    <TwoWeekGrid
                       slots={slots}
                       selectedDate={activeDate}
                       timeZone={timeZone}
-                      onSelectDate={setSelectedDate}
+                      horizonEnd={horizonEnd}
+                      onSelectDate={handleSelectDate}
                     />
-                  )
-                )}
-              </div>
-
-              <div className="flex min-h-0 flex-col p-6">
-                {isLoading && <SlotsSkeleton />}
-
-                <span className="sr-only" aria-live="polite">
-                  Загрузка слотов…
-                </span>
-
-                {!isLoading && error && (
-                  <div className="rounded-xl border bg-background p-6 text-center">
-                    <p className="font-medium">Не удалось загрузить слоты</p>
-                    <Button className="mt-4" variant="outline" onClick={() => refetch()}>
-                      Повторить
-                    </Button>
                   </div>
-                )}
+                )
+              )}
 
-                {!isLoading && !error && slots.length === 0 && (
-                  <div className="rounded-xl border bg-background p-6 text-center">
-                    <p className="font-medium">Нет доступных слотов</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Загляните позже — организатор ещё не открыл время.
-                    </p>
-                  </div>
-                )}
+              {!isLoading && !error && activeDate && (
+                <p className="mt-3 text-[13px] text-muted-foreground">
+                  Под датой — сколько окон свободно.
+                </p>
+              )}
 
-                {!isLoading && !error && activeDate && (
-                  <>
-                    <h2 className="font-semibold">{formatDayTitle(activeDate)}</h2>
-                    <p className="mt-1 text-[13px] text-muted-foreground" aria-live="polite">
-                      {freeCount} {pluralRu(freeCount, ['свободное окно', 'свободных окна', 'свободных окон'])} ·
-                      время по {timeZone}
-                    </p>
-                    <div className="scrollbar-none mt-5 flex-1 overflow-y-auto">
-                      <SlotGrid
-                        slots={visibleSlots}
-                        selectedSlotId={selectedSlotId}
-                        timeZone={timeZone}
-                        onSelect={(slot) => setSelectedSlotId(slot.id)}
-                        onConfirm={() => setIsDialogOpen(true)}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </main>
-      ) : (
-        <main className="mx-auto w-full max-w-md px-4 py-4 pb-32">
-          {!bookedBooking && typePicker}
-          {bookedBooking && bookedSlot ? (
-            <div className="flex flex-col">
-              <BookingSuccess
-                booking={bookedBooking}
-                slot={bookedSlot}
-                timeZone={timeZone}
+              <div className="my-5 border-t border-border" />
+
+              {freeCount < 4 && activeDate && suggestion && (
+                <div className="mb-4 rounded-xl bg-secondary p-3 text-[13px]">
+                  <p>
+                    Нет подходящего времени? Во {formatDayTitle(suggestion.date).toLowerCase()},
+                    свободно {suggestion.count}{' '}
+                    {pluralRu(suggestion.count, ['окно', 'окна', 'окон'])} с{' '}
+                    {formatTimeInZone(suggestion.first.startAt, timeZone, hour12)}.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDate(suggestion.date)}
+                    className="mt-1.5 font-semibold text-primary underline-offset-4 hover:underline"
+                  >
+                    Показать {formatDayTitle(suggestion.date).split(',')[0].toLowerCase()}
+                  </button>
+                </div>
+              )}
+
+              {slotsBlock}
+            </section>
+
+            <aside className="glass rounded-card bg-card/35 p-6">
+              <BookingForm
+                slot={selectedSlot}
+                hostSlug={slug ?? ''}
+                eventTypeId={selectedTypeId}
                 eventTypeTitle={selectedType?.title ?? null}
-                onReset={handleReset}
+                timeZone={timeZone}
+                variant="column"
+                onBooked={handleBooked}
+                onConflict={handleConflict}
               />
+            </aside>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {hostBlurb}
+            {typePicker}
+            {rules}
+
+            {isLoading ? (
+              <DaysSkeleton />
+            ) : (
+              !error &&
+              slots.length > 0 && (
+                <DateStrip
+                  slots={slots}
+                  selectedDate={activeDate ?? ''}
+                  timeZone={timeZone}
+                  onSelectDate={handleSelectDate}
+                />
+              )
+            )}
+
+            <div>
+              <TimezoneCard timeZone={timeZone} onTimeZoneChange={setTimeZone} />
             </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              <section>
-                <div className="flex items-center gap-3">
-                  <div className="flex size-11 items-center justify-center rounded-full bg-accent font-bold text-accent-foreground">
-                    {host.initials}
-                  </div>
-                  <p className="text-sm text-muted-foreground">{host.name}</p>
-                </div>
-                <h2 className="mt-3 font-serif text-[28px] font-semibold leading-tight">
-                  {selectedType?.title ?? host.meetingTitle}
-                </h2>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {durationMin !== null && (
-                    <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px]">
-                      <Clock className="size-3.5 text-muted-foreground" strokeWidth={1.8} />
-                      {durationMin} мин
-                    </span>
-                  )}
-                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px]">
-                    <Video className="size-3.5 text-muted-foreground" strokeWidth={1.8} />
-                    Онлайн
-                  </span>
-                  <TimeZoneSelect
-                    value={timeZone}
-                    onChange={setTimeZone}
-                    hideLabel
-                    labelIcon={
-                      <Globe className="size-3.5 text-muted-foreground" strokeWidth={1.8} />
-                    }
-                    className="inline-flex h-8 flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 text-[13px] [&>input]:h-6 [&>input]:w-auto [&>input]:border-0 [&>input]:bg-transparent [&>input]:p-0 [&>input]:text-[13px]"
-                  />
-                  <TimeFormatToggle className="h-8" />
-                </div>
-              </section>
 
-              <section>
-                {isLoading ? (
-                  <CalendarSkeleton />
-                ) : (
-                  activeDate && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <p className="text-[15px] font-semibold">{monthTitle}</p>
-                        <button
-                          type="button"
-                          aria-expanded={isMonthOpen}
-                          onClick={() => setIsMonthOpen((open) => !open)}
-                          className="inline-flex h-11 items-center gap-1 text-sm font-semibold text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                        >
-                          Весь месяц
-                          <ChevronDown
-                            className={cn('size-4 transition-transform', isMonthOpen && 'rotate-180')}
-                            strokeWidth={1.8}
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-                      <div className="mt-2">
-                        <DateStrip
-                          slots={slots}
-                          selectedDate={activeDate}
-                          timeZone={timeZone}
-                          onSelectDate={setSelectedDate}
-                        />
-                      </div>
-                      {isMonthOpen && (
-                        <div className="mt-4">
-                          <MonthCalendar
-                            slots={slots}
-                            selectedDate={activeDate}
-                            timeZone={timeZone}
-                            onSelectDate={setSelectedDate}
-                          />
-                        </div>
-                      )}
-                    </>
-                  )
-                )}
-              </section>
+            <section>{slotsBlock}</section>
 
-              <section>
-                {isLoading && <SlotsSkeleton />}
+            <BookingForm
+              slot={selectedSlot}
+              hostSlug={slug ?? ''}
+              eventTypeId={selectedTypeId}
+              eventTypeTitle={selectedType?.title ?? null}
+              timeZone={timeZone}
+              variant="step"
+              onBooked={handleBooked}
+              onConflict={handleConflict}
+            />
 
-                <span className="sr-only" aria-live="polite">
-                  Загрузка слотов…
-                </span>
-
-                {!isLoading && error && (
-                  <div className="rounded-xl border bg-background p-6 text-center">
-                    <p className="font-medium">Не удалось загрузить слоты</p>
-                    <Button className="mt-4" variant="outline" onClick={() => refetch()}>
-                      Повторить
-                    </Button>
-                  </div>
-                )}
-
-                {!isLoading && !error && slots.length === 0 && (
-                  <div className="rounded-xl border bg-background p-6 text-center">
-                    <p className="font-medium">Нет доступных слотов</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Загляните позже — организатор ещё не открыл время.
-                    </p>
-                  </div>
-                )}
-
-                {!isLoading && !error && activeDate && (
-                  <>
-                    <h2 className="text-[15px] font-semibold">{formatDayTitle(activeDate)}</h2>
-                    <p className="mt-1 text-[13px] text-muted-foreground" aria-live="polite">
-                      {freeCount} {pluralRu(freeCount, ['свободное окно', 'свободных окна', 'свободных окон'])} ·
-                      время по {timeZone}
-                    </p>
-                    <div className="mt-3">
-                      <SlotGrid
-                        slots={visibleSlots}
-                        selectedSlotId={selectedSlotId}
-                        timeZone={timeZone}
-                        columns={3}
-                        onSelect={(slot) => setSelectedSlotId(slot.id)}
-                        onConfirm={() => setIsDialogOpen(true)}
-                      />
-                    </div>
-                  </>
-                )}
-              </section>
-            </div>
-          )}
-        </main>
-      )}
-
-      {!isDesktop && !bookedBooking && selectedSlot && activeDate && (
-        <BookingBar
-          dateTitle={formatDayShortTitle(activeDate)}
-          timeRange={formatTimeRange(selectedSlot, timeZone, hour12)}
-          onConfirm={() => setIsDialogOpen(true)}
-        />
-      )}
-
-      <BookingDialog
-        slot={selectedSlot}
-        hostSlug={slug ?? ''}
-        eventTypeId={selectedTypeId}
-        timeZone={timeZone}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onBooked={handleBooked}
-        onFailed={() => {
-          setIsDialogOpen(false)
-          setSelectedSlotId(null)
-          refetch()
-        }}
-      />
+            {!isLoading && !error && slots.length === 0 && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <CalendarX className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                Свободных слотов нет
+              </p>
+            )}
+          </div>
+        )}
+      </main>
     </AppShell>
   )
 }

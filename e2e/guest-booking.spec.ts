@@ -15,16 +15,16 @@ interface Booking {
 test('гость проходит сквозной сценарий: тип → слот → форма → подтверждение', async ({ page }) => {
   await page.goto(`/book/${HOST}`)
 
-  // Первый свободный слот выбирается автоматически — кнопка подтверждения сразу доступна
-  const confirm = page.getByRole('button', { name: 'Забронировать' })
-  await expect(confirm).toBeVisible()
-  await confirm.click()
+  // Время за гостя не выбирается: кликаем по первому свободному слоту
+  const slot = page.getByRole('button', { name: /^\d{2}:\d{2}$/ }).first()
+  await expect(slot).toBeVisible()
+  await slot.click()
 
-  const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Имя').fill('Гость E2E')
-  await dialog.getByLabel('Email').fill('guest@example.com')
-  await dialog.getByLabel('Согласие на обработку персональных данных').check()
-  await dialog.getByRole('button', { name: 'Забронировать' }).click()
+  const form = page.getByRole('form', { name: 'Ваши данные' })
+  await form.getByLabel('Имя').fill('Гость E2E')
+  await form.getByLabel('Email').fill('guest@example.com')
+  await form.getByLabel('Согласие на обработку персональных данных').check()
+  await form.getByRole('button', { name: /^Записаться на/ }).click()
 
   await expect(page.getByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeVisible()
   await expect(page.getByText('Гость E2E')).toBeVisible()
