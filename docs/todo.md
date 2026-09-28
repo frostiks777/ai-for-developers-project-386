@@ -177,10 +177,10 @@
 - [x] **Этап 10** — панель: разделы-экраны, «Обзор» (`dashboard-overview`), раскрытие строк, «Скопировать текст для гостя».
 - [x] **Этап 11** — доступность и пояс ([ADR-0024](adr/0024-slots-in-host-timezone.md)): генерация слотов в поясе хоста, широкие поля времени, `availability-preview`.
 - [x] **Этап 12** — лендинг и «Мои встречи»: имя организатора без дубля, одна CTA `bg-highlight`, блок «Форматы встречи» (`/book/:slug?type=…`), карточки `glass`.
-- [ ] **Этап 13** — документация и приёмка: ADR-0022…0024 → Accepted, `docs/design/README.md`, обновление e2e, «Отклонения».
-- [ ] **ADRs v2** — [`design/docs/design/v2/adr/`](../design/docs/design/v2/adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone).
-- [ ] **Макеты/скриншоты v2** — `design/docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking).
-- [ ] **Архив v1** — [`design/Old/`](../design/Old/): старый пакет (PROMPT.md, README.md) — при решении о v2 удалить или оставить как справку.
+- [x] **Этап 13** — документация: ADR-0022…0024 → Accepted, ADR-0007 дополнен ADR-0023, `docs/design/README.md` (v2 — текущий, v1 — история), «Отклонения» в `docs/design/v2/README.md`; `MEMORY.md`/`docs/todo.md`/`README.md` синхронизированы. Визуальная приёмка — за человеком.
+- [x] **ADRs v2** — [`docs/adr/`](adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone) — **Accepted** 2026-09-28.
+- [ ] **Макеты/скриншоты v2** — `docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking) — визуальная приёмка человеком.
+- [ ] **Архив v1** — [`docs/design/`](design/): старый пакет оставлен как история (см. `docs/design/README.md`).
 
 ## Ключевые расхождения со спекой
 

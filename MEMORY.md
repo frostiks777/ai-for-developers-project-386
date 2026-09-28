@@ -318,8 +318,10 @@
     - **Этап 1** (`e3328f5`, `335c8e1`): `fix(api): require admin auth for bookings list and redirect /events` + `feat(web): move upcoming events into organizer panel` ([ADR-0022](docs/adr/0022-private-bookings-list.md)); `GET /api/v1/hosts/:slug/bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, `events-page` и вкладка удалены, ADR-0017 п.6 помечен заменённым.
     - **Этап 2** (`2f4e6de`): `fix(web): correct weekday labels and show cancel time in guest zone` — `formatWeekdayShort` (TDD: падающий тест на 2026-09-28 → Пн), `formatZoneShort`/`formatZoneOffsetLabel` (словарь предложного падежа), `date-strip` и `cancel-page` обновлены.
     - **Этапы 3–12** (`e023cc4`, `4c6ffd5`, `47f2deb`, `d69d90a`, `dcb5d52`, `eec5a16`, `7189747`, `e7da573`, `92074b4`, текущий): токены/фон/стекло/шапка; десктоп «Дни»; «Неделя»; мобильный мастер; экран успеха; 409 + подсказки; страница управления встречей; панель-разделы + «Обзор»; пояс правил доступности ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)); лендинг (имя без дубля, CTA `bg-highlight`, блок «Форматы встречи» `/book/:slug?type=…`) и «Мои встречи» (`glass`).
-    - Проверки: lint 0, typecheck чисто, **263/263 тестов** (46 файлов), build ✓.
-    - Осталось: **этап 13** (документация и приёмка — ADR-0022…0024 → Accepted, `docs/design/README.md`, обновление e2e, «Отклонения»).
+    - **Этап 13** (текущий): ADR-0022…0024 → **Accepted** (2026-09-28), ADR-0007 дополнен ADR-0023, `docs/adr/README.md` обновлён; `docs/design/README.md` — v2 как текущий дизайн, v1 как история; «Отклонения» в `docs/design/v2/README.md`; `docs/todo.md`/`MEMORY.md` синхронизированы. Визуальная приёмка со `screenshots/` — за человеком.
+    - **Фиксы по ходу** (issues #52, #53, коммиты `ac2e9cc`, `ae1543a`): «Неделя глазами гостя» показывает встречи (`AvailabilityPreview` принимает `slots`, `bg-primary`, `data-state=meeting`; `weekdayAndMinuteInZone`); `dev-all.mjs` ждёт `/health` API до старта Vite (гонка ECONNREFUSED).
+    - Проверки: lint 0, typecheck чисто, **266/266 тестов** (47 файлов), build ✓.
+    - Осталось: визуальная сверка со `screenshots/` (человек) и мерж ветки `feat/redesign-v2-mint` в `main`.
 
 ## Что осталось (следующие шаги)
 
