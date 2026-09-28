@@ -5,12 +5,8 @@ import { MemoryRouter } from 'react-router-dom'
 import { jsonResponse, requestPath } from '@/test/http'
 import type { AvailabilitySettings } from '@/types/availability-settings'
 import type { BookingWithSlot } from '@/types/booking'
-import {
-  defaultTimeZone,
-  formatDayTitle,
-  toDateKeyInZone,
-} from '@/utils/timezone'
-import DashboardPage from './dashboard-page'
+import { defaultTimeZone, formatDayTitle, toDateKeyInZone } from '@/utils/timezone'
+import DashboardPage, { type DashboardSection } from './dashboard-page'
 
 const booking: BookingWithSlot = {
   id: 'token-1',
@@ -42,7 +38,6 @@ const defaultSettings: AvailabilitySettings = {
   ],
 }
 
-// UI-модель → контрактная модель брони v1
 const toApi = (item: BookingWithSlot) => ({
   id: item.id,
   hostSlug: 'default',
@@ -80,9 +75,7 @@ function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
 
     if (url.startsWith('/api/v1/bookings/') && url.endsWith('/cancel') && method === 'POST') {
       const id = url.split('/')[4]
-      bookings = bookings.map((item) =>
-        item.id === id ? { ...item, status: 'cancelled' } : item,
-      )
+      bookings = bookings.map((item) => (item.id === id ? { ...item, status: 'cancelled' } : item))
       return jsonResponse({})
     }
 
@@ -98,11 +91,26 @@ function mockFetch(initialBookings: BookingWithSlot[] = [booking]) {
       return jsonResponse([eventType])
     }
 
+    if (url.startsWith('/api/v1/hosts/default/slots') && method === 'GET') {
+      return jsonResponse({
+        timeZone: 'UTC',
+        date: null,
+        slots: [
+          {
+            id: 1,
+            startAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            durationMin: 30,
+            available: true,
+          },
+        ],
+      })
+    }
+
     return jsonResponse({ error: 'Не найдено' }, 404)
   })
 }
 
-function renderDashboard(initialSection?: 'bookings' | 'event-types' | 'availability' | 'blocks') {
+function renderDashboard(initialSection?: DashboardSection) {
   return render(
     <MemoryRouter>
       <DashboardPage initialSection={initialSection} />
@@ -110,22 +118,24 @@ function renderDashboard(initialSection?: 'bookings' | 'event-types' | 'availabi
   )
 }
 
-describe('DashboardPage', () => {
+describe('DashboardPage: разделы', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('показывает список броней и настройки доступности', async () => {
+  it('на /admin/bookings показывает встречи, /admin/availability — форму доступности', async () => {
     vi.stubGlobal('fetch', mockFetch())
-    renderDashboard()
 
+    const { unmount } = renderDashboard('bookings')
     expect(await screen.findByText('Иван')).toBeInTheDocument()
-    expect(screen.getByText('ivan@example.com')).toBeInTheDocument()
-    expect(screen.getByText('Обсудить архитектуру')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Сохранить' })).toBeNull()
+    unmount()
 
+    renderDashboard('availability')
     expect(await screen.findByRole('button', { name: 'Сохранить' })).toBeEnabled()
     expect(screen.getByRole('switch', { name: 'Пн: доступность' })).toBeChecked()
     expect(screen.getByRole('switch', { name: 'Сб: доступность' })).not.toBeChecked()
+    expect(screen.queryByText('Иван')).toBeNull()
   })
 
   it('отменяет бронь и убирает её из списка', async () => {
@@ -133,8 +143,9 @@ describe('DashboardPage', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDashboard()
+    renderDashboard('bookings')
 
+    await user.click(await screen.findByRole('button', { name: /Иван/ }))
     const cancel = await screen.findByRole('button', { name: 'Отменить' })
     await user.click(cancel)
 
@@ -152,7 +163,7 @@ describe('DashboardPage', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDashboard()
+    renderDashboard('availability')
 
     await screen.findByRole('button', { name: 'Сохранить' })
 
@@ -178,7 +189,7 @@ describe('DashboardPage', () => {
     vi.stubGlobal('fetch', mockFetch())
 
     const user = userEvent.setup()
-    renderDashboard()
+    renderDashboard('availability')
 
     await screen.findByRole('button', { name: 'Сохранить' })
 
@@ -192,13 +203,13 @@ describe('DashboardPage', () => {
 
   it('показывает пустой список, если броней нет', async () => {
     vi.stubGlobal('fetch', mockFetch([]))
-    renderDashboard()
+    renderDashboard('bookings')
 
     expect(await screen.findByText('Пока нет ни одной брони')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Отменить' })).toBeNull()
   })
 
-  it('не показывает отменённые брони', async () => {
+  it('не показывает отменённые брони среди предстоящих', async () => {
     const cancelled: BookingWithSlot = {
       ...booking,
       id: 'token-2',
@@ -206,13 +217,13 @@ describe('DashboardPage', () => {
       status: 'cancelled',
     }
     vi.stubGlobal('fetch', mockFetch([booking, cancelled]))
-    renderDashboard()
+    renderDashboard('bookings')
 
     expect(await screen.findByText('Иван')).toBeInTheDocument()
     expect(screen.queryByText('Отменённый')).toBeNull()
   })
 
-  it('счётчик встреч считает только активные брони', async () => {
+  it('счётчик встреч в сайдбаре считает только активные брони', async () => {
     const cancelled: BookingWithSlot = {
       ...booking,
       id: 'token-2',
@@ -220,9 +231,8 @@ describe('DashboardPage', () => {
       status: 'cancelled',
     }
     vi.stubGlobal('fetch', mockFetch([booking, cancelled]))
-    renderDashboard()
+    renderDashboard('bookings')
 
-    // Десктопный сайдбар: одна активная бронь из двух
     expect(await screen.findByText('Иван')).toBeInTheDocument()
     const sidebar = screen.getByRole('navigation', { name: 'Панель организатора' })
     expect(within(sidebar).getByText('1')).toBeInTheDocument()
@@ -233,7 +243,7 @@ describe('DashboardPage', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDashboard()
+    renderDashboard('availability')
 
     await screen.findByRole('button', { name: 'Сохранить' })
 
@@ -252,18 +262,37 @@ describe('DashboardPage', () => {
   })
 })
 
+describe('DashboardPage: обзор', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('по умолчанию показывает обзор и ближайшие встречи', async () => {
+    const soon: BookingWithSlot = {
+      ...booking,
+      startAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    }
+    vi.stubGlobal('fetch', mockFetch([soon]))
+    renderDashboard()
+
+    expect(await screen.findByRole('heading', { name: 'Ближайшие встречи' })).toBeInTheDocument()
+    expect(screen.getByText('Иван')).toBeInTheDocument()
+    expect(screen.getByText('Неделя глазами гостя')).toBeInTheDocument()
+  })
+})
+
 describe('BookingsList', () => {
   it('не показывает телефон, если он не указан', async () => {
     vi.stubGlobal('fetch', mockFetch([{ ...booking, phone: null }]))
-    renderDashboard()
+    renderDashboard('bookings')
 
-    const row = (await screen.findByText('Иван')).closest('li')
+    const row = (await screen.findByRole('button', { name: /Иван/ })).closest('li')
     expect(row).not.toBeNull()
     expect(within(row as HTMLElement).queryByText('+79000000000')).toBeNull()
   })
 })
 
-describe('DashboardPage grouping and filter', () => {
+describe('DashboardPage: группировка и фильтр', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
   })
@@ -278,17 +307,13 @@ describe('DashboardPage grouping and filter', () => {
       startAt: '2099-09-25T07:00:00.000Z',
     }
     vi.stubGlobal('fetch', mockFetch([booking, second]))
-    renderDashboard()
+    renderDashboard('bookings')
 
     expect(await screen.findByText('Иван')).toBeInTheDocument()
     expect(screen.getByText('Мария')).toBeInTheDocument()
 
-    const firstHeading = formatDayTitle(
-      toDateKeyInZone(new Date(booking.startAt), defaultTimeZone),
-    )
-    const secondHeading = formatDayTitle(
-      toDateKeyInZone(new Date(second.startAt), defaultTimeZone),
-    )
+    const firstHeading = formatDayTitle(toDateKeyInZone(new Date(booking.startAt), defaultTimeZone))
+    const secondHeading = formatDayTitle(toDateKeyInZone(new Date(second.startAt), defaultTimeZone))
     expect(screen.getByRole('heading', { name: firstHeading })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: secondHeading })).toBeInTheDocument()
   })
@@ -308,7 +333,7 @@ describe('DashboardPage grouping and filter', () => {
       startAt: new Date(now + 24 * 60 * 60 * 1000).toISOString(),
     }
     vi.stubGlobal('fetch', mockFetch([pastBooking, upcomingBooking]))
-    renderDashboard()
+    renderDashboard('bookings')
 
     const user = userEvent.setup()
     expect(await screen.findByText('Будущий')).toBeInTheDocument()
@@ -329,7 +354,7 @@ describe('DashboardPage grouping and filter', () => {
       startAt: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
     }
     vi.stubGlobal('fetch', mockFetch([booking, second]))
-    renderDashboard()
+    renderDashboard('bookings')
 
     const user = userEvent.setup()
     expect(await screen.findByText('Иван')).toBeInTheDocument()
@@ -342,30 +367,23 @@ describe('DashboardPage grouping and filter', () => {
 
   it('показывает подсказку о числе слотов', async () => {
     vi.stubGlobal('fetch', mockFetch())
-    renderDashboard()
+    renderDashboard('availability')
 
     expect(await screen.findByText(/≈ 12 слотов в рабочий день/)).toBeInTheDocument()
   })
 })
 
-describe('DashboardPage deep-link admin-маршрутов', () => {
+describe('DashboardPage: admin-маршруты', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('на десктопе прокручивает к запрошенной секции', async () => {
+  it('/admin/availability рендерит только раздел доступности', async () => {
     vi.stubGlobal('fetch', mockFetch())
-    const scrollIntoView = vi.spyOn(Element.prototype, 'scrollIntoView')
-
     renderDashboard('availability')
 
-    await screen.findByRole('button', { name: 'Сохранить' })
-    expect(scrollIntoView).toHaveBeenCalled()
-    expect(scrollIntoView.mock.instances[0]).toBe(
-      document.getElementById('availability'),
-    )
-
-    scrollIntoView.mockRestore()
+    expect(await screen.findByRole('button', { name: 'Сохранить' })).toBeInTheDocument()
+    expect(screen.queryByText('Иван')).toBeNull()
   })
 
   it('на телефоне открывает запрошенный таб', async () => {
