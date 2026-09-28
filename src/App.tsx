@@ -3,14 +3,13 @@ import { Route, Routes, useParams } from 'react-router-dom'
 import { HostProvider } from '@/components/host-provider'
 import { TimeFormatProvider } from '@/components/time-format-provider'
 import { useActiveHost } from '@/hooks/use-active-host'
-import CancelPage from '@/pages/cancel-page'
 import ConfirmedPage from '@/pages/confirmed-page'
 import DashboardPage from '@/pages/dashboard-page'
 import HomePage from '@/pages/home-page'
 import LandingPage from '@/pages/landing-page'
+import ManageBookingPage from '@/pages/manage-booking-page'
 import MyBookingsPage from '@/pages/my-bookings-page'
 import NotFoundPage from '@/pages/not-found-page'
-import ReschedulePage from '@/pages/reschedule-page'
 
 // Публичная ссылка хоста: slug (например, 'default') или UUID (ADR-0018)
 const HOST_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -47,10 +46,13 @@ export function App() {
           <Route path="/admin/event-types" element={<DashboardPage initialSection="event-types" />} />
           <Route path="/admin/blocks" element={<DashboardPage initialSection="blocks" />} />
           <Route path="/admin/hosts" element={<DashboardPage initialSection="hosts" />} />
-          <Route path="/cancel/:token" element={<CancelPage />} />
-          <Route path="/reschedule/:token" element={<ReschedulePage />} />
-          <Route path="/booking/:uuid/cancel" element={<CancelPage />} />
-          <Route path="/booking/:uuid/reschedule" element={<ReschedulePage />} />
+          <Route path="/cancel/:token" element={<ManageBookingPage mode="cancel" />} />
+          <Route path="/reschedule/:token" element={<ManageBookingPage mode="reschedule" />} />
+          <Route path="/booking/:uuid/cancel" element={<ManageBookingPage mode="cancel" />} />
+          <Route
+            path="/booking/:uuid/reschedule"
+            element={<ManageBookingPage mode="reschedule" />}
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </HostProvider>

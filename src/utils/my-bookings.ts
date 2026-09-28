@@ -45,3 +45,16 @@ export function removeMyBooking(id: string): void {
     // ignore
   }
 }
+
+// Новое время встречи после переноса — обновляем сохранённую запись,
+// чтобы «Мои встречи» и страница управления показывали актуальные данные.
+export function updateMyBookingTime(id: string, startAt: string): void {
+  try {
+    const updated = listMyBookings().map((item) =>
+      item.id === id ? { ...item, startAt } : item,
+    )
+    window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(updated))
+  } catch {
+    // ignore
+  }
+}
