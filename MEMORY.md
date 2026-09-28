@@ -317,8 +317,9 @@
     - **Этап 0** (`6e7e54d`): пакет в `docs/design/v2/`, ADR-0022…0024 в `docs/adr/` (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
     - **Этап 1** (`e3328f5`, `335c8e1`): `fix(api): require admin auth for bookings list and redirect /events` + `feat(web): move upcoming events into organizer panel` ([ADR-0022](docs/adr/0022-private-bookings-list.md)); `GET /api/v1/hosts/:slug/bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, `events-page` и вкладка удалены, ADR-0017 п.6 помечен заменённым.
     - **Этап 2** (`2f4e6de`): `fix(web): correct weekday labels and show cancel time in guest zone` — `formatWeekdayShort` (TDD: падающий тест на 2026-09-28 → Пн), `formatZoneShort`/`formatZoneOffsetLabel` (словарь предложного падежа), `date-strip` и `cancel-page` обновлены.
-    - Проверки: lint 0, typecheck чисто, **236/236 тестов**, build ✓, e2e 2/2.
-    - Осталось: этапы 3–13 (токены/фон/стекло, «Дни»/«Неделя», мастер, форма, успех, 409, страница управления, панель, пояс правил, лендинг/«Мои встречи», документация).
+    - **Этапы 3–12** (`e023cc4`, `4c6ffd5`, `47f2deb`, `d69d90a`, `dcb5d52`, `eec5a16`, `7189747`, `e7da573`, `92074b4`, текущий): токены/фон/стекло/шапка; десктоп «Дни»; «Неделя»; мобильный мастер; экран успеха; 409 + подсказки; страница управления встречей; панель-разделы + «Обзор»; пояс правил доступности ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)); лендинг (имя без дубля, CTA `bg-highlight`, блок «Форматы встречи» `/book/:slug?type=…`) и «Мои встречи» (`glass`).
+    - Проверки: lint 0, typecheck чисто, **263/263 тестов** (46 файлов), build ✓.
+    - Осталось: **этап 13** (документация и приёмка — ADR-0022…0024 → Accepted, `docs/design/README.md`, обновление e2e, «Отклонения»).
 
 ## Что осталось (следующие шаги)
 

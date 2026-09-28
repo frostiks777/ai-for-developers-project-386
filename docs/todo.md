@@ -167,7 +167,17 @@
 - [x] **Этап 0 — подготовка** — ветка `feat/redesign-v2-mint`, пакет в [`docs/design/v2/`](design/v2/), ADR-0022…0024 в [`docs/adr/`](adr/) (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
 - [x] **Этап 1** — контакты гостей только для организатора ([ADR-0022](adr/0022-private-bookings-list.md)): `GET /bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, вкладка и `events-page` удалены.
 - [x] **Этап 2** — баги времени: `formatWeekdayShort` (дни недели в ленте), пояс гостя при отмене (`formatZoneShort`).
-- [ ] **Этапы 3–13** — редизайн по [`docs/design/v2/implementation-plan.md`](design/v2/implementation-plan.md).
+- [x] **Этап 3** — токены, живой фон, стеклянные поверхности, шапка (`ambient-background`, `app-shell`, `glass-bar`, `formatZoneShort`).
+- [x] **Этап 4** — десктоп «Дни» (A): `event-type-picker`, `two-week-grid`, `slot-groups`, `booking-form`, `timezone-card`; форма в колонке, без автовыбора слота.
+- [x] **Этап 5** — вид «Неделя» (B): `view-toggle`, `use-booking-view`, `week-grid`.
+- [x] **Этап 6** — мобильный мастер C1–C3: `booking-wizard`, `day-list`, `day-switcher`, `booking-bar`.
+- [x] **Этап 7** — экран подтверждения C4: рестайл `booking-success`, ссылки переноса/отмены, «Скопировать ссылку».
+- [x] **Этап 8** — конфликт 409: сохранение полей, `slot-suggestions`, toast убран.
+- [x] **Этап 9** — страница управления встречей M: `manage-booking-page` (перенос + отмена), старые страницы объединены.
+- [x] **Этап 10** — панель: разделы-экраны, «Обзор» (`dashboard-overview`), раскрытие строк, «Скопировать текст для гостя».
+- [x] **Этап 11** — доступность и пояс ([ADR-0024](adr/0024-slots-in-host-timezone.md)): генерация слотов в поясе хоста, широкие поля времени, `availability-preview`.
+- [x] **Этап 12** — лендинг и «Мои встречи»: имя организатора без дубля, одна CTA `bg-highlight`, блок «Форматы встречи» (`/book/:slug?type=…`), карточки `glass`.
+- [ ] **Этап 13** — документация и приёмка: ADR-0022…0024 → Accepted, `docs/design/README.md`, обновление e2e, «Отклонения».
 - [ ] **ADRs v2** — [`design/docs/design/v2/adr/`](../design/docs/design/v2/adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone).
 - [ ] **Макеты/скриншоты v2** — `design/docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking).
 - [ ] **Архив v1** — [`design/Old/`](../design/Old/): старый пакет (PROMPT.md, README.md) — при решении о v2 удалить или оставить как справку.

@@ -41,7 +41,7 @@ export default function MyBookingsPage() {
         </p>
 
         {bookings.length === 0 && (
-          <div className="mt-8 rounded-card border bg-card p-8 text-center">
+          <div className="mt-8 glass rounded-2xl p-8 text-center">
             <CalendarClock
               className="mx-auto size-8 text-muted-foreground"
               strokeWidth={1.6}
@@ -64,7 +64,7 @@ export default function MyBookingsPage() {
             return (
               <li
                 key={booking.id}
-                className="rounded-card border bg-card p-5 text-card-foreground shadow-soft"
+                className="glass rounded-2xl p-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold">{booking.eventTypeTitle ?? host.meetingTitle}</p>
