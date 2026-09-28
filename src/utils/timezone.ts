@@ -164,3 +164,14 @@ export function formatZoneShort(timeZone: string): string {
 
   return `по ${label} (${formatZoneOffsetLabel(timeZone)})`
 }
+
+// Час начала слота в заданном поясе (0–23). Для группировки «Утром / Днём / Вечером».
+export function hourInZone(iso: string, timeZone: string): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      hour12: false,
+    }).format(new Date(iso)),
+  )
+}

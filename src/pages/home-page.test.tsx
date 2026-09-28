@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { jsonResponse, requestPath } from '@/test/http'
 import type { TimeSlot } from '@/types/booking'
-import { toDateKeyInZone } from '@/utils/timezone'
+import { defaultTimeZone, formatTimeInZone, toDateKeyInZone } from '@/utils/timezone'
 import HomePage from './home-page'
 
 function renderHomePage() {
@@ -81,9 +81,9 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
         timeZone: 'UTC',
         slotDurationMin: 30,
         bufferBeforeMin: 0,
-  bufferAfterMin: 10,
+        bufferAfterMin: 10,
         minNoticeMin: 120,
-        horizonDays: 14,
+        horizonDays: 99999,
         ranges: [],
       })
     }
@@ -92,19 +92,22 @@ function mockFetch(slots: TimeSlot[] = [slot]) {
   })
 }
 
-async function bookSlot(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: 'Забронировать' }))
+async function fillForm(user: ReturnType<typeof userEvent.setup>) {
+  const form = screen.getByRole('form', { name: 'Ваши данные' })
 
-  const dialog = screen.getByRole('dialog')
+  await user.type(within(form).getByLabelText('Имя'), 'Иван')
+  await user.type(within(form).getByLabelText('Email'), 'ivan@example.com')
+  await user.click(within(form).getByLabelText('Согласие на обработку персональных данных'))
+}
 
-  await user.type(within(dialog).getByLabelText('Имя'), 'Иван')
-  await user.type(within(dialog).getByLabelText('Телефон'), '+79000000000')
-  await user.type(within(dialog).getByLabelText('Email'), 'ivan@example.com')
-  await user.click(within(dialog).getByLabelText('Согласие на обработку персональных данных'))
-
-  const submit = within(dialog).getByRole('button', { name: 'Забронировать' })
-  await waitFor(() => expect(submit).toBeEnabled())
-  await user.click(submit)
+async function bookSlot(
+  user: ReturnType<typeof userEvent.setup>,
+  startAt = slot.startAt,
+) {
+  const time = formatTimeInZone(startAt, defaultTimeZone)
+  await user.click(await screen.findByRole('button', { name: time }))
+  await fillForm(user)
+  await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
 }
 
 describe('HomePage: экран успеха', () => {
@@ -171,7 +174,7 @@ describe('HomePage: экран успеха', () => {
     expect(googleLink.getAttribute('href')).toContain(`text=${encodeURIComponent('Консультация')}`)
   })
 
-  it('кнопка «Выбрать другое время» возвращает к списку слотов', async () => {
+  it('кнопка «Выбрать другое время» возвращает к выбору времени', async () => {
     vi.stubGlobal('fetch', mockFetch())
 
     const user = userEvent.setup()
@@ -180,11 +183,11 @@ describe('HomePage: экран успеха', () => {
     await bookSlot(user)
     await user.click(await screen.findByRole('button', { name: 'Выбрать другое время' }))
 
-    expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Выберите время' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeNull()
   })
 
-  it('кнопка «Назад» на экране успеха возвращает к списку слотов', async () => {
+  it('кнопка «Назад» на экране успеха возвращает к выбору времени', async () => {
     vi.stubGlobal('fetch', mockFetch())
 
     const user = userEvent.setup()
@@ -193,22 +196,17 @@ describe('HomePage: экран успеха', () => {
     await bookSlot(user)
     await user.click(await screen.findByRole('button', { name: 'Назад' }))
 
-    expect(await screen.findByRole('button', { name: 'Забронировать' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Выберите время' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Встреча успешно запланирована!' })).toBeNull()
   })
 
   it('пересчитывает время слотов при смене часового пояса', async () => {
-    vi.stubGlobal(
-      'fetch',
-      mockFetch([
-        { id: 1, startAt: '2099-09-24T07:00:00.000Z', durationMin: 30, isBooked: false },
-      ]),
-    )
+    vi.stubGlobal('fetch', mockFetch())
 
     const user = userEvent.setup()
     renderHomePage()
 
-    await screen.findByRole('button', { name: 'Забронировать' })
+    await screen.findByRole('button', { name: 'Выберите время' })
 
     await user.click(screen.getByLabelText('Часовой пояс'))
     await user.click(screen.getByRole('option', { name: /^UTC/ }))
@@ -216,7 +214,7 @@ describe('HomePage: экран успеха', () => {
     expect(screen.getByText(/07:00/)).toBeInTheDocument()
   })
 
-  it('фильтрует слоты по выбранной в календаре дате', async () => {
+  it('фильтрует слоты по выбранной в сетке дате', async () => {
     const firstDay = new Date(2099, 8, 24, 10, 0)
     const secondDay = new Date(2099, 8, 25, 15, 0)
     const twoSlots: TimeSlot[] = [
@@ -228,17 +226,19 @@ describe('HomePage: экран успеха', () => {
     const user = userEvent.setup()
     renderHomePage()
 
-    expect(await screen.findAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
-    expect(screen.getByText(/10:00/)).toBeInTheDocument()
+    const secondKey = toDateKeyInZone(secondDay, defaultTimeZone)
 
-    await user.click(screen.getByRole('button', { name: '2099-09-25' }))
+    expect(await screen.findByText(formatTimeInZone(firstDay.toISOString(), defaultTimeZone))).toBeInTheDocument()
 
-    expect(screen.getAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
-    expect(screen.getByText(/15:00/)).toBeInTheDocument()
-    expect(screen.queryByText(/10:00/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: secondKey }))
+
+    expect(screen.getByText(formatTimeInZone(secondDay.toISOString(), defaultTimeZone))).toBeInTheDocument()
+    expect(
+      screen.queryByText(formatTimeInZone(firstDay.toISOString(), defaultTimeZone)),
+    ).toBeNull()
   })
 
-  it('автоматически выбирает первый свободный слот и переносит выбор по клику', async () => {
+  it('не выбирает время за гостя', async () => {
     const slots: TimeSlot[] = [
       { id: 1, startAt: new Date(2099, 8, 24, 7, 0).toISOString(), durationMin: 30, isBooked: true },
       { id: 2, startAt: new Date(2099, 8, 24, 8, 0).toISOString(), durationMin: 30, isBooked: false },
@@ -249,13 +249,19 @@ describe('HomePage: экран успеха', () => {
     const user = userEvent.setup()
     renderHomePage()
 
-    const confirm = await screen.findByRole('button', { name: 'Забронировать' })
-    expect(confirm).toHaveAttribute('aria-pressed', 'true')
-    expect(confirm).toHaveTextContent('08:00')
+    const submit = await screen.findByRole('button', { name: 'Выберите время' })
+    expect(submit).toBeDisabled()
+
+    expect(screen.getAllByRole('button', { name: '08:00' })[0]).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
 
     await user.click(screen.getByRole('button', { name: '09:00' }))
 
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toHaveTextContent('09:00')
+    expect(screen.getByRole('button', { name: '09:00' })).toHaveAttribute('aria-pressed', 'true')
+    await fillForm(user)
+    expect(screen.getByRole('button', { name: 'Записаться на 09:00' })).toBeEnabled()
   })
 })
 
@@ -281,7 +287,7 @@ describe('HomePage: мобильная раскладка', () => {
     window.matchMedia = originalMatchMedia
   })
 
-  it('показывает ленту дат, раскрывает календарь по «Весь месяц» и одну кнопку «Забронировать»', async () => {
+  it('показывает ленту дат и форму записи', async () => {
     const mobileSlot: TimeSlot = {
       id: 1,
       startAt: new Date(2099, 8, 24, 10, 0).toISOString(),
@@ -290,21 +296,12 @@ describe('HomePage: мобильная раскладка', () => {
     }
     vi.stubGlobal('fetch', mockFetch([mobileSlot]))
 
-    const user = userEvent.setup()
     renderHomePage()
 
-    const dateKey = toDateKeyInZone(
-      new Date(mobileSlot.startAt),
-      Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    )
+    const dateKey = toDateKeyInZone(new Date(mobileSlot.startAt), defaultTimeZone)
 
     expect(await screen.findByRole('button', { name: dateKey })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Следующий месяц' })).toBeNull()
-
-    await user.click(screen.getByRole('button', { name: 'Весь месяц' }))
-
-    expect(screen.getByRole('button', { name: 'Следующий месяц' })).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Забронировать' })).toHaveLength(1)
+    expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
   })
 })
 
@@ -384,4 +381,3 @@ describe('HomePage: выбор типа встречи', () => {
     )
   })
 })
-

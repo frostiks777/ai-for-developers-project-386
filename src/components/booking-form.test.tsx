@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 
-import { BookingDialog } from './booking-dialog'
+import { BookingForm } from './booking-form'
 import type { TimeSlot } from '@/types/booking'
 
 vi.mock('sonner', () => ({
@@ -16,19 +16,20 @@ const slot: TimeSlot = {
   isBooked: false,
 }
 
-const onOpenChange = vi.fn()
 const onBooked = vi.fn()
+const onConflict = vi.fn()
 
-function renderDialog(eventTypeId: string | null = 'type-1') {
+function renderForm(eventTypeId: string | null = 'type-1') {
   return render(
-    <BookingDialog
+    <BookingForm
       slot={slot}
       hostSlug="default"
       eventTypeId={eventTypeId}
+      eventTypeTitle="Консультация"
       timeZone="UTC"
-      open
-      onOpenChange={onOpenChange}
+      variant="column"
       onBooked={onBooked}
+      onConflict={onConflict}
     />,
   )
 }
@@ -54,93 +55,103 @@ const v1BookingResponse = (overrides: Record<string, unknown> = {}) =>
 
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Имя'), 'Иван')
+  await user.click(screen.getByRole('button', { name: /Телефон, комментарий, гости/ }))
   await user.type(screen.getByLabelText('Телефон'), '+79000000000')
   await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
   await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
 }
 
-describe('BookingDialog', () => {
+describe('BookingForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('показывает форму с данными слота', () => {
-    renderDialog()
+  it('показывает форму «Ваши данные» и блокирует отправку до заполнения', () => {
+    renderForm()
 
-    expect(screen.getByRole('heading', { name: 'Бронирование звонка' })).toBeInTheDocument()
+    expect(screen.getByRole('form', { name: 'Ваши данные' })).toBeInTheDocument()
     expect(screen.getByLabelText('Имя')).toBeInTheDocument()
-    expect(screen.getByLabelText('Телефон')).toBeInTheDocument()
     expect(screen.getByLabelText('Email')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
   })
 
   it('включает кнопку отправки только после заполнения всех полей', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
-
-    await user.type(screen.getByLabelText('Телефон'), '+7 900 000-00-00')
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
 
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
 
     await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeEnabled()
   })
 
   it('не даёт отправить форму без согласия на обработку данных', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
 
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
   })
 
-  it('не даёт отправить форму с невалидным email', async () => {
+  it('показывает ошибку, если в email нет знака @', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
-    await user.type(screen.getByLabelText('Телефон'), '+79000000000')
     await user.type(screen.getByLabelText('Email'), 'not-an-email')
 
-    expect(screen.getByText('Неверный email')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByText('Проверьте email: в нём должен быть знак @')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
+  })
+
+  it('показывает ошибку, если в email нет домена', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.type(screen.getByLabelText('Email'), 'ivan@example')
+
+    expect(
+      screen.getByText('Похоже, адрес не полный: не хватает домена, например .ru'),
+    ).toBeInTheDocument()
   })
 
   it('не даёт отправить форму с невалидным телефоном', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.click(screen.getByRole('button', { name: /Телефон, комментарий, гости/ }))
     await user.type(screen.getByLabelText('Телефон'), '12345')
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
 
     expect(screen.getByText('Неверный номер телефона')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
   })
 
   it('не даёт отправить форму с именем короче 2 символов', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await user.type(screen.getByLabelText('Имя'), 'И')
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
 
     expect(screen.getByText('Имя от 2 символов')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
   })
 
   it('форматирует телефон по маске при вводе', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
+    await user.click(screen.getByRole('button', { name: /Телефон, комментарий, гости/ }))
     await user.type(screen.getByLabelText('Телефон'), '79000000000')
 
     expect(screen.getByLabelText('Телефон')).toHaveValue('+7 (900) 000-00-00')
@@ -151,52 +162,44 @@ describe('BookingDialog', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await user.type(screen.getByLabelText('Имя'), 'Иван')
     await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
     await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
-    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+    await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/hosts/default/bookings'),
       expect.objectContaining({ method: 'POST' }),
     )
     expect(onBooked).toHaveBeenCalledTimes(1)
-    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it('бронирует слот, показывает уведомление и закрывает диалог', async () => {
+  it('бронирует слот и показывает уведомление', async () => {
     const fetchMock = vi.fn(async () => v1BookingResponse())
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await fillValidForm(user)
-    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+    await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/hosts/default/bookings'),
-      expect.objectContaining({ method: 'POST' }),
-    )
     expect(toast.success).toHaveBeenCalledWith('Звонок забронирован')
     expect(onBooked).toHaveBeenCalledTimes(1)
-    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it('отправляет комментарий, если он заполнен', async () => {
-    const fetchMock = vi.fn(async () =>
-      v1BookingResponse({ clientNotes: 'Хочу обсудить проект' }),
-    )
+    const fetchMock = vi.fn(async () => v1BookingResponse({ clientNotes: 'Хочу обсудить проект' }))
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await fillValidForm(user)
     await user.type(screen.getByLabelText('Комментарий'), 'Хочу обсудить проект')
-    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+    await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/hosts/default/bookings'),
@@ -207,7 +210,7 @@ describe('BookingDialog', () => {
     )
   })
 
-  it('показывает ошибку, если слот уже занят', async () => {
+  it('при 409 сохраняет поля, не показывает тост и зовёт onConflict', async () => {
     const fetchMock = vi.fn(
       async () =>
         new Response(
@@ -218,15 +221,17 @@ describe('BookingDialog', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await fillValidForm(user)
-    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+    await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
 
-    expect(toast.error).toHaveBeenCalledWith('Слот только что заняли')
-    expect(screen.getByRole('alert')).toHaveTextContent('Этот слот только что заняли. Выберите другое время.')
+    expect(toast.error).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Это время только что заняли')
+    expect(screen.getByLabelText('Имя')).toHaveValue('Иван')
+    expect(screen.getByLabelText('Email')).toHaveValue('ivan@example.com')
+    expect(onConflict).toHaveBeenCalledWith(slot)
     expect(onBooked).not.toHaveBeenCalled()
-    expect(onOpenChange).not.toHaveBeenCalled()
   })
 
   it('добавляет гостя по Enter и отправляет его в теле запроса', async () => {
@@ -234,11 +239,11 @@ describe('BookingDialog', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
     await fillValidForm(user)
     await user.type(screen.getByLabelText('Гости'), 'guest@example.com{Enter}')
-    await user.click(screen.getByRole('button', { name: 'Забронировать' }))
+    await user.click(screen.getByRole('button', { name: /^Записаться на/ }))
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/hosts/default/bookings'),
@@ -251,18 +256,21 @@ describe('BookingDialog', () => {
 
   it('блокирует отправку и показывает сообщение без типа встречи', async () => {
     const user = userEvent.setup()
-    renderDialog(null)
+    renderForm(null)
 
-    await fillValidForm(user)
+    await user.type(screen.getByLabelText('Имя'), 'Иван')
+    await user.type(screen.getByLabelText('Email'), 'ivan@example.com')
+    await user.click(screen.getByLabelText('Согласие на обработку персональных данных'))
 
     expect(screen.getByRole('alert')).toHaveTextContent('не настроены типы встреч')
-    expect(screen.getByRole('button', { name: 'Забронировать' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^Записаться на/ })).toBeDisabled()
   })
 
   it('обновляет счётчик комментария при вводе', async () => {
     const user = userEvent.setup()
-    renderDialog()
+    renderForm()
 
+    await user.click(screen.getByRole('button', { name: /Телефон, комментарий, гости/ }))
     await user.type(screen.getByLabelText('Комментарий'), 'abc')
 
     expect(screen.getByText('3 / 500')).toBeInTheDocument()

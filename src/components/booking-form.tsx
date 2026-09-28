@@ -3,28 +3,32 @@ import { useEffect, useRef, useState } from 'react'
 import { Calendar, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useBooking } from '@/hooks/use-booking'
-import { useMediaQuery } from '@/hooks/use-media-query'
 import { useTimeFormat } from '@/hooks/use-time-format'
 import { createBookingSchema } from '@/lib/validation'
 import { cn } from '@/lib/utils'
 import type { CreatedBooking, TimeSlot } from '@/types/booking'
 import { formatPhoneInput } from '@/utils/phone'
-import { formatDialogDate, formatTimeRange, toDateKeyInZone } from '@/utils/timezone'
+import {
+  formatDayShortTitle,
+  formatTimeInZone,
+  formatTimeRange,
+  formatZoneShort,
+  toDateKeyInZone,
+} from '@/utils/timezone'
 
-interface BookingDialogProps {
+interface BookingFormProps {
   slot: TimeSlot | null
   hostSlug: string
   eventTypeId: string | null
+  eventTypeTitle?: string | null
   timeZone: string
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  variant?: 'column' | 'step'
   onBooked: (booking: CreatedBooking) => void
-  onFailed?: () => void
+  onConflict: (slot: TimeSlot) => void
 }
 
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
@@ -37,16 +41,24 @@ function createIdempotencyKey(): string {
   return `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-export function BookingDialog({
+function joinRu(items: string[]): string {
+  if (items.length <= 1) {
+    return items.join('')
+  }
+
+  return `${items.slice(0, -1).join(', ')} и ${items[items.length - 1]}`
+}
+
+export function BookingForm({
   slot,
   hostSlug,
   eventTypeId,
+  eventTypeTitle,
   timeZone,
-  open,
-  onOpenChange,
+  variant = 'column',
   onBooked,
-  onFailed,
-}: BookingDialogProps) {
+  onConflict,
+}: BookingFormProps) {
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -55,29 +67,18 @@ export function BookingDialog({
   const [guestInput, setGuestInput] = useState('')
   const [guestError, setGuestError] = useState<string | null>(null)
   const [consent, setConsent] = useState(false)
-  const [idempotencyKey, setIdempotencyKey] = useState('')
+  const [isExtraOpen, setIsExtraOpen] = useState(false)
   const [conflict, setConflict] = useState(false)
+  const [idempotencyKey, setIdempotencyKey] = useState(() => createIdempotencyKey())
   const { isSubmitting, bookSlot } = useBooking()
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
   const { hour12 } = useTimeFormat()
   const nameInputRef = useRef<HTMLInputElement>(null)
 
+  // Новый ключ идемпотентности на каждый выбранный слот (поля не сбрасываем)
   useEffect(() => {
-    if (open) {
-      setIdempotencyKey(createIdempotencyKey())
-      return
-    }
-
-    setName('')
-    setPhone('')
-    setEmail('')
-    setComment('')
-    setGuests([])
-    setGuestInput('')
-    setGuestError(null)
-    setConsent(false)
+    setIdempotencyKey(createIdempotencyKey())
     setConflict(false)
-  }, [open])
+  }, [slot?.id])
 
   const addGuest = () => {
     const value = guestInput.trim()
@@ -108,8 +109,7 @@ export function BookingDialog({
     guests,
     consentAccepted: consent,
   })
-  const isFormValid = parseResult.success
-  const canSubmit = isFormValid && slot !== null && eventTypeId !== null
+  const isFormValid = parseResult.success && slot !== null && eventTypeId !== null
   const issues = parseResult.success ? [] : parseResult.error.issues
   const nameError =
     name.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'name')?.message ?? null) : null
@@ -117,6 +117,17 @@ export function BookingDialog({
     phone.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'phone')?.message ?? null) : null
   const emailError =
     email.trim() !== '' ? (issues.find((issue) => issue.path[0] === 'email')?.message ?? null) : null
+
+  const missing: string[] = []
+  if (name.trim() === '' || nameError !== null) {
+    missing.push('заполните имя')
+  }
+  if (email.trim() === '' || emailError !== null) {
+    missing.push('укажите email')
+  }
+  if (!consent) {
+    missing.push('отметьте согласие')
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -144,131 +155,130 @@ export function BookingDialog({
 
     if (result.ok) {
       onBooked(result.booking)
-      onOpenChange(false)
+      setName('')
+      setPhone('')
+      setEmail('')
+      setComment('')
+      setGuests([])
+      setGuestInput('')
+      setGuestError(null)
+      setConsent(false)
+      setIsExtraOpen(false)
+      setIdempotencyKey(createIdempotencyKey())
       return
     }
 
     if (result.error.status === 409) {
       setConflict(true)
-      return
+      onConflict(slot)
     }
-
-    onFailed?.()
-  }
-
-  const handleOpenAutoFocus = (event: Event) => {
-    event.preventDefault()
-    nameInputRef.current?.focus()
   }
 
   const dateKey = slot ? toDateKeyInZone(new Date(slot.startAt), timeZone) : null
-  const dialogDate = dateKey ? formatDialogDate(dateKey) : ''
-  const timeRange = slot ? formatTimeRange(slot, timeZone, hour12) : ''
-  const desktopSummary = slot ? `${dialogDate}, ${timeRange} · ${slot.durationMin} мин` : ''
-  const mobileSummaryLine2 = slot ? `${timeRange} · ${slot.durationMin} мин · ${timeZone}` : ''
-  const inputClass = isDesktop ? 'h-11' : 'h-[52px] text-base'
+  const summaryTitle =
+    slot && dateKey ? `${formatDayShortTitle(dateKey)}, ${formatTimeRange(slot, timeZone, hour12)}` : ''
+  const summarySubtitle = `${eventTypeTitle ?? 'Встреча'} · ${formatZoneShort(timeZone)}`
+  const isStep = variant === 'step'
+  const inputClass = isStep ? 'h-[52px] text-base' : 'h-11'
+  const buttonLabel = slot
+    ? `Записаться на ${formatTimeInZone(slot.startAt, timeZone, hour12)}`
+    : 'Выберите время'
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        hideClose
-        sheet={!isDesktop}
-        className={isDesktop ? 'max-w-[480px] rounded-card p-7' : ''}
-        onOpenAutoFocus={handleOpenAutoFocus}
-      >
-        {!isDesktop && (
-          <span aria-hidden="true" className="mx-auto h-1 w-10 shrink-0 rounded-full bg-border" />
-        )}
+    <section className="flex h-full min-w-0 flex-col">
+      <h2 className="text-lg font-semibold">Ваши данные</h2>
 
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex min-w-0 flex-col gap-2">
-            <DialogTitle
-              className={
-                isDesktop
-                  ? 'font-serif text-2xl font-semibold leading-tight'
-                  : 'font-serif text-[22px] font-semibold leading-tight'
-              }
-            >
-              Бронирование звонка
-            </DialogTitle>
-            {slot &&
-              (isDesktop ? (
-                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Calendar className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-                  <span>{desktopSummary}</span>
-                </p>
-              ) : null)}
-          </div>
-          <DialogClose asChild>
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              aria-label="Закрыть"
-              className={cn(
-                'shrink-0 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                isDesktop ? 'size-9' : 'size-11',
-              )}
-            >
-              <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
-            </Button>
-          </DialogClose>
+      <div
+        className={cn(
+          'mt-3 rounded-xl p-3',
+          slot ? 'bg-accent' : 'border border-dashed border-input',
+        )}
+      >
+        {slot ? (
+          <>
+            <p className="text-[15px] font-bold text-accent-foreground">{summaryTitle}</p>
+            <p className="mt-0.5 text-[13px] text-accent-foreground/80">{summarySubtitle}</p>
+          </>
+        ) : (
+          <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <Calendar className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
+            Выберите день и время слева
+          </p>
+        )}
+      </div>
+
+      {conflict && (
+        <p
+          role="alert"
+          className="mt-3 rounded-xl border border-highlight/40 bg-highlight/15 px-3 py-2 text-[13px]"
+        >
+          <strong>Это время только что заняли.</strong> Выберите соседнее — ваши имя и email
+          сохранены.
+        </p>
+      )}
+
+      <form aria-label="Ваши данные" className="mt-4 flex min-h-0 flex-1 flex-col gap-3" onSubmit={handleSubmit}>
+        <div className="grid gap-2">
+          <Label htmlFor="booking-name">Имя</Label>
+          <Input
+            ref={nameInputRef}
+            id="booking-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Как к вам обращаться"
+            autoComplete="name"
+            aria-invalid={nameError !== null}
+            aria-describedby={nameError ? 'booking-name-error' : undefined}
+            className={cn(inputClass, nameError && 'border-destructive')}
+          />
+          {nameError && (
+            <p id="booking-name-error" className="text-[13px] text-destructive">
+              {nameError}
+            </p>
+          )}
         </div>
 
-        {slot && !isDesktop && (
-          <div className="flex items-center gap-2.5 rounded-xl bg-accent p-3 text-accent-foreground">
-            <Calendar className="size-4 shrink-0" strokeWidth={1.8} aria-hidden="true" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold">{dialogDate}</p>
-              <p className="text-[13px] text-muted-foreground">{mobileSummaryLine2}</p>
-            </div>
-          </div>
-        )}
+        <div className="grid gap-2">
+          <Label htmlFor="booking-email">Email</Label>
+          <Input
+            id="booking-email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            aria-invalid={emailError !== null}
+            aria-describedby={emailError ? 'booking-email-error' : undefined}
+            className={cn(inputClass, emailError && 'border-destructive')}
+          />
+          {emailError ? (
+            <p id="booking-email-error" className="text-[13px] text-destructive">
+              {emailError}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Нужен, чтобы вы могли найти встречу позже
+            </p>
+          )}
+        </div>
 
-        <form
-          className={isDesktop ? 'grid gap-4' : 'flex min-h-0 flex-1 flex-col gap-3'}
-          onSubmit={handleSubmit}
+        <button
+          type="button"
+          aria-expanded={isExtraOpen}
+          aria-controls="booking-extra-fields"
+          onClick={() => setIsExtraOpen((open) => !open)}
+          className={cn(
+            'flex items-center gap-1.5 rounded-xl border border-dashed border-input px-3 text-[13px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            isStep ? 'h-[52px]' : 'h-11',
+          )}
         >
-          <div className="grid gap-2">
-            <Label htmlFor="booking-name">Имя</Label>
-            <Input
-              ref={nameInputRef}
-              id="booking-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Как к вам обращаться"
-              autoComplete="name"
-              aria-invalid={nameError !== null}
-              aria-describedby={nameError ? 'booking-name-error' : undefined}
-              className={cn(inputClass, nameError && 'border-destructive')}
-            />
-            {nameError && (
-              <p id="booking-name-error" className="text-[13px] text-destructive">
-                {nameError}
-              </p>
-            )}
-          </div>
+          + {isStep ? 'Добавить телефон или вопрос к встрече' : 'Телефон, комментарий, гости'}
+        </button>
 
-          <div className="grid gap-2">
-            <Label htmlFor="booking-email">Email</Label>
-            <Input
-              id="booking-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              aria-invalid={emailError !== null}
-              aria-describedby={emailError ? 'booking-email-error' : undefined}
-              className={cn(inputClass, emailError && 'border-destructive')}
-            />
-            {emailError && (
-              <p id="booking-email-error" className="text-[13px] text-destructive">
-                {emailError}
-              </p>
-            )}
-          </div>
-
+        <div
+          id="booking-extra-fields"
+          className={cn('grid gap-3', !isExtraOpen && 'hidden')}
+        >
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="booking-phone">Телефон</Label>
@@ -362,56 +372,49 @@ export function BookingDialog({
               </p>
             )}
           </div>
+        </div>
 
-          <label className="flex items-start gap-2 text-[13px] text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(event) => setConsent(event.target.checked)}
-              aria-label="Согласие на обработку персональных данных"
-              className="mt-0.5 size-4 shrink-0 rounded border-input"
-            />
-            <span>Я согласен с обработкой персональных данных</span>
-          </label>
+        <label className="flex items-start gap-2 text-[13px] text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
+            aria-label="Согласие на обработку персональных данных"
+            className="mt-0.5 size-5 shrink-0 rounded border-input"
+          />
+          <span>Согласен на обработку персональных данных для этой встречи</span>
+        </label>
 
-          {!eventTypeId && (
-            <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
-              Для этого организатора не настроены типы встреч — бронирование недоступно.
+        {!eventTypeId && (
+          <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+            Для этого организатора не настроены типы встреч — бронирование недоступно.
+          </p>
+        )}
+
+        <div className="mt-auto pt-3">
+          <Button
+            type="submit"
+            disabled={!isFormValid || isSubmitting}
+            aria-describedby={!isFormValid ? 'booking-submit-hint' : undefined}
+            className={cn(
+              'w-full bg-highlight text-highlight-foreground shadow-glow-lg hover:bg-highlight/90',
+              isStep ? 'h-14 rounded-[14px] text-[17px]' : 'h-[52px] rounded-xl text-base',
+            )}
+          >
+            {isSubmitting ? 'Отправка…' : buttonLabel}
+          </Button>
+          {!isFormValid && missing.length > 0 && (
+            <p id="booking-submit-hint" className="mt-2 text-center text-xs text-muted-foreground">
+              Чтобы записаться, {joinRu(missing)}
             </p>
           )}
-
-          {conflict && (
-            <p role="alert" className="rounded-xl bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
-              Этот слот только что заняли. Выберите другое время.
+          {isStep && (
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Сохраним встречу на этом телефоне в «Мои встречи»
             </p>
           )}
-
-          {isDesktop ? (
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSubmitting}
-                onClick={() => onOpenChange(false)}
-                className="h-11"
-              >
-                Отмена
-              </Button>
-              <Button type="submit" disabled={!canSubmit || isSubmitting} className="h-11">
-                {isSubmitting ? 'Отправка…' : 'Забронировать'}
-              </Button>
-            </DialogFooter>
-          ) : (
-            <Button
-              type="submit"
-              disabled={!canSubmit || isSubmitting}
-              className="mt-auto h-14 w-full rounded-xl text-base"
-            >
-              {isSubmitting ? 'Отправка…' : 'Забронировать'}
-            </Button>
-          )}
-        </form>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </form>
+    </section>
   )
 }
