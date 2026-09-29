@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.22.2...v1.23.0) (2026-09-29)
+
+
+### Features
+
+* **email:** booking notifications and reminders via Brevo ([#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83)) ([e7cf43e](https://github.com/frostiks777/ai-for-developers-project-386/commit/e7cf43e009e83ba7e9699b028d1cab46de47a729))
+
 ## [1.22.2](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.22.1...v1.22.2) (2026-09-29)
 
 
