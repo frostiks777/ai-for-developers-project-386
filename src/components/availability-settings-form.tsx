@@ -221,13 +221,11 @@ export function AvailabilitySettingsForm({
   const firstRange = [...draft.ranges].sort(
     (a, b) => a.weekday - b.weekday || a.startMinute - b.startMinute,
   )[0]
+  // Шаг сетки — только длительность слота: буферы не входят в сетку (#89).
   const slotsPerDay = firstRange
     ? Math.max(
         0,
-        Math.floor(
-          (firstRange.endMinute - firstRange.startMinute) /
-            (draft.slotDurationMin + draft.bufferBeforeMin + draft.bufferAfterMin),
-        ),
+        Math.floor((firstRange.endMinute - firstRange.startMinute) / draft.slotDurationMin),
       )
     : 0
 

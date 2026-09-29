@@ -28,7 +28,7 @@ import {
 } from './notifications'
 import { scheduleLazyReminderCheck, sendDueReminders } from './reminders'
 import { loadAvailabilitySettings, saveAvailabilitySettings } from './availability-settings'
-import { defaultAvailabilityRules } from './availability'
+import { conflictsWithBuffers, defaultAvailabilityRules } from './availability'
 import {
   createEventType,
   deleteEventType,
@@ -223,6 +223,22 @@ export async function buildApp(): Promise<FastifyInstance> {
   const minNoticeMs = async (hostId: string) =>
     (await loadAvailabilityRules(hostId)).minNoticeMin * 60 * 1000
 
+  // Интервалы подтверждённых встреч хоста — для отсечения слотов, попавших
+  // в буфер до/после занятой встречи (#89).
+  const busyIntervals = async (hostId: string) => {
+    const rules = await loadAvailabilityRules(hostId)
+    const rows = await db
+      .select({ startAt: bookings.startAt, endAt: bookings.endAt })
+      .from(bookings)
+      .where(and(eq(bookings.hostId, hostId), eq(bookings.status, 'confirmed')))
+
+    return {
+      intervals: rows.map((row) => ({ startAt: row.startAt, endAt: row.endAt })),
+      bufferBeforeMin: rules.bufferBeforeMin,
+      bufferAfterMin: rules.bufferAfterMin,
+    }
+  }
+
   // Читает хост по slug или UUID; undefined, если не найден (роуты отвечают 404)
   const findHost = async (ref: string) =>
     (
@@ -252,9 +268,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   }
 
   // Слоты хоста в будущем с признаком занятости, отсортированные по startAt.
-  // Слоты, пересекающиеся с ручными блокировками, не выдаются.
+  // Слоты, пересекающиеся с ручными блокировками или с буферами вокруг
+  // подтверждённых встреч, не выдаются (#89).
   const selectFutureSlots = async (hostId: string): Promise<TimeSlot[]> => {
     const blocks = await listBlockIntervals(hostId)
+    const busy = await busyIntervals(hostId)
 
     const rows = await db
       .select({
@@ -280,18 +298,30 @@ export async function buildApp(): Promise<FastifyInstance> {
         durationMin: row.durationMin,
         isBooked: row.bookingId !== null,
       }))
-      .filter(
-        (slot) =>
-          !isBlocked(
-            {
-              startAt: slot.startAt,
-              endAt: new Date(
-                new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
-              ).toISOString(),
-            },
-            blocks,
-          ),
-      )
+      .filter((slot) => {
+        const interval = {
+          startAt: slot.startAt,
+          endAt: new Date(
+            new Date(slot.startAt).getTime() + slot.durationMin * 60_000,
+          ).toISOString(),
+        }
+
+        if (isBlocked(interval, blocks)) {
+          return false
+        }
+
+        if (slot.isBooked) {
+          return true
+        }
+
+        return !conflictsWithBuffers(
+          interval.startAt,
+          interval.endAt,
+          busy.intervals,
+          busy.bufferBeforeMin,
+          busy.bufferAfterMin,
+        )
+      })
   }
 
   app.get('/api/slots', async (): Promise<TimeSlot[]> => {
@@ -920,6 +950,19 @@ export async function buildApp(): Promise<FastifyInstance> {
 
       if (isBlocked(slotInterval, await listBlockIntervals(host.id))) {
         return reply.code(409).send(v1Error('CONFLICT', 'Время заблокировано организатором'))
+      }
+
+      const busy = await busyIntervals(host.id)
+      if (
+        conflictsWithBuffers(
+          slotInterval.startAt,
+          slotInterval.endAt,
+          busy.intervals,
+          busy.bufferBeforeMin,
+          busy.bufferAfterMin,
+        )
+      ) {
+        return reply.code(409).send(v1Error('CONFLICT', 'Слот попадает в буфер соседней встречи'))
       }
 
       const created = await createBookingV1(

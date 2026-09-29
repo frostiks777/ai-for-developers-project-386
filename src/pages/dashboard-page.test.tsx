@@ -410,11 +410,12 @@ describe('DashboardPage: группировка и фильтр', () => {
     expect(screen.getByText('Мария')).toBeInTheDocument()
   })
 
+  // Сетка считается по slotDurationMin: буферы в неё не входят (#89).
   it('показывает подсказку о числе слотов', async () => {
     vi.stubGlobal('fetch', mockFetch())
     renderDashboard('availability')
 
-    expect(await screen.findByText(/≈ 12 слотов в рабочий день/)).toBeInTheDocument()
+    expect(await screen.findByText(/≈ 16 слотов в рабочий день/)).toBeInTheDocument()
   })
 })
 

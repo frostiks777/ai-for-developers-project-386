@@ -20,7 +20,9 @@ export const defaultAvailabilityRules: AvailabilityRules = {
   windowEndHour: 18,
   slotDurationMin: 30,
   bufferBeforeMin: 0,
-  bufferAfterMin: 10,
+  // Буферы не входят в шаг сетки: по умолчанию 0, иначе после брони
+  // соседние слоты молча выпадали бы из выдачи (#89).
+  bufferAfterMin: 0,
   minNoticeMin: 120,
   horizonDays: 14,
 }
@@ -83,13 +85,15 @@ const MS_PER_MINUTE = 60 * 1000
 // Генерирует ISO-времена начал слотов от now на горизонт вперёд.
 // Слот попадает в результат, если он целиком укладывается в рабочее окно,
 // начинается не раньше now + minNotice и день входит в рабочие дни.
+// Шаг сетки — slotDurationMin: буферы двигать сетку не должны (спека, #89),
+// они применяются фильтром занятости — см. conflictsWithBuffers.
 export function generateSlotStarts(
   now: Date,
   rules: AvailabilityRules = defaultAvailabilityRules,
 ): string[] {
   const starts: string[] = []
   const earliest = now.getTime() + rules.minNoticeMin * MS_PER_MINUTE
-  const stepMin = rules.slotDurationMin + rules.bufferBeforeMin + rules.bufferAfterMin
+  const stepMin = rules.slotDurationMin
   const windowEndMin = rules.windowEndHour * 60
 
   for (let dayOffset = 0; dayOffset < rules.horizonDays; dayOffset += 1) {
@@ -123,6 +127,42 @@ export function generateSlotStarts(
   }
 
   return starts
+}
+
+// ── Буферы как фильтр занятости, а не как шаг сетки (#89) ────────────────
+
+export interface TimeIntervalLike {
+  startAt: string
+  endAt: string
+}
+
+const addMinutes = (iso: string, minutes: number): string =>
+  new Date(new Date(iso).getTime() + minutes * MS_PER_MINUTE).toISOString()
+
+/**
+ * Возвращает true, если слот [slotStartAt, slotEndAt) конфликтует с буферами
+ * вокруг уже занятых встреч.
+ *
+ * Буфер после занятой встречи отодвигает её конец, буфер до — отодвигает начало
+ * нашей встречи назад: слот не должен начинаться раньше, чем закончится буфер.
+ * Сетка при этом не сдвигается — конфликтный слот просто не выдаётся.
+ */
+export function conflictsWithBuffers(
+  slotStartAt: string,
+  slotEndAt: string,
+  busyIntervals: TimeIntervalLike[],
+  bufferBeforeMin: number,
+  bufferAfterMin: number,
+): boolean {
+  const slotStart = new Date(slotStartAt).getTime()
+  const slotEnd = new Date(slotEndAt).getTime()
+
+  return busyIntervals.some((busy) => {
+    const busyStart = new Date(addMinutes(busy.startAt, -bufferBeforeMin)).getTime()
+    const busyEnd = new Date(addMinutes(busy.endAt, bufferAfterMin)).getTime()
+
+    return slotStart < busyEnd && busyStart < slotEnd
+  })
 }
 
 // ── v1: диапазоны по дням недели (ADR-0011) ──────────────────────────────
@@ -294,10 +334,11 @@ export function defaultAvailabilitySettings(timeZone: string): AvailabilitySetti
 }
 
 // Генерирует ISO-времена начал слотов по диапазонам дней недели в поясе хоста.
+// Шаг сетки — slotDurationMin, буферы сетку не двигают (спека, #89).
 export function generateSlotStartsFromRanges(now: Date, settings: AvailabilitySettings): string[] {
   const starts: string[] = []
   const earliest = now.getTime() + settings.minNoticeMin * MS_PER_MINUTE
-  const stepMin = settings.slotDurationMin + settings.bufferBeforeMin + settings.bufferAfterMin
+  const stepMin = settings.slotDurationMin
   const timeZone = settings.timeZone || 'UTC'
 
   for (let dayOffset = 0; dayOffset < settings.horizonDays; dayOffset += 1) {

@@ -59,3 +59,4 @@
 | [0024](0024-slots-in-host-timezone.md) | Слоты генерируются в поясе организатора | Accepted | 2026-09-28 |
 | [0025](0025-captcha-and-rate-limit.md) | Защита публичной записи: Cloudflare Turnstile и rate-limit по IP | Accepted | 2026-09-28 |
 | [0026](0026-email-notifications.md) | Email-уведомления (Brevo HTTP API, ленивые напоминания) | Accepted | 2026-09-29 |
+| [0027](0027-slot-grid-step-independent-of-buffers.md) | Шаг сетки слотов не зависит от буферов; буферы — фильтр занятости | Accepted | 2026-09-29 |

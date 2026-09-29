@@ -88,6 +88,14 @@ describe('GET /api/slots', () => {
 
     expect(allSlots.some((slot) => slot.startAt === soonStartAt)).toBe(false)
   })
+
+  // Спека: буферы не двигают сетку и не сдвигают старты соседних слотов (#89).
+  it('отдаёт слоты получасовой сеткой независимо от буферов', async () => {
+    const allSlots = await requestSlots()
+    const minutes = allSlots.map((slot) => new Date(slot.startAt).getUTCMinutes())
+
+    expect(minutes.every((minute) => minute === 0 || minute === 30)).toBe(true)
+  })
 })
 
 describe('GET /api/bookings', () => {

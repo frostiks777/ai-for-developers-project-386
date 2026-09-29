@@ -24,9 +24,9 @@ const minuteToLabel = (minute: number): string =>
 // «Неделя глазами гостя»: сетка Пн–Пт × времена начал по черновику правил.
 // Часы показаны в поясе правил (settings.timeZone). Если переданы слоты,
 // занятые окна (isBooked) помечаются как встречи.
+// Шаг сетки — slotDurationMin: буферы сетку не двигают (#89).
 export function AvailabilityPreview({ settings, slots = [] }: AvailabilityPreviewProps) {
-  const step =
-    settings.slotDurationMin + settings.bufferBeforeMin + settings.bufferAfterMin
+  const step = settings.slotDurationMin
 
   const times = new Set<string>()
 

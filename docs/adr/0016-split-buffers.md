@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-09-25.
+Accepted — 2026-09-25. Пункты 2 и 4 частично устарели: см. [ADR-0027](0027-slot-grid-step-independent-of-buffers.md) (2026-09-29).
 
 ## Context
 
@@ -11,7 +11,7 @@ Accepted — 2026-09-25.
 ## Decision
 
 1. Заменяем `bufferMin` на два поля: `bufferBeforeMin` и `bufferAfterMin` (0–480) в настройках доступности и API-контракте (`AvailabilitySettings`, `UpdateAvailabilityRequest`).
-2. Шаг генерации слотов — `slotDurationMin + bufferBeforeMin + bufferAfterMin` (остаётся чистой функцией в `server/availability.ts`).
+2. ~~Шаг генерации слотов — `slotDurationMin + bufferBeforeMin + bufferAfterMin` (остаётся чистой функцией в `server/availability.ts`).~~ **Устарело:** по [ADR-0027](0027-slot-grid-step-independent-of-buffers.md) шаг сетки — только `slotDurationMin`, буферы применяются фильтром занятости.
 3. БД: аддитивная миграция — колонки `bufferBeforeMin`/`bufferAfterMin` (`ADD COLUMN IF NOT EXISTS`, дефолт 0) и сохранён символ колонки `bufferMin` (дефолт 0). Бэкфилл: старый `bufferMin` переносится в `bufferAfterMin`, если тот ещё пуст.
 4. Форма `/dashboard`: два поля «Буфер до, мин» и «Буфер после, мин»; подсказка «≈ N слотов в рабочем дне» считает шаг по сумме.
 5. Легаси-схема `availability_rules` (`bufferMin`) остаётся только как носитель совместимости; в v1-ответах не участвует.

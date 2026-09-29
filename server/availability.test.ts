@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  conflictsWithBuffers,
   defaultAvailabilityRules,
   generateSlotStarts,
   generateSlotStartsFromRanges,
@@ -10,13 +11,13 @@ import {
 const now = new Date('2026-09-23T06:00:00.000Z')
 
 describe('generateSlotStarts', () => {
-  it('генерирует слоты по окну с шагом «длительность + буфер»', () => {
+  it('генерирует слоты по окну с шагом slotDurationMin', () => {
     const starts = generateSlotStarts(now, defaultAvailabilityRules)
     const firstDay = starts.filter((startAt) => startAt.startsWith('2026-09-23'))
 
     expect(firstDay[0]).toBe('2026-09-23T10:00:00.000Z')
-    expect(firstDay[1]).toBe('2026-09-23T10:40:00.000Z')
-    expect(firstDay.at(-1)).toBe('2026-09-23T17:20:00.000Z')
+    expect(firstDay[1]).toBe('2026-09-23T10:30:00.000Z')
+    expect(firstDay.at(-1)).toBe('2026-09-23T17:30:00.000Z')
   })
 
   it('не генерирует выходные дни', () => {
@@ -36,16 +37,26 @@ describe('generateSlotStarts', () => {
   it('исключает слоты в пределах minNotice', () => {
     const starts = generateSlotStarts(new Date('2026-09-23T09:00:00.000Z'), defaultAvailabilityRules)
 
-    expect(starts[0]).toBe('2026-09-23T11:20:00.000Z')
+    expect(starts[0]).toBe('2026-09-23T11:00:00.000Z')
   })
 
-  it('учитывает bufferBefore при расчёте шага', () => {
+  // Спека: буферы не должны двигать обязательный шаг сетки (#89).
+  it('не сдвигает сетку при bufferBefore/bufferAfter', () => {
     const rules = { ...defaultAvailabilityRules, bufferBeforeMin: 10, bufferAfterMin: 10 }
     const starts = generateSlotStarts(now, rules).filter((startAt) =>
       startAt.startsWith('2026-09-23'),
     )
 
-    expect(starts[1]).toBe('2026-09-23T10:50:00.000Z')
+    expect(starts[0]).toBe('2026-09-23T10:00:00.000Z')
+    expect(starts[1]).toBe('2026-09-23T10:30:00.000Z')
+  })
+
+  it('дефолтный набор правил даёт получасовую сетку', () => {
+    const starts = generateSlotStarts(now, defaultAvailabilityRules)
+    const firstDay = starts.filter((startAt) => startAt.startsWith('2026-09-23'))
+    const minutes = firstDay.map((startAt) => new Date(startAt).getUTCMinutes())
+
+    expect(minutes.every((minute) => minute === 0 || minute === 30)).toBe(true)
   })
 })
 
@@ -100,5 +111,54 @@ describe('generateSlotStartsFromRanges: пояс хоста', () => {
     expect(new Set(starts).size).toBe(starts.length)
     expect(starts).toContain('2026-03-29T00:00:00.000Z') // 01:00 CET
     expect(starts.every((startAt) => startAt.endsWith('Z'))).toBe(true)
+  })
+
+  // Спека: буферы не должны двигать обязательный шаг сетки (#89).
+  it('не сдвигает сетку при буферах', () => {
+    const buffered = {
+      ...settings('UTC'),
+      slotDurationMin: 30,
+      bufferBeforeMin: 10,
+      bufferAfterMin: 10,
+      ranges: [{ weekday: 1, startMinute: 600, endMinute: 780 }],
+    }
+    const starts = generateSlotStartsFromRanges(new Date('2026-09-28T00:00:00.000Z'), buffered)
+
+    expect(starts).toEqual([
+      '2026-09-28T10:00:00.000Z',
+      '2026-09-28T10:30:00.000Z',
+      '2026-09-28T11:00:00.000Z',
+      '2026-09-28T11:30:00.000Z',
+      '2026-09-28T12:00:00.000Z',
+      '2026-09-28T12:30:00.000Z',
+    ])
+  })
+})
+
+describe('conflictsWithBuffers', () => {
+  const busy = [{ startAt: '2026-09-28T10:00:00.000Z', endAt: '2026-09-28T10:30:00.000Z' }]
+
+  it('при нулевых буферах не конфликтует с соседним слотом', () => {
+    expect(
+      conflictsWithBuffers('2026-09-28T10:30:00.000Z', '2026-09-28T11:00:00.000Z', busy, 0, 0),
+    ).toBe(false)
+  })
+
+  it('буфер после встречи отсекает следующий слот', () => {
+    expect(
+      conflictsWithBuffers('2026-09-28T10:30:00.000Z', '2026-09-28T11:00:00.000Z', busy, 0, 10),
+    ).toBe(true)
+  })
+
+  it('буфер до встречи отсекает предыдущий слот', () => {
+    expect(
+      conflictsWithBuffers('2026-09-28T09:30:00.000Z', '2026-09-28T10:00:00.000Z', busy, 10, 0),
+    ).toBe(true)
+  })
+
+  it('отдаёт слот за пределами буфера', () => {
+    expect(
+      conflictsWithBuffers('2026-09-28T11:00:00.000Z', '2026-09-28T11:30:00.000Z', busy, 10, 10),
+    ).toBe(false)
   })
 })
