@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.2](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.23.1...v1.23.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **ci:** run checks on every push, not just main ([#90](https://github.com/frostiks777/ai-for-developers-project-386/issues/90)) ([b411114](https://github.com/frostiks777/ai-for-developers-project-386/commit/b411114b263ab6d4a750189797d7f538af3cb1c6))
+
 ## [1.23.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.23.0...v1.23.1) (2026-09-29)
 
 
