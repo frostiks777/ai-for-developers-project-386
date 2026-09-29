@@ -15,9 +15,9 @@ services:
         value: production
       - key: PORT
         value: 10000
-      # Демо-пароль панели организатора (см. README → «Доступ организатора»)
-      - key: ADMIN_PASSWORD
-        value: call-calendar-admin
+      # Панель организатора открыта без логина: владелец один и заранее задан,
+      # авторизация по спецификации курса не нужна (ADR-0028). ADMIN_PASSWORD
+      # больше не используется — если он задан в Environment Group, игнорируется.
       # Cloudflare Turnstile (ADR-0025). CAPTCHA выключена, пока не задан
       # TURNSTILE_SECRET_KEY. Настоящие ключи НЕ коммитим — задать в
       # Environment Group (Render → Environment → Add). Здесь только напоминание:

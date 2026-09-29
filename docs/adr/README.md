@@ -49,7 +49,7 @@
 | [0014](0014-time-blocks.md) | Ручные блокировки времени (`time_blocks`) | Accepted | 2026-09-24 |
 | [0015](0015-booking-guests-consent-idempotency.md) | Гости, согласие ПДн и идемпотентность брони | Accepted | 2026-09-25 |
 | [0016](0016-split-buffers.md) | Раздельные буферы до и после встречи | Accepted | 2026-09-25 |
-| [0017](0017-dashboard-basic-auth.md) | Парольный доступ (Basic Auth) к панели организатора | Accepted | 2026-09-25 |
+| [0017](0017-dashboard-basic-auth.md) | Парольный доступ (Basic Auth) к панели организатора | Superseded (ADR-0028) | 2026-09-25 |
 | [0018](0018-multi-host-model.md) | Мульти-хост-модель (`hostId` в slots/bookings, CRUD хостов) | Accepted | 2026-09-25 |
 | [0019](0019-my-bookings-on-device.md) | «Мои встречи» на устройстве (localStorage) | Accepted | 2026-09-25 |
 | [0020](0020-per-host-availability-rules.md) | Per-host скаляры расписания (`availability_rules` по `hostId`) | Accepted | 2026-09-25 |
@@ -60,3 +60,4 @@
 | [0025](0025-captcha-and-rate-limit.md) | Защита публичной записи: Cloudflare Turnstile и rate-limit по IP | Accepted | 2026-09-28 |
 | [0026](0026-email-notifications.md) | Email-уведомления (Brevo HTTP API, ленивые напоминания) | Accepted | 2026-09-29 |
 | [0027](0027-slot-grid-step-independent-of-buffers.md) | Шаг сетки слотов не зависит от буферов; буферы — фильтр занятости | Accepted | 2026-09-29 |
+| [0028](0028-dashboard-access-without-login.md) | Доступ к панели организатора без логина | Accepted | 2026-09-29 |

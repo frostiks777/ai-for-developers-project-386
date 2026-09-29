@@ -37,8 +37,8 @@ import type { Host } from '@/api/generated'
 Код сервера отделён от фронтенда и лежит в `server/`:
 
 - `server/index.ts` — точка входа: создаёт приложение через `buildApp()` и слушает порт 3000. Запуск в dev-режиме — `npm run server:dev` (через `tsx watch`).
-- `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты легаси `/api/*`, маршруты `/api/v1/*`, Basic-auth гейт панели и раздачу собранного фронтенда из `dist/`. Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
-- `server/env.ts` — валидация переменных окружения (`PORT`, `DATABASE_URL`, `ADMIN_PASSWORD`) через zod.
+- `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты легаси `/api/*`, маршруты `/api/v1/*` и раздачу собранного фронтенда из `dist/`. Панель организатора и админские API открыты без логина ([ADR-0028](adr/0028-dashboard-access-without-login.md)). Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
+- `server/env.ts` — валидация переменных окружения (`PORT`, `DATABASE_URL`, `TURNSTILE_*`, `EMAIL_*`) через zod.
 - `server/bookings-v1.ts` — логика броней v1: проверка слота, `minNotice`, статус, гости, `Idempotency-Key`, отмена/перенос.
 - `server/event-types.ts`, `server/time-blocks.ts` — CRUD типов встреч и блокировок времени ([ADR-0014](adr/0014-time-blocks.md)).
 - `server/validation.ts` — zod-схемы API-контракта (`createBookingSchema`, `availabilityRulesSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).

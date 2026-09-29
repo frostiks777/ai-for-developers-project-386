@@ -36,7 +36,7 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   └── main.tsx       # Точка входа
 ├── server/
 │   ├── index.ts       # Точка входа: buildApp() + listen + стартовая проверка напоминаний
-│   ├── app.ts         # Фабрика Fastify: /health, /api/*, /api/v1/*, Basic-auth гейт, статика dist/
+│   ├── app.ts         # Фабрика Fastify: /health, /api/*, /api/v1/*, статика dist/ (панель без логина, ADR-0028)
 │   ├── hosts.ts       # Хосты: findHost (slug или UUID), дефолтный хост
 │   ├── bookings-v1.ts # Логика броней v1 (слоты, статус, гости, идемпотентность)
 │   ├── event-types.ts # Типы встреч CRUD

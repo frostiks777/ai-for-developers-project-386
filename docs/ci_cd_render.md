@@ -10,7 +10,7 @@
 |---|---|---|
 | Фронтенд + API | Render Web Service (Docker, `main`, `frankfurt`, plan `free`) | Fastify раздаёт `dist/` и слушает `/api/*` — один origin, CORS не нужен |
 | БД | Neon (PostgreSQL) | строки подключения в `DATABASE_URL` |
-| Доступ к панели | `ADMIN_PASSWORD` → HTTP Basic Auth на `/dashboard`, `/admin/*` и админских мутациях ([ADR-0017](adr/0017-dashboard-basic-auth.md)) | без переменной гейт выключен |
+| Доступ к панели | без логина: `/dashboard`, `/admin/*` и админские мутации открыты ([ADR-0028](adr/0028-dashboard-access-without-login.md)) | владелец один и заранее задан; `ADMIN_PASSWORD` не используется |
 | Email-уведомления | Brevo HTTP API + внешний cron (cron-job.org) | включается `EMAIL_API_KEY` ([ADR-0026](adr/0026-email-notifications.md)); пошагово — [email-setup-brevo.md](email-setup-brevo.md) |
 
 Данные **не** хранятся в контейнере: файловая система Render free эфемерна, поэтому БД обязана быть внешней. Без `DATABASE_URL` сервер поднимает PGlite в памяти — это годится для локального dev, но на Render приведёт к потере всех данных при каждом рестарте.
@@ -21,7 +21,6 @@
 |---|---|---|
 | `DATABASE_URL` | `postgresql://…?sslmode=require` | на Render приходит из **Environment Group `DB`** (см. `render.yaml`). Значение `sslmode` менять не нужно — нормализуется в `verify-full` на старте сервера |
 | `PORT` | `10000` | Render задаёт порт; сервер читает `process.env.PORT` |
-| `ADMIN_PASSWORD` | пароль организатора | в Blueprint задано демо-значение `call-calendar-admin` — **смените** |
 | `NODE_ENV` | `production` | отключает тестовый логгер Fastify |
 | `EMAIL_API_KEY` | ключ Brevo (v3, `xkeysib-…`) | пусто — письма не отправляются (no-op). Подробная настройка — [email-setup-brevo.md](email-setup-brevo.md) |
 | `EMAIL_FROM` | `Календарь звонков <sender@example.com>` | email должен быть **подтверждён** в Brevo (Senders) |
@@ -37,11 +36,11 @@
 1. <https://dashboard.render.com> → **Sign in with GitHub**.
 2. **New +** → **Web Service** → подключить репозиторий.
 3. Параметры: `Name: calendar-slots-app`, `Region: Frankfurt (EU Central)`, `Branch: main`, `Root Directory: пусто`, `Runtime: Docker`, `Instance Type: Free`.
-4. **Environment Variables**: `NODE_ENV=production`, `PORT=10000`, `ADMIN_PASSWORD=<свой пароль>`, `DATABASE_URL=<строка Neon>`.
+4. **Environment Variables**: `NODE_ENV=production`, `PORT=10000`, `DATABASE_URL=<строка Neon>`. Пароль организатора не нужен — панель открыта ([ADR-0028](adr/0028-dashboard-access-without-login.md)).
 5. **Create Web Service** — Render соберёт образ из `Dockerfile` и начнёт деплой по каждому пушу в `main` (`autoDeploy: true`).
 6. Healthcheck — `GET /health` (в Blueprint: `healthCheckPath: /health`).
 
-Через Blueprint (`render.yaml`) всё то же создаётся одной кнопкой в разделе **Blueprints** — файл уже содержит `fromGroup: DB`, `PORT`, `NODE_ENV` и демо-пароль.
+Через Blueprint (`render.yaml`) всё то же создаётся одной кнопкой в разделе **Blueprints** — файл уже содержит `fromGroup: DB`, `PORT` и `NODE_ENV`.
 
 ## 4. База данных Neon
 
@@ -64,4 +63,4 @@
 - Засыпание после ~15 минут простоя; первый запрос после сна — медленный (холодный старт).
 - Сборка идёт на `free`-инстансе: лимит 512 МБ RAM. Образ multi-stage, native-зависимостей с компиляцией больше нет (`pg` — чистый JS), поэтому сборка лёгкая.
 - Один инстанс: горизонтальное масштабирование невозможно, состояние держится в БД.
-- Секреты (`DATABASE_URL`, `ADMIN_PASSWORD`) живут только в переменных Render, в репозитории их нет (`.env` в `.gitignore`, `.env.example` — без значений).
+- Секреты (`DATABASE_URL`, `EMAIL_API_KEY`, `REMINDERS_SECRET`, ключи Turnstile) живут только в переменных Render, в репозитории их нет (`.env` в `.gitignore`, `.env.example` — без значений).

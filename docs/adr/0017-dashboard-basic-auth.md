@@ -1,8 +1,10 @@
 # ADR 0017: Парольный доступ к панели организатора
 
+> **Superseded — 2026-09-29:** панель организатора открыта без логина, см. [ADR-0028](0028-dashboard-access-without-login.md). Гейт Basic-auth, `ADMIN_PASSWORD` и все защищённые маршруты из этого ADR удалены. Документ сохранён как история решения.
+
 ## Status
 
-Accepted — 2026-09-25. Пункт 6 в части публичного чтения `GET /api/v1/hosts/:slug/bookings` заменён [ADR-0022](0022-private-bookings-list.md) — 2026-09-28.
+Superseded — 2026-09-29 (см. [ADR-0028](0028-dashboard-access-without-login.md)). До этого: Accepted — 2026-09-25. Пункт 6 в части публичного чтения `GET /api/v1/hosts/:slug/bookings` заменён [ADR-0022](0022-private-bookings-list.md) — 2026-09-28.
 
 ## Context
 

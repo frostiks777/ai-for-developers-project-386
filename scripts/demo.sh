@@ -48,4 +48,4 @@ curl -s "$BASE/api/v1/hosts/$HOST/slots" | \
   node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));const s=d.slots.find(x=>x.startAt==='$START');console.log('слот', '$START', 'доступен:', s?s.available:'—')"
 
 printf '\n\033[1;32mГотово.\033[0m В UI: / (лендинг) → /book/%s → выбор слота → форма → успех;\n' "$HOST"
-printf 'страница «Мои встречи» (/my) и панель организатора (/dashboard) — по паролю ADMIN_PASSWORD.\n'
+printf 'страница «Мои встречи» (/my) и панель организатора (/dashboard) — без логина.\n'

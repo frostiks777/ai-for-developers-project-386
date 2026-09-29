@@ -57,13 +57,6 @@ const envSchema = z.object({
       (value) => value === undefined || /^postgres(ql)?:\/\//.test(value),
       'DATABASE_URL должен быть строкой подключения Postgres',
     ),
-  // Пароль для Basic-auth на /dashboard и /admin/*. Если не задан — панель открыта
-  // (в продакшене обязательно задавать; см. README).
-  ADMIN_PASSWORD: z
-    .string()
-    .trim()
-    .optional()
-    .transform((value) => value || undefined),
   // Cloudflare Turnstile (ADR-0025). CAPTCHA включена, когда задан SECRET_KEY.
   // Без него капча выключена: виджет не рендерится, сервер не проверяет токен —
   // это делает локальный dev, npm test и e2e в CI независимыми от внешнего сервиса.

@@ -106,76 +106,6 @@ function pgErrorCode(error: unknown): string | undefined {
 
 const isUniqueViolation = (error: unknown) => pgErrorCode(error) === PG_UNIQUE_VIOLATION
 
-// Панель организатора: HTML-маршруты /dashboard и /admin/* под Basic-auth.
-// Плюс закрываются административные API (изменение настроек/типов/блокировок),
-// но публичные чтения для гостя (GET availability/event-types/bookings, бронь,
-// отмена/перенос по id) остаются открытыми.
-const requiresAdminAuth = (method: string, url: string): boolean => {
-  const pathname = url.split('?')[0]
-
-  if (pathname === '/dashboard' || pathname === '/admin' || pathname.startsWith('/admin/')) {
-    return true
-  }
-
-  // Легаси-API организатора
-  if (pathname === '/api/availability' || pathname === '/api/bookings') {
-    return true
-  }
-  if (method === 'DELETE' && /^\/api\/bookings\/\d+$/.test(pathname)) {
-    return true
-  }
-
-  // Список хостов — публичное чтение; создание — админское (ADR-0018/0021)
-  if (pathname === '/api/v1/hosts') {
-    return method !== 'GET'
-  }
-
-  const v1 = pathname.match(/^\/api\/v1\/hosts\/[^/]+\/(.+)$/)
-  if (!v1) {
-    return false
-  }
-
-  const rest = v1[1]
-
-  if (rest === 'availability') {
-    return method !== 'GET'
-  }
-  // Список броней — только организатору (ADR-0022); создание брони остаётся публичным
-  if (rest === 'bookings') {
-    return method === 'GET'
-  }
-  if (rest === 'blocks' || rest.startsWith('blocks/')) {
-    return true
-  }
-  if (rest === 'event-types') {
-    return method !== 'GET'
-  }
-  if (rest.startsWith('event-types/')) {
-    return true
-  }
-
-  return false
-}
-
-// Basic-auth: имя пользователя любое, пароль сверяется с ADMIN_PASSWORD.
-const isAuthorizedAdmin = (authorization: string | undefined, password: string): boolean => {
-  if (!authorization?.startsWith('Basic ')) {
-    return false
-  }
-
-  const decoded = Buffer.from(authorization.slice('Basic '.length), 'base64').toString('utf8')
-  const separator = decoded.indexOf(':')
-
-  if (separator === -1) {
-    return false
-  }
-
-  const provided = Buffer.from(decoded.slice(separator + 1))
-  const expected = Buffer.from(password)
-
-  return provided.length === expected.length && timingSafeEqual(provided, expected)
-}
-
 // Фабрика приложения: тесты создают изолированный инстанс без listen()
 export async function buildApp(): Promise<FastifyInstance> {
   // В тестах логи fastify не нужны (vitest выставляет NODE_ENV=test)
@@ -198,20 +128,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     errorResponseBuilder: rateLimitErrorResponse,
   })
 
-  // Гейт панели организатора. Без ADMIN_PASSWORD доступ открыт (локальный dev,
-  // тесты, e2e); в продакшене пароль задаётся переменной окружения.
-  app.addHook('onRequest', async (request, reply) => {
-    const password = env.ADMIN_PASSWORD
-
-    if (!password || !requiresAdminAuth(request.method, request.url)) {
-      return
-    }
-
-    if (!isAuthorizedAdmin(request.headers.authorization, password)) {
-      reply.header('WWW-Authenticate', 'Basic realm="admin"')
-      return reply.code(401).send({ error: 'Требуется авторизация' })
-    }
-  })
+  // Панель организатора и административные API доступны без логина: в проекте
+  // один заранее заданный владелец, авторизация по спецификации курса не нужна
+  // (ADR-0028). Гейт Basic-auth (ADR-0017/0022) удалён.
 
   // Ленивая проверка напоминаний (ADR-0026): дёшево и с троттлингом,
   // в тестах выключена, чтобы фоновые отправки не примешивались к мокам fetch.

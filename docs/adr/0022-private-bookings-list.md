@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed — 2026-09-25; Accepted — 2026-09-28 (ветка `feat/redesign-v2-mint`).
+Proposed — 2026-09-25; Accepted — 2026-09-28 (ветка `feat/redesign-v2-mint`). Пункт 1 заменён — 2026-09-29: гейт Basic-auth снят, `GET /api/v1/hosts/:slug/bookings` снова открыт (см. [ADR-0028](0028-dashboard-access-without-login.md)). Пункты 2–4 (редирект `/events`, снятие вкладки из меню, поведение без `ADMIN_PASSWORD`) остаются в силе.
 
 ## Context
 
