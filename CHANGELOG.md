@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.24.0...v1.24.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **availability:** stop cancelled bookings from pinning off-grid slots ([#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97)) ([3733379](https://github.com/frostiks777/ai-for-developers-project-386/commit/3733379c69d476daad2445d0b19963a847edbad9))
+
 ## [1.24.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.23.2...v1.24.0) (2026-09-29)
 
 
