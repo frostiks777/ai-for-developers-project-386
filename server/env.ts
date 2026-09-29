@@ -90,6 +90,53 @@ const envSchema = z.object({
   RATE_LIMIT_BOOKING_MAX: z.coerce.number().int().positive().default(20),
   RATE_LIMIT_READ_MAX: z.coerce.number().int().positive().default(300),
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(600),
+  // Email-уведомления (ADR-0026). Отправка включена, когда задан EMAIL_API_KEY
+  // (Brevo HTTP API). Пусто → письма не отправляются (no-op): dev, npm test и
+  // e2e в CI не зависят от внешнего сервиса. На Render SMTP заблокирован,
+  // поэтому используется только HTTP API.
+  EMAIL_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  // Отправитель в формате "Имя <email@example.com>"; email верифицируется в Brevo.
+  EMAIL_FROM: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  // Reply-To — почта организатора, на неё гость может ответить.
+  EMAIL_REPLY_TO: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  // Получатель писем организатору (новая бронь, отмена). Пусто — не шлём.
+  ORGANIZER_EMAIL: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  // Напоминание за N минут до встречи (по умолчанию 24 ч).
+  REMINDER_LEAD_MINUTES: z.coerce.number().int().positive().default(1440),
+  // Секрет внешнего cron-endpoint /api/internal/reminders; не задан — endpoint выключен.
+  REMINDERS_SECRET: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  // Базовый origin для абсолютных ссылок в письмах (fallback — RENDER_EXTERNAL_URL).
+  APP_ORIGIN: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
+  // Render подставляет это значение сам — используем как fallback для ссылок в письмах.
+  RENDER_EXTERNAL_URL: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
 })
 
 export const env = envSchema.parse(process.env)
