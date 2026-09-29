@@ -127,7 +127,7 @@ curl.exe -i -X POST https://calendar-slots-app.onrender.com/api/internal/reminde
    - **Title**: `Calendar reminders`;
    - **URL**: `https://calendar-slots-app.onrender.com/api/internal/reminders`;
    - **Schedule**: every **10 minutes** (предустановка «Every 10 minutes»);
-   - **Request method**: `POST`;
+   - **Request method**: `POST` (тело запроса можно оставить пустым — endpoint принимает любой `Content-Type`);
    - включите **Advanced** → **Custom headers** → добавьте заголовок
      `X-Reminders-Secret` = значение из Render (шаг 4);
    - по желанию: **Notify on failure** (email при падении).
@@ -153,6 +153,7 @@ curl.exe -i -X POST https://calendar-slots-app.onrender.com/api/internal/reminde
 | Письма уходят только на свой адрес | Использован `onboarding@…`-подобный песочный отправитель — нужен свой подтверждённый sender |
 | `/api/internal/reminders` → `404` | `REMINDERS_SECRET` не задан в Render (endpoint выключен) |
 | `/api/internal/reminders` → `401` | В заголовке cron `X-Reminders-Secret` другое значение, чем в Render |
+| cron получает `415 Unsupported Media Type` | Старый деплой принимал только `json`/`text`. Обнови стенд (фикс [#86](https://github.com/frostiks777/ai-for-developers-project-386/issues/86)): endpoint теперь принимает любой `Content-Type` и пустое тело |
 | Письма в «Спаме» | Нет домена и SPF/DKIM/DMARC (см. шаг 2); попросите получателей отметить «Не спам» |
 | Превышение лимита | Free-план Brevo — 300 писем/день. Напоминания + подтверждения при демо-нагрузке укладываются |
 
