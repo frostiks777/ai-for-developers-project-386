@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-29 (вечер: разбор ревью — issues #88–#93; закрыты #90, #91, #93; открыты #88, #89, #92. Ранее в этот же день — email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md)).
+> Дата последнего обновления: 2026-09-29 (вечер: разбор ревью — issues #88–#93; закрыты #90, #91, #92, #93; открыты #88, #89. Ранее в этот же день — email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md)).
 > Все шаги курса закрыты. Продуктовый backlog — `docs/todo.md` («Backlog продукта»): уведомления ✅, далее регистрация/аккаунты, интеграции с календарями, повторяющиеся события, аналитика.
 > **Открытые issues (ревью проверяющего, 2026-09-29):** [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88) — панель организатора под Basic-auth, нужен доступ без логина (пересмотр [ADR-0017](docs/adr/0017-dashboard-basic-auth.md)); [#89](https://github.com/frostiks777/ai-for-developers-project-386/issues/89) — шаг сетки слотов 40 мин вместо 30 (буфер сдвигает сетку: `server/availability.ts:23,92,300`); [#92](https://github.com/frostiks777/ai-for-developers-project-386/issues/92) — три ранних коммита не по Conventional Commits (нужна перезапись истории / апрув на force-push).
 
@@ -416,7 +416,7 @@
   - [#91](https://github.com/frostiks777/ai-for-developers-project-386/issues/91) (npm audit) — ✅ закрыто: `npm audit fix` (без `--force`) обновил транзитивный `@scalar/json-magic` → находки по `undici` ушли (7 → 5: 1 high, 4 moderate). Остались `@fastify/static` (high, фикс только мажорный 10.1.5) и `esbuild` через `drizzle-kit` (moderate, только dev-CLI, в проде не используется) — решение: не обновлять сейчас, обоснование в issue.
   - [#89](https://github.com/frostiks777/ai-for-developers-project-386/issues/89) — **открыто**: горизонт 30 дней был значением в БД (в коде дефолт 14), часть снята; остаётся сетка — дефолт `bufferAfterMin: 10` (`server/availability.ts:23`) и `stepMin = slot + буферы` (`:92,:300`) дают шаг 40 мин; буферы не должны менять обязательный шаг.
   - [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88) — **открыто**: панель организатора под Basic-auth, по условиям курса нужен доступ без логина (пересмотр ADR-0017).
-  - [#92](https://github.com/frostiks777/ai-for-developers-project-386/issues/92) — **открыто**: три ранних коммита (`bf8fdbc`, `ea6f9c9`, `5fa261c`) не по Conventional Commits; требует перезаписи истории + force-push → ждёт апрува владельца.
+  - [#92](https://github.com/frostiks777/ai-for-developers-project-386/issues/92) — ✅ закрыто (по апруву владельца): три ранних коммита переписаны в Conventional Commits через `filter-branch --msg-filter` + `--force-with-lease` push в `main`; содержимое не менялось, новый HEAD `ba6756e`, CI/hexlet-check/Release Please — success.
 
 ## Ключевые решения
 
