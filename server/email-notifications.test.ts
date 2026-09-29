@@ -221,6 +221,20 @@ describe('напоминания (ADR-0026)', () => {
     expect(typeof response.json<{ sent: number }>().sent).toBe('number')
   })
 
+  it('принимает произвольный Content-Type от внешнего cron', async () => {
+    env.REMINDERS_SECRET = 'top-secret'
+
+    for (const contentType of ['application/x-www-form-urlencoded', 'text/plain']) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/internal/reminders',
+        headers: { 'x-reminders-secret': 'top-secret', 'content-type': contentType },
+      })
+
+      expect(response.statusCode).toBe(200)
+    }
+  })
+
   it('без REMINDERS_SECRET endpoint выключен', async () => {
     env.REMINDERS_SECRET = undefined
 
