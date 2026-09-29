@@ -66,10 +66,12 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   ├── spec.md         # Утверждённая спека (снимок Шага 2 курса)
 │   ├── course-steps.md # Шаги курса и критерии приёмки
 │   ├── model-usage.md
+│   ├── email-setup-brevo.md # Настройка email-уведомлений: Brevo + Render + cron-job.org
 │   ├── Структура проекта.md
 │   └── Каркас приложения.md
 ├── docs/adr/          # Architecture Decision Records (ADR-0001, …)
 ├── docs/agents/       # Конфиг скиллов: issue-tracker / triage-labels / domain
+├── docs/research/     # Исследования (email-notifications.md)
 ├── docs/design/       # Дизайн-пакеты: v1 (история) и v2 «Мята и солнце» (текущий)
 ├── docs/openapi/      # Сгенерированный openapi.yaml
 ├── docs/artefacts/    # Скриншоты и отчёты аудитов
@@ -141,6 +143,8 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - `ci_cd_render.md` — руководство по бесплатному деплою на Render.com + Neon
 - `adr/` — Architecture Decision Records (см. `docs/adr/README.md`)
 - `mcp.md` — подключённые MCP-серверы и правила работы с ними
+- `email-setup-brevo.md` — настройка email-уведомлений: Brevo + Render + cron-job.org
+- `research/` — исследования (email-notifications.md)
 - `design/v2/` — текущий дизайн-пакет («Мята и солнце») и план внедрения
 
 При внесении изменений — сверяться с документацией в `docs/`. При принятии архитектурного решения — добавить ADR (шаблон в `docs/adr/template.md`).
