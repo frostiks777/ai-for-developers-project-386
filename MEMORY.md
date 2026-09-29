@@ -1,7 +1,7 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
 > Дата последнего обновления: 2026-09-29 (фикс [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): «Перенести» у прошедших встреч скрыт в `/my`; фикс [#79](https://github.com/frostiks777/ai-for-developers-project-386/issues/79): тайм-бомба теста `TwoWeekGrid`; [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) верифицирован и закрыт; `AGENTS.md`: уведомление в Telegram на старте задачи — обязательно).
-> Все шаги курса закрыты. Открытых issues нет (2026-09-29 закрыты #76, #46, #79).
+> Все шаги курса закрыты. Открытых issues нет (2026-09-29 закрыты #76, #46, #79, #81, #82). Продуктовый backlog — в `docs/todo.md`, раздел «Backlog продукта (сверх курса)».
 
 > **Актуальный стек:** PostgreSQL (Neon) + Drizzle ORM (`pg`), PGlite в тестах и локальном dev без `DATABASE_URL`; миграции — идемпотентный `server/db/migrate.ts` при старте сервера; контракт — TypeSpec `api/main.tsp` → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); фронт ходит в API через `src/api/sdk.ts` (ручной `src/api/client.ts` удалён на Шаге 3, T7).
 > Упоминания SQLite, `DATABASE_PATH`, `better-sqlite3`, `server/data/app.db` ниже — **история** до [ADR-0013](docs/adr/0013-postgres-migration.md) (2026-09-24).
@@ -375,13 +375,20 @@
     - **`AGENTS.md`:** старт работы над задачей — обязательное уведомление в Telegram-чат (тост — по-прежнему только блокер/релиз).
     - **Решения пользователя:** `ADMIN_PASSWORD` в Render не менять; TLS-проверку БД не трогать (`docs/todo.md`, «Актуальный план»).
     - Проверки: lint 0, typecheck чисто, **303/303 тестов** (51 файл), build ✓.
+75. ✅ **Техдолг и продуктовый backlog (2026-09-29):**
+    - [#81](https://github.com/frostiks777/ai-for-developers-project-386/issues/81) — code-split бандла: `vite.config.ts` → `build.rollupOptions.output.manualChunks` (`vendor-react` 143 kB, `vendor` 157 kB, `vendor-zod` 87 kB, `vendor-router` 39 kB, app `index` 156 kB); warning «чанк >500 kB» исчез.
+    - [#82](https://github.com/frostiks777/ai-for-developers-project-386/issues/82) — e2e `e2e/manage-booking.spec.ts`: гостевой перенос и отмена по ссылке управления; 3/3 локально и в CI.
+    - `docs/todo.md`: сняты стухшие чекбоксы (#76, приёмка v2), добавлен раздел «Backlog продукта (сверх курса)»: сделаны расписание/буферы/таймзоны/перенос-отмена; осталось — аккаунты, интеграции с внешними календарями, уведомления, повторяющиеся события, аналитика (предложенный порядок захода в файле).
+    - `pg` v9 не выпущен (latest 8.23.0) — перепроверка SSL-режима отложена до релиза v9.
+    - Проверки: lint 0, typecheck чисто, **303/303 тестов** (51 файл), build ✓, e2e 3/3.
 
 ## Что осталось (следующие шаги)
 
 - [x] **#49 — мобильная вёрстка** (P1, bug): повторный аудит после v2 — 56 проверок (14 экранов × 2 ширины × 2 темы), 0 overflow/наложений после двух правок панели. Закрыт 2026-09-28.
 - [x] **#46 — CAPTCHA** (enhancement): Cloudflare Turnstile + rate-limit по IP, [ADR-0025](docs/adr/0025-captcha-and-rate-limit.md).
 - [x] **SSL-режим `pg`** (мелкое, закрыто 2026-09-28): `pg-connection-string@2.14.0` печатает предупреждение только из-за `sslmode=require`. Проверено живым соединением: `require`/`verify-full`/`prefer` дают **тот же** конфиг `ssl: {}`, а сервер TLS требует (без `sslmode` → `28000 connection is insecure`); `uselibpqcompat=true&require` отклонён (даёт `rejectUnauthorized: false`). **Ручная правка строки не нужна** — её формируют Neon/Render: режим нормализуется в `server/env.ts: normalizeSslMode` (меняется только значение параметра, без пересборки URL, чтобы не перекодировать пароль). 7 тестов — `server/env.test.ts`. Перепроверить после апгрейда `pg` до v9.
-- [ ] **Визуальная приёмка v2** (человек): `docs/design/v2/screenshots/` vs реализация, отличия — в «Отклонения».
+- [x] **Визуальная приёмка v2** (человек): пройдена 2026-09-28, расхождений нет.
+- [ ] **Продуктовый backlog (сверх курса)** — см. `docs/todo.md`, «Backlog продукта»: уведомления (email) → регистрация/аккаунты → интеграции с внешними календарями → повторяющиеся события → аналитика.
 
 - [x] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
 - [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным. CI + hexlet-check на `main` — success (коммит `807d4e0`).
