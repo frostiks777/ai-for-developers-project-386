@@ -61,3 +61,4 @@
 | [0026](0026-email-notifications.md) | Email-уведомления (Brevo HTTP API, ленивые напоминания) | Accepted | 2026-09-29 |
 | [0027](0027-slot-grid-step-independent-of-buffers.md) | Шаг сетки слотов не зависит от буферов; буферы — фильтр занятости | Accepted | 2026-09-29 |
 | [0028](0028-dashboard-access-without-login.md) | Доступ к панели организатора без логина | Accepted | 2026-09-29 |
+| [0029](0029-audit-fastify-static-upgrade-deferred.md) | Аудит зависимостей: обновление `@fastify/static` до 10.x отложено | Accepted | 2026-09-29 |
