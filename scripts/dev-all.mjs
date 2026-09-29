@@ -1,12 +1,45 @@
 import { spawn } from 'node:child_process'
+import { createServer } from 'node:net'
 
 // Поднимаем API первым и ждём /health, иначе Vite стартует раньше и первые
 // запросы браузера падают с http proxy error: ECONNREFUSED 127.0.0.1:3000.
-const API_HEALTH = 'http://127.0.0.1:3000/health'
+const API_PORT = 3000
+const WEB_PORT = 5173
+const API_HEALTH = `http://127.0.0.1:${API_PORT}/health`
 const API_WAIT_MS = 30_000
 
 const reset = '\x1b[0m'
 const children = []
+
+// Порт занят другим процессом → слушаем его и получаем EADDRINUSE.
+function isPortBusy(port) {
+  return new Promise((resolve) => {
+    const server = createServer()
+    server.once('error', () => resolve(true))
+    server.once('listening', () => server.close(() => resolve(false)))
+    server.listen({ port, host: '0.0.0.0' })
+  })
+}
+
+const ports = [
+  { name: 'API', port: API_PORT },
+  { name: 'Vite', port: WEB_PORT },
+]
+const busy = []
+
+for (const { name, port } of ports) {
+  if (await isPortBusy(port)) {
+    busy.push(`${name} :${port}`)
+  }
+}
+
+if (busy.length > 0) {
+  console.log(`Порты заняты: ${busy.join(', ')}.`)
+  console.log('Освободи их и запусти снова. Как найти процесс:')
+  console.log(`  Windows:      netstat -ano | findstr :${API_PORT}   →   taskkill /PID <pid> /F`)
+  console.log(`  Linux/macOS:  lsof -i :${API_PORT}`)
+  process.exit(1)
+}
 
 function log(name, color, data) {
   for (const line of String(data).split(/\r?\n/)) {
