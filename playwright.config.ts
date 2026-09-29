@@ -10,15 +10,15 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:3100',
+    baseURL: 'http://127.0.0.1:3210',
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: 'npm run build && npm start',
-    url: 'http://127.0.0.1:3100/health',
+    url: 'http://127.0.0.1:3210/health',
     env: {
-      PORT: '3100',
+      PORT: '3210',
       DATABASE_URL: '',
       NODE_ENV: 'test',
       // CAPTCHA выключена в e2e (ADR-0025): иначе виджет Cloudflare
@@ -27,6 +27,9 @@ export default defineConfig({
       // 1x00000000000000000000AA / 1x0000000000000000000000000000000AA.
       TURNSTILE_SITEKEY: '',
       TURNSTILE_SECRET_KEY: '',
+      // Email-уведомления выключены в e2e (ADR-0026): без ключа отправка — no-op.
+      EMAIL_API_KEY: '',
+      REMINDERS_SECRET: '',
     },
     reuseExistingServer: false,
     timeout: 180_000,
