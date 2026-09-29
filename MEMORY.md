@@ -1,7 +1,7 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-28 (защита публичной записи: Cloudflare Turnstile + rate-limit по IP — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46), [ADR-0025](docs/adr/0025-captcha-and-rate-limit.md); синхронизация документации с кодом — [#72](https://github.com/frostiks777/ai-for-developers-project-386/issues/72); редизайн v2 «Мята и солнце» принят — [ADR-0022](docs/adr/0022-private-bookings-list.md), [ADR-0023](docs/adr/0023-redesign-v2-mint.md), [ADR-0024](docs/adr/0024-slots-in-host-timezone.md)).
-> Все шаги курса закрыты. Открытые задачи: [#49](https://github.com/frostiks777/ai-for-developers-project-386/issues/49) (bug, P1 — мобильная вёрстка), [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76) (bug — превью недели растянуто, ждут: суббота в переносе, «Перенести» у прошедших встреч), мелкий пункт SSL-режима `pg` (см. `docs/todo.md`, «Актуальный план»).
+> Дата последнего обновления: 2026-09-29 (фикс [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): «Перенести» у прошедших встреч скрыт в `/my`; фикс [#79](https://github.com/frostiks777/ai-for-developers-project-386/issues/79): тайм-бомба теста `TwoWeekGrid`; [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) верифицирован и закрыт; `AGENTS.md`: уведомление в Telegram на старте задачи — обязательно).
+> Все шаги курса закрыты. Открытых issues нет (2026-09-29 закрыты #76, #46, #79).
 
 > **Актуальный стек:** PostgreSQL (Neon) + Drizzle ORM (`pg`), PGlite в тестах и локальном dev без `DATABASE_URL`; миграции — идемпотентный `server/db/migrate.ts` при старте сервера; контракт — TypeSpec `api/main.tsp` → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); фронт ходит в API через `src/api/sdk.ts` (ручной `src/api/client.ts` удалён на Шаге 3, T7).
 > Упоминания SQLite, `DATABASE_PATH`, `better-sqlite3`, `server/data/app.db` ниже — **история** до [ADR-0013](docs/adr/0013-postgres-migration.md) (2026-09-24).
@@ -368,6 +368,13 @@
     - `blocks-editor.tsx`: описание и кнопка «Заблокировать время» в столбик на мобильном (`sm:flex-row` на десктопе) — текст больше не сжимается в колонку из 2–3 слов.
     - Регресс-тесты: `availability-settings-form.test.tsx` (+1), `blocks-editor.test.tsx` (+1). Артефакты: `docs/artefacts/mobile-audit-v2/` (report.json + скриншоты 360 px + контроль 1280×820).
     - Проверки: lint 0, typecheck чисто, **274/274 тестов** (47 файлов), build ✓.
+74. ✅ **Фиксы и гигиена (2026-09-29):**
+    - **#76, пункт 3 — «Перенести» у прошедших встреч.** Кнопки переноса в панели нет вообще (`bookings-list.tsx` умеет только «Скопировать текст об отмене» и «Отменить»); место с багом — гостевая страница `/my`, `src/pages/my-bookings-page.tsx:83`. Теперь «Перенести» и «Отменить» рендерятся под `!isPast`, «Убрать» остаётся; тест `my-bookings-page.test.tsx` обновлён (было «оставляет перенос» — стало «скрывает перенос и отмену»). Суббота в переносе разобрана ранее (в правилах хоста были включены выходные; превью недели исправлено `885a073`).
+    - **#79 — тайм-бомба теста `TwoWeekGrid`.** `src/components/two-week-grid.test.tsx` был захардкожен на `2026-09-28`; 29-го дата стала прошедшей (`isPast` в `two-week-grid.tsx:75`) → `10 окон` превращалось в `28—`. Дата понедельника (и субботы) теперь вычисляется от `new Date()`.
+    - **#46 — верификация CAPTCHA:** ADR-0025 Accepted, `server/captcha.test.ts` + `server/rate-limit.test.ts` — 16/16 зелёные, `TURNSTILE_*` в проде заданы (подтверждено пользователем); issue закрыт.
+    - **`AGENTS.md`:** старт работы над задачей — обязательное уведомление в Telegram-чат (тост — по-прежнему только блокер/релиз).
+    - **Решения пользователя:** `ADMIN_PASSWORD` в Render не менять; TLS-проверку БД не трогать (`docs/todo.md`, «Актуальный план»).
+    - Проверки: lint 0, typecheck чисто, **303/303 тестов** (51 файл), build ✓.
 
 ## Что осталось (следующие шаги)
 

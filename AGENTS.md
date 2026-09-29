@@ -233,6 +233,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/notify.ps1 "За
 
 Правила:
 - **Не слать на каждый шаг** и не слать просто так — только случаи 1 и 2 выше.
+- **Старт работы над задачей** тостом не уведомляется — для него есть обязательное уведомление в Telegram-чат (см. «Telegram-мост»).
 - Текст — короткий, по-русски, без секретов.
 - Скрипт использует WinRT-тип `Windows.UI.Notifications` — его видит только `powershell.exe` (5.1); `pwsh` 7 без projection падает с «Unable to find type».
 
@@ -245,4 +246,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/notify.ps1 "За
 - Команды с телефона: `/ping`, `/status`, `/approve <id>`, `/deny <id>` (меню регистрируется через `node telegram-bot/setup-menu.mjs`).
 - Свободные вопросы пользователя из TG: `node telegram-bot/unread.mjs` (что без ответа) → ответить в чате → продублировать через `node telegram-bot/reply.mjs "текст"`.
 - Автозапуск: `.opencode/plugins/telegram-autostart.js` поднимает `bot.mjs` и шлёт уведомления по событиям сессии (`session.idle` — «Агент закончил», `session.error` — «Ошибка сессии»). Тумблер в `.env`: `TELEGRAM_NOTIFY=on|off` (по умолчанию `off`). Антиспам: не чаще раза в минуту на тип события.
-- Те же 2 случая, что и у тоста: блокер/решение и успешный релиз. Секреты в чат не слать.
+- **Обязательные случаи:** (1) **старт работы над задачей** — короткое «Начинаю работу: <задача, #issue>» перед первым действием по задаче; (2) блокер/решение; (3) успешный релиз. Секреты в чат не слать.
