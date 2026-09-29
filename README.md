@@ -87,6 +87,13 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `RATE_LIMIT_BOOKING_MAX` | `20` | лимит записей/отмен/переносов на IP за минуту |
 | `RATE_LIMIT_READ_MAX` | `300` | лимит публичных чтений на IP за минуту |
 | `RATE_LIMIT_GLOBAL_MAX` | `600` | общий предохранитель на IP за минуту |
+| `EMAIL_API_KEY` | — | ключ Brevo HTTP API. **Пока не задан — письма не отправляются** (no-op) |
+| `EMAIL_FROM` | — | отправитель, формат `Имя <email@example.com>`; email верифицируется в Brevo |
+| `EMAIL_REPLY_TO` | — | Reply-To (почта организатора) |
+| `ORGANIZER_EMAIL` | — | получатель писем организатору (новая бронь/отмена); пусто — не шлём |
+| `REMINDER_LEAD_MINUTES` | `1440` | за сколько минут до встречи напоминать |
+| `REMINDERS_SECRET` | — | секрет endpoint `/api/internal/reminders`; пусто — endpoint выключен |
+| `APP_ORIGIN` | — | базовый origin для ссылок в письмах; пусто → `RENDER_EXTERNAL_URL` |
 
 Пример — [`.env.example`](.env.example). При первом старте создаются слоты на 14 дней вперёд по правилам хоста: будни 10:00–18:00, слот 30 мин, буферы до/после встречи, бронь не позднее чем за 2 часа до начала ([ADR-0004](docs/adr/0004-slot-generation-rules.md)). Слоты генерируются в часовом поясе хоста ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)), в интерфейсе их можно переключить на любой IANA-пояс.
 
@@ -126,6 +133,26 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 откатом на `request.ip`. Поэтому `trustProxy: true` в `server/app.ts` обязателен — без него адрес
 прокси станет ключом для всех сразу и лимит превратится в глобальный.
 
+## Уведомления по email
+
+Письма гостю (подтверждение, перенос, отмена, напоминание за 24 часа) и организатору (новая бронь,
+отмена) отправляются через **Brevo HTTP API** ([ADR-0026](docs/adr/0026-email-notifications.md)); на
+бесплатном плане — 300 писем/день, без карты. SMTP не используется: Render Free блокирует порты
+25/465/587, а Brevo требует верифицировать хотя бы один sender-email (свой домен не обязателен) —
+выбор и сравнение провайдеров в [`docs/research/email-notifications.md`](docs/research/email-notifications.md).
+
+- **Единый переключатель:** пока не задан `EMAIL_API_KEY`, отправка — no-op; локальный dev, `npm test`
+  и e2e в CI не ходят в сеть. В production без ключа приложение пишет предупреждение в лог.
+- **В Render:** Environment → `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ORGANIZER_EMAIL` →
+  Save & Deploy. Ключ берётся в Brevo: SMTP & API → API Keys; sender верифицируется в Senders.
+- **Напоминания** не планируются in-process (сервис спит через 15 минут): ленивая проверка due-писем
+  при старте и входящих запросах (`reminderSentAt` защищает от дублей). Для точности подключите
+  бесплатный внешний cron (например, [cron-job.org](https://cron-job.org)): `POST
+  {APP_ORIGIN}/api/internal/reminders` каждые 15 минут с заголовком `X-Reminders-Secret:
+  <REMINDERS_SECRET>`. Пока `REMINDERS_SECRET` не задан, endpoint отвечает `404`.
+- **Антиспам:** отправка только транзакционных писем opted-in получателям, `Reply-To` организатора,
+  rate-limit/backoff; для лучшей доставляемости стоит добавить домен и SPF/DKIM/DMARC.
+
 ## API
 
 Контракт задан в `api/main.tsp` (TypeSpec) и сгенерирован в `docs/openapi/openapi.yaml`; ниже — фактические маршруты `server/app.ts`. Столбец **auth** — `admin` означает HTTP Basic Auth (см. [«Доступ организатора»](#доступ-организатора-пароль)).
@@ -143,7 +170,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `POST` | `/api/v1/hosts/:slug/bookings` | создать бронь (`Idempotency-Key` поддерживается) |
 | `GET` | `/api/v1/bookings/:bookingId` | бронь по id (страница управления встречей) |
 | `POST` | `/api/v1/bookings/:bookingId/cancel` | отмена: `{ reason? }` |
-| `POST` | `/api/v1/bookings/:bookingId/reschedule` | перенос: `{ slotId }` |
+| `POST` | `/api/v1/bookings/:bookingId/reschedule` | перенос: `{ startAt }` |
 
 Административные (`ADMIN_PASSWORD`):
 
@@ -159,6 +186,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `DELETE` | `/api/bookings/:id` | легаси-отмена брони |
 | `POST` | `/api/bookings/cancel`, `POST /api/bookings/reschedule`, `GET /api/bookings/by-token/:token` | управление по capability-токену (открыты) |
 | `PUT` | `/api/availability` | легаси-обновление правил |
+| `POST` | `/api/internal/reminders` | служебный запуск due-напоминаний; закрыт `X-Reminders-Secret` (`404`, если `REMINDERS_SECRET` не задан) |
 
 Примеры:
 
@@ -218,7 +246,7 @@ npm run api:generate   # tsp compile api/main.tsp → docs/openapi/openapi.yaml 
 
 ```
 src/       фронтенд: pages, components (в т.ч. ui/), hooks, utils, api (SDK + mappers), lib (zod)
-server/    Fastify: app.ts (фабрика и роуты), bookings-v1.ts, hosts.ts, event-types.ts, time-blocks.ts, db/ (Drizzle pg-core + миграции)
+server/    Fastify: app.ts (фабрика и роуты), bookings-v1.ts, hosts.ts, event-types.ts, time-blocks.ts, email.ts + email-templates.ts + notifications.ts + reminders.ts, db/ (Drizzle pg-core + миграции)
 api/       TypeSpec-контракт API v1
 e2e/       сценарии Playwright
 docs/      архитектура, конвенции, ADR, спека, дизайн-пакеты, план

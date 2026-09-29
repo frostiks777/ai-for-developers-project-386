@@ -1,7 +1,7 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-29 (фикс [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): «Перенести» у прошедших встреч скрыт в `/my`; фикс [#79](https://github.com/frostiks777/ai-for-developers-project-386/issues/79): тайм-бомба теста `TwoWeekGrid`; [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) верифицирован и закрыт; `AGENTS.md`: уведомление в Telegram на старте задачи — обязательно).
-> Все шаги курса закрыты. Открытых issues нет (2026-09-29 закрыты #76, #46, #79, #81, #82). Продуктовый backlog — в `docs/todo.md`, раздел «Backlog продукта (сверх курса)».
+> Дата последнего обновления: 2026-09-29 (email-уведомления: Brevo HTTP API + ленивые напоминания — [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md); ранее в этот же день — фиксы #76/#79, верификация #46, техдолг #81/#82).
+> Все шаги курса закрыты. Открытых issues нет. Продуктовый backlog — `docs/todo.md` («Backlog продукта»): уведомления ✅, далее регистрация/аккаунты, интеграции с календарями, повторяющиеся события, аналитика.
 
 > **Актуальный стек:** PostgreSQL (Neon) + Drizzle ORM (`pg`), PGlite в тестах и локальном dev без `DATABASE_URL`; миграции — идемпотентный `server/db/migrate.ts` при старте сервера; контракт — TypeSpec `api/main.tsp` → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); фронт ходит в API через `src/api/sdk.ts` (ручной `src/api/client.ts` удалён на Шаге 3, T7).
 > Упоминания SQLite, `DATABASE_PATH`, `better-sqlite3`, `server/data/app.db` ниже — **история** до [ADR-0013](docs/adr/0013-postgres-migration.md) (2026-09-24).
@@ -141,13 +141,13 @@
 
 ## Результаты проверок
 
-> Актуальный прогон — 2026-09-28. Блок ниже в комментарии `// 2026-09-25 (эпоха SQLite)` — история.
+> Актуальный прогон — 2026-09-29. Блок ниже в комментарии `// 2026-09-25 (эпоха SQLite)` — история.
 
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 272/272 passed (47 файлов: фронтенд RTL + server/*), PGlite в памяти
-✅ e2e: playwright — 2/2 (сквозной сценарий гостя + конфликт слотов), собранное приложение на :3100
+✅ test: 323/323 passed (54 файла: фронтенд RTL + server/*), PGlite в памяти
+✅ e2e: playwright — 3/3 (бронь гостя, конфликт слотов, перенос/отмена), собранное приложение на :3210
 ```
 
 Исторический прогон 2026-09-25 (до миграции на PostgreSQL, см. [ADR-0013](docs/adr/0013-postgres-migration.md)):
@@ -381,6 +381,12 @@
     - `docs/todo.md`: сняты стухшие чекбоксы (#76, приёмка v2), добавлен раздел «Backlog продукта (сверх курса)»: сделаны расписание/буферы/таймзоны/перенос-отмена; осталось — аккаунты, интеграции с внешними календарями, уведомления, повторяющиеся события, аналитика (предложенный порядок захода в файле).
     - `pg` v9 не выпущен (latest 8.23.0) — перепроверка SSL-режима отложена до релиза v9.
     - Проверки: lint 0, typecheck чисто, **303/303 тестов** (51 файл), build ✓, e2e 3/3.
+76. ✅ **Email-уведомления** (2026-09-29) — [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md), исследование — [`docs/research/email-notifications.md`](docs/research/email-notifications.md):
+    - Провайдер — **Brevo HTTP API** (free 300/день, свой домен не нужен; SMTP на Render Free заблокирован, Render Cron платный). Включение по `EMAIL_API_KEY`: без ключа отправка — no-op, тесты/CI/e2e без сети. Env: `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ORGANIZER_EMAIL`, `REMINDER_LEAD_MINUTES`, `REMINDERS_SECRET`, `APP_ORIGIN`.
+    - Модули: `server/email.ts` (Brevo-транспорт, `appOrigin`), `server/email-templates.ts` (text+html, экранирование), `server/notifications.ts` (письма по событиям брони — гость и организатор), `server/reminders.ts` (идемпотентные due-напоминания за 24 ч + `POST /api/internal/reminders` под `X-Reminders-Secret`).
+    - Схема: `bookings.reminderSentAt` + идемпотентная миграция. Планировщик: проверка при старте + ленивая в `onRequest` (в тестах выключена) + внешний cron-job.org.
+    - Тесты: `email.test.ts` (5), `email-templates.test.ts` (8), `email-notifications.test.ts` (7). Попутно: e2e-порт 3100→3210 (конфликт с чужим dev-сервером), `scripts/dev-all.mjs` падает с подсказкой при занятых портах, README/env-таблица/AGENTS/architecture синхронизированы.
+    - Проверки: lint 0, typecheck чисто, **323/323 тестов** (54 файла), build ✓, e2e 3/3.
 
 ## Что осталось (следующие шаги)
 
@@ -459,6 +465,7 @@
 | Активный организатор | `HostProvider` + `useActiveHost`; `activeSlug` в `localStorage` (`call-calendar-active-host`), фолбэк — первый хост; весь фронт на активном хосте; `GET /api/v1/hosts` публичный, `POST` — Basic-auth | [ADR-0021](docs/adr/0021-active-host-and-hosts-ui.md); UI управления хостами (селектор + секция «Организаторы» + `/admin/hosts`) |
 | Отмена без ссылки | «Мои встречи» на устройстве: бронь в `localStorage`, страница `/my` с отменой/переносом | [ADR-0019](docs/adr/0019-my-bookings-on-device.md); capability-токен не утекает, нет перечисления по email; ограничение — только тот же браузер |
 | Защита публичной записи | Cloudflare Turnstile (Free), **включается фактом `TURNSTILE_SECRET_KEY`**; `server/captcha.ts` fail-closed; проверка в `POST .../bookings` после zod и **после** реплея по `Idempotency-Key`; site key отдаёт `GET /hosts/:slug/settings` (`captcha: CaptchaSettings`); rate-limit `@fastify/rate-limit` in-memory (20/мин запись, 300/мин чтения), ключ — `CF-Connecting-IP` → `request.ip` | [ADR-0025](docs/adr/0025-captcha-and-rate-limit.md); [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46); dev/CI/e2e не зависят от внешнего сервиса; `trustProxy: true` обязателен, иначе IP у всех одинаковый и лимит глобальный |
+| Email-уведомления | **Brevo HTTP API** (free 300/день, без своего домена), включается фактом `EMAIL_API_KEY`; `server/email.ts` + `email-templates.ts` + `notifications.ts`; напоминания — идемпотентная ленивая проверка (`bookings.reminderSentAt`) + внешний cron `POST /api/internal/reminders` под `X-Reminders-Secret` | [ADR-0026](docs/adr/0026-email-notifications.md); [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83); SMTP на Render Free заблокирован, Render Cron платный, домена нет; без ключа — no-op (тесты/CI/e2e без сети) |
 
 ## Окружение
 
