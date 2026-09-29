@@ -4,7 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fastifyStatic from '@fastify/static'
 import rateLimit from '@fastify/rate-limit'
-import { and, eq, gte, or } from 'drizzle-orm'
+import { and, eq, gte, lte, or } from 'drizzle-orm'
 import Fastify, { type FastifyInstance } from 'fastify'
 import { db } from './db'
 import { captchaSiteKey, isCaptchaEnabled, verifyCaptchaToken } from './captcha'
@@ -142,6 +142,19 @@ export async function buildApp(): Promise<FastifyInstance> {
   const minNoticeMs = async (hostId: string) =>
     (await loadAvailabilityRules(hostId)).minNoticeMin * 60 * 1000
 
+  // Окно записи хоста: [now + minNotice, now + horizonDays]. Границы задаются
+  // здесь, а не только материализацией слотов, иначе горизонт держится лишь
+  // тем, что слоты заранее созданы ровно на него (#97).
+  const bookingWindow = async (hostId: string) => {
+    const { minNoticeMin, horizonDays } = await loadAvailabilityRules(hostId)
+    const now = Date.now()
+
+    return {
+      from: new Date(now + minNoticeMin * 60 * 1000).toISOString(),
+      to: new Date(now + horizonDays * 24 * 60 * 60 * 1000).toISOString(),
+    }
+  }
+
   // Интервалы подтверждённых встреч хоста — для отсечения слотов, попавших
   // в буфер до/после занятой встречи (#89).
   const busyIntervals = async (hostId: string) => {
@@ -192,6 +205,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   const selectFutureSlots = async (hostId: string): Promise<TimeSlot[]> => {
     const blocks = await listBlockIntervals(hostId)
     const busy = await busyIntervals(hostId)
+    const window = await bookingWindow(hostId)
 
     const rows = await db
       .select({
@@ -205,7 +219,8 @@ export async function buildApp(): Promise<FastifyInstance> {
       .where(
         and(
           eq(slots.hostId, hostId),
-          gte(slots.startAt, new Date(Date.now() + (await minNoticeMs(hostId))).toISOString()),
+          gte(slots.startAt, window.from),
+          lte(slots.startAt, window.to),
         ),
       )
       .orderBy(slots.startAt)

@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray } from 'drizzle-orm'
+import { and, eq, gte } from 'drizzle-orm'
 
 import {
   defaultAvailabilityRules,
@@ -8,8 +8,8 @@ import {
   type AvailabilitySettings,
 } from './availability'
 import { db } from './db'
-import { availabilityRanges, bookings, slots } from './db/schema'
-import { loadAvailabilityRules, saveAvailabilityRules } from './rules'
+import { availabilityRanges, hosts, slots } from './db/schema'
+import { loadAvailabilityRules, purgeUnpinnedFutureSlots, saveAvailabilityRules } from './rules'
 
 export async function loadAvailabilitySettings(
   hostId: string,
@@ -68,7 +68,8 @@ export async function saveAvailabilitySettings(
   await regenerateFutureSlotsForSettings(hostId, settings)
 }
 
-// Пересобирает будущие слоты хоста под настройки, не трогая занятые слоты
+// Пересобирает будущие слоты хоста под настройки, не трогая занятые слоты.
+// Слот закреплён только брони в статусе confirmed — см. purgeUnpinnedFutureSlots.
 export async function regenerateFutureSlotsForSettings(
   hostId: string,
   settings: AvailabilitySettings,
@@ -76,17 +77,7 @@ export async function regenerateFutureSlotsForSettings(
   const now = new Date()
   const nowIso = now.toISOString()
 
-  const futureSlots = await db
-    .select({ id: slots.id, bookingId: bookings.id })
-    .from(slots)
-    .leftJoin(bookings, eq(bookings.slotId, slots.id))
-    .where(and(eq(slots.hostId, hostId), gte(slots.startAt, nowIso)))
-
-  const freeIds = futureSlots.filter((slot) => slot.bookingId === null).map((slot) => slot.id)
-
-  if (freeIds.length > 0) {
-    await db.delete(slots).where(inArray(slots.id, freeIds))
-  }
+  await purgeUnpinnedFutureSlots(hostId)
 
   const existingStarts = new Set(
     (
@@ -110,4 +101,19 @@ export async function regenerateFutureSlotsForSettings(
       })),
     )
   }
+}
+
+// Приводит слоты всех хостов в соответствие с их настройками при старте сервера.
+// Без этого фикс не доходит до данных, застывших до его появления: регенерация
+// иначе срабатывает только когда организатор руками сохранит доступность (#97).
+export async function regenerateAllHostsSlots(): Promise<number> {
+  const rows = await db.select({ id: hosts.id, timezone: hosts.timezone }).from(hosts)
+
+  for (const host of rows) {
+    const settings = await loadAvailabilitySettings(host.id, host.timezone)
+
+    await regenerateFutureSlotsForSettings(host.id, settings)
+  }
+
+  return rows.length
 }
