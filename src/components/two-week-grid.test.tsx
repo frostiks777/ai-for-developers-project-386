@@ -4,12 +4,29 @@ import userEvent from '@testing-library/user-event'
 import { TwoWeekGrid } from './two-week-grid'
 import type { TimeSlot } from '@/types/booking'
 
-const monday = '2026-09-28'
+function nextMondayUtc(): Date {
+  const now = new Date()
+  const offset = (8 - now.getUTCDay()) % 7
+
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset))
+}
+
+const mondayDate = nextMondayUtc()
+const monday = mondayDate.toISOString().slice(0, 10)
+const saturday = new Date(mondayDate.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
 function buildSlots(count: number): TimeSlot[] {
   return Array.from({ length: count }, (_, index) => ({
     id: index + 1,
-    startAt: new Date(Date.UTC(2026, 8, 28, 10, index * 30)).toISOString(),
+    startAt: new Date(
+      Date.UTC(
+        mondayDate.getUTCFullYear(),
+        mondayDate.getUTCMonth(),
+        mondayDate.getUTCDate(),
+        10,
+        index * 30,
+      ),
+    ).toISOString(),
     durationMin: 30,
     isBooked: false,
   }))
@@ -49,8 +66,8 @@ describe('TwoWeekGrid', () => {
       />,
     )
 
-    const saturday = screen.getByRole('button', { name: '2026-10-03' })
-    expect(saturday).toBeDisabled()
-    expect(saturday).toHaveTextContent('выходной')
+    const saturdayButton = screen.getByRole('button', { name: saturday })
+    expect(saturdayButton).toBeDisabled()
+    expect(saturdayButton).toHaveTextContent('выходной')
   })
 })
