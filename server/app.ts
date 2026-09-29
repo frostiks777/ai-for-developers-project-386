@@ -20,6 +20,13 @@ import {
   findSlotByStartAt,
   rescheduleBookingV1,
 } from './bookings-v1'
+import { isEmailEnabled } from './email'
+import {
+  notifyBookingCancelled,
+  notifyBookingConfirmed,
+  notifyBookingRescheduled,
+} from './notifications'
+import { scheduleLazyReminderCheck, sendDueReminders } from './reminders'
 import { loadAvailabilitySettings, saveAvailabilitySettings } from './availability-settings'
 import { defaultAvailabilityRules } from './availability'
 import {
@@ -206,6 +213,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
   })
 
+  // Ленивая проверка напоминаний (ADR-0026): дёшево и с троттлингом,
+  // в тестах выключена, чтобы фоновые отправки не примешивались к мокам fetch.
+  app.addHook('onRequest', async () => {
+    scheduleLazyReminderCheck()
+  })
+
 
   const minNoticeMs = async (hostId: string) =>
     (await loadAvailabilityRules(hostId)).minNoticeMin * 60 * 1000
@@ -232,6 +245,10 @@ export async function buildApp(): Promise<FastifyInstance> {
     app.log.warn(
       'CAPTCHA выключена: не задан TURNSTILE_SECRET_KEY. Публичная запись брони не защищена от ботов (ADR-0025).',
     )
+  }
+
+  if (env.NODE_ENV === 'production' && !isEmailEnabled()) {
+    app.log.warn('Email-уведомления выключены: не задан EMAIL_API_KEY (ADR-0026).')
   }
 
   // Слоты хоста в будущем с признаком занятости, отсортированные по startAt.
@@ -912,6 +929,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         eventType.durationMin,
       )
 
+      await notifyBookingConfirmed(created)
+
       return reply.code(201).send(toBooking(created, host.slug, host.timezone))
     },
   )
@@ -1007,11 +1026,10 @@ export async function buildApp(): Promise<FastifyInstance> {
       return toBooking(booking, host?.slug ?? '', host?.timezone ?? 'UTC')
     }
 
-    return toBooking(
-      await cancelBookingV1(booking, parsed.data.reason),
-      host?.slug ?? '',
-      host?.timezone ?? 'UTC',
-    )
+    const cancelled = await cancelBookingV1(booking, parsed.data.reason)
+    await notifyBookingCancelled(cancelled, parsed.data.reason)
+
+    return toBooking(cancelled, host?.slug ?? '', host?.timezone ?? 'UTC')
   })
 
   app.post(
@@ -1062,8 +1080,32 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     const updated = await rescheduleBookingV1(booking, slot, durationMin)
+    await notifyBookingRescheduled(updated)
 
     return toBooking(updated, host?.slug ?? '', host?.timezone ?? 'UTC')
+  })
+
+  // Внешний cron (cron-job.org) дёргает этот endpoint на бесплатном Render,
+  // где cron-сервисы платные, а in-process таймеры ненадёжны (ADR-0026).
+  // Секрет не задан — endpoint выключен (404): публичного «отправителя писем» нет.
+  app.post('/api/internal/reminders', async (request, reply) => {
+    const secret = env.REMINDERS_SECRET
+
+    if (!secret) {
+      return reply.code(404).send()
+    }
+
+    const provided = request.headers['x-reminders-secret']
+    const isValid =
+      typeof provided === 'string' &&
+      provided.length === secret.length &&
+      timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+
+    if (!isValid) {
+      return reply.code(401).send({ error: 'Неверный секрет' })
+    }
+
+    return { sent: await sendDueReminders() }
   })
 
   // /events перенесена в панель (ADR-0022). Редирект серверный, а не <Navigate>:

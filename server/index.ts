@@ -1,5 +1,6 @@
 import { buildApp } from './app'
 import { env } from './env'
+import { sendDueReminders } from './reminders'
 
 const app = await buildApp()
 
@@ -19,5 +20,9 @@ try {
   app.log.error(error)
   process.exit(1)
 }
+
+// Напоминания (ADR-0026): проверка при старте. На Render Free сервис спит,
+// поэтому основной триггер — внешний cron и ленивая проверка в onRequest.
+void sendDueReminders().catch((error) => app.log.error(error))
 
 // Запуск: npm run server:dev (разработка) / npm run start (продакшен)

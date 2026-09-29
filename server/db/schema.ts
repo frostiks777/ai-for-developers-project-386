@@ -68,6 +68,8 @@ export const bookings = pgTable('bookings', {
   endAt: text('endAt').notNull(),
   // Токен для публичной ссылки отмены брони (в ответе на создание брони)
   cancelToken: text('cancelToken').unique(),
+  // Когда отправлено напоминание (UTC ISO); null — ещё не отправляли (ADR-0026)
+  reminderSentAt: text('reminderSentAt'),
   createdAt: text('createdAt')
     .notNull()
     .default(sql`(now()::text)`),
