@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-29 (вечер: разбор ревью — issues #88–#93; закрыты все шесть, открытых нет. Ранее в этот же день — email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md)).
+> Дата последнего обновления: 2026-09-29 (вечер: #89 закрыт не полностью — [#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97) «отменённые брони держат слоты вне сетки», фикс готов; чистка прод-БД — регенерацией приложения после деплоя. Ранее в этот же день — разбор ревью #88–#93 (закрыты), email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md), [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md) — апгрейд `@fastify/static` 8.3.0 → 10.1.5 отложен как осознанный долг).
 > Все шаги курса закрыты. Продуктовый backlog — `docs/todo.md` («Backlog продукта»): уведомления ✅, далее регистрация/аккаунты, интеграции с календарями, повторяющиеся события, аналитика.
 > **Итог ревью проверяющего (2026-09-29):** все шесть замечаний оформлены как issues [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88)–[#93](https://github.com/frostiks777/ai-for-developers-project-386/issues/93) и **закрыты**: #88 (панель без логина, [ADR-0028](docs/adr/0028-dashboard-access-without-login.md)), #89 (сетка слотов 30 мин, [ADR-0027](docs/adr/0027-slot-grid-step-independent-of-buffers.md)), #90 (CI на каждый push), #91 (npm audit), #92 (Conventional Commits), #93 (привязка коммитов к issue). Открытых issues нет.
 
@@ -147,7 +147,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 323/323 passed (54 файла: фронтенд RTL + server/*), PGlite в памяти
+✅ test: 331/331 passed (55 файлов: фронтенд RTL + server/*), PGlite в памяти
 ✅ e2e: playwright — 3/3 (бронь гостя, конфликт слотов, перенос/отмена), собранное приложение на :3210
 ```
 
