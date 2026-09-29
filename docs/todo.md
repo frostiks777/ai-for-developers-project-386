@@ -172,7 +172,7 @@
 ## Backlog (новые задачи)
 
 - [x] **Защита от ботов (CAPTCHA) в окне брони** — [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) ✅ 2026-09-28: **Cloudflare Turnstile** (Free, Managed/Visible), **показывается всегда**; выключена, пока не задан `TURNSTILE_SECRET_KEY` (dev/test/e2e не зависят от внешнего сервиса); site key отдаёт `GET /api/v1/hosts/:slug/settings` (`captcha: CaptchaSettings`); серверная проверка в `POST .../bookings` — порядок «реплей по `Idempotency-Key` → zod → CAPTCHA → слоты», fail-closed; легаси `POST /api/bookings` тоже защищён; `RateLimit`-плагин (`@fastify/rate-limit` ≥10): 20/мин запись, 300/мин чтения, 600/мин глобально, ключ — `CF-Connecting-IP` → `request.ip`, `trustProxy: true`. Коды `CAPTCHA_FAILED`/`RATE_LIMITED` добавлены в `api/main.tsp` → OpenAPI + SDK. Тесты: `server/captcha.test.ts` (11), `server/rate-limit.test.ts` (5); [ADR-0025](adr/0025-captcha-and-rate-limit.md).
-- [ ] **Панель и перенос: превью недели, суббота, перенос прошедшей встречи** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76): превью «Неделя глазами гостя» растянуто на ширину блока ✅, добавлены дни из правил (был захардкожен Пн–Пт) ✅, снят левый отступ сетки ✅; ждёт: убрать «Перенести» у прошедших встреч (компонент не `bookings-list.tsx`).
+- [x] **Панель и перенос: превью недели, суббота, перенос прошедшей встречи** — [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76) ✅ 2026-09-29: превью растянуто, дни из правил, отступ снят, «Перенести» у прошедших убран (в `/my` — в панели переноса нет), суббота разобрана (в правилах хоста были выходные).
 - [x] **SSL-режим драйвера Postgres (`pg`)** ✅ разобран 2026-09-28 (см. [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76)). Предупреждение `SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'` печатает `pg-connection-string@2.14.0` только из-за наличия `sslmode=require` в строке подключения. **Проверено живым соединением** с Neon (все варианты реально подключились, не только разбор строки):
 
   | `sslmode` | конфиг клиента | результат |
@@ -206,7 +206,7 @@
 - [x] **Этап 12** — лендинг и «Мои встречи»: имя организатора без дубля, одна CTA `bg-highlight`, блок «Форматы встречи» (`/book/:slug?type=…`), карточки `glass`.
 - [x] **Этап 13** — документация: ADR-0022…0024 → Accepted, ADR-0007 дополнен ADR-0023, `docs/design/README.md` (v2 — текущий, v1 — история), «Отклонения» в `docs/design/v2/README.md`; `MEMORY.md`/`docs/todo.md`/`README.md` синхронизированы. Визуальная приёмка — за человеком.
 - [x] **ADRs v2** — [`docs/adr/`](adr/): 0022 (private-bookings-list), 0023 (redesign-v2-mint), 0024 (slots-in-host-timezone) — **Accepted** 2026-09-28.
-- [ ] **Макеты/скриншоты v2** — `docs/design/v2/{mockups,screenshots,current}/`: сверить реализацию (desktop/mobile, light/dark, UX-кейсы case-01…case-11, M-manage-booking) — визуальная приёмка человеком (см. «Актуальный план», шаг 3).
+- [x] **Макеты/скриншоты v2** — `docs/design/v2/{mockups,screenshots,current}/`: визуальная приёмка пройдена человеком 2026-09-28, расхождений нет (см. «Актуальный план»).
 - [x] **Архив v1** — [`docs/design/`](design/): v1-пакет сохранён как история, в `docs/design/README.md` помечено, что текущий дизайн — v2 ([ADR-0023](adr/0023-redesign-v2-mint.md)).
 
 ## Ключевые расхождения со спекой (закрыты)
@@ -258,3 +258,24 @@
 - [x] Табы Upcoming / Past / Canceled (§3.3) — **сделано**: `BookingFilter` → «Предстоящие / Прошедшие / Отменённые», отмена только для предстоящих
 - [x] Поиск по имени и email (§3.3) — **сделано**: поле поиска в панели (desktop и mobile), фильтр по имени/email
 - [x] `BlockTimeModal` + форма блокировки времени (§3.3) — **сделано**: таблица `time_blocks`, API `/api/v1/hosts/:slug/blocks`, `BlocksEditor` + `BlockTimeModal` в панели; блокировки исключают слоты и дают `409`
+
+## Backlog продукта (сверх курса)
+
+> Сверка списка «что развивать как продукт после успешной проверки» с текущей реализацией (2026-09-29). Ниже — только MISSING; уже сделанное помечено ✅.
+
+**Уже сделано:**
+
+- ✅ **Гибкое расписание** — окна доступности по дням недели и несколько интервалов (перерывы) на день: `availability_ranges` ([ADR-0016](adr/0016-split-buffers.md), [ADR-0020](adr/0020-per-host-availability-rules.md)); исключения/праздничные дни закрываются блокировками времени (`time_blocks`, [ADR-0014](adr/0014-time-blocks.md)).
+- ✅ **Часовые пояса** — зона владельца хранится и применяется при генерации слотов, гость смотрит расписание в своём поясе: [ADR-0024](adr/0024-slots-in-host-timezone.md).
+- ✅ **Перенос и отмена бронирований** — `manage-booking-page`, [ADR-0006](adr/0006-cancellation-by-token.md), [ADR-0008](adr/0008-reschedule-by-token.md).
+- ✅ **Буфер между встречами** — `bufferBeforeMin`/`bufferAfterMin`: [ADR-0016](adr/0016-split-buffers.md).
+
+**Нужно сделать:**
+
+- [ ] **Регистрация и аккаунты** — self-service: регистрация/логин, у каждого пользователя свои календари и типы встреч. Сейчас есть мульти-хост ([ADR-0018](adr/0018-multi-host-model.md)), но вход в панель — общий Basic-auth `ADMIN_PASSWORD` ([ADR-0017](adr/0017-dashboard-basic-auth.md)); владения/разграничения нет. Ожидает ADR по аутентификации.
+- [ ] **Интеграции с внешними календарями** — двусторонняя синхронизация занятости/событий (Google/Outlook). Сейчас только экспорт: `.ics` и ссылка Google Calendar (`src/utils/calendar.ts`), односторонне.
+- [ ] **Уведомления** — письма гостю и организатору: подтверждение, отмена, напоминание о предстоящей встрече. Сейчас нет ни одного канала уведомлений.
+- [ ] **Повторяющиеся события** — серии встреч (еженедельно/по будням и т.п.) и повторяющиеся брони.
+- [ ] **Аналитика по записям** — сводки/метрики панели (загрузка, конверсия, популярные слоты/типы).
+
+**Предлагаемый порядок захода:** уведомления (email) → регистрация/аккаунты → интеграции с календарями → повторяющиеся события → аналитика.
