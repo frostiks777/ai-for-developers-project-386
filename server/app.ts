@@ -1088,24 +1088,33 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Внешний cron (cron-job.org) дёргает этот endpoint на бесплатном Render,
   // где cron-сервисы платные, а in-process таймеры ненадёжны (ADR-0026).
   // Секрет не задан — endpoint выключен (404): публичного «отправителя писем» нет.
-  app.post('/api/internal/reminders', async (request, reply) => {
-    const secret = env.REMINDERS_SECRET
+  await app.register(async (scope) => {
+    // Cron шлёт POST без тела и с произвольным Content-Type; по умолчанию
+    // Fastify принимает только json/text и отвечает 415. Тело здесь не нужно —
+    // принимаем любой Content-Type (пустое тело тоже), в рамках этого плагина.
+    scope.addContentTypeParser('*', { parseAs: 'string' }, (_request, body, done) => {
+      done(null, body)
+    })
 
-    if (!secret) {
-      return reply.code(404).send()
-    }
+    scope.post('/api/internal/reminders', async (request, reply) => {
+      const secret = env.REMINDERS_SECRET
 
-    const provided = request.headers['x-reminders-secret']
-    const isValid =
-      typeof provided === 'string' &&
-      provided.length === secret.length &&
-      timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+      if (!secret) {
+        return reply.code(404).send()
+      }
 
-    if (!isValid) {
-      return reply.code(401).send({ error: 'Неверный секрет' })
-    }
+      const provided = request.headers['x-reminders-secret']
+      const isValid =
+        typeof provided === 'string' &&
+        provided.length === secret.length &&
+        timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
 
-    return { sent: await sendDueReminders() }
+      if (!isValid) {
+        return reply.code(401).send({ error: 'Неверный секрет' })
+      }
+
+      return { sent: await sendDueReminders() }
+    })
   })
 
   // /events перенесена в панель (ADR-0022). Редирект серверный, а не <Navigate>:
