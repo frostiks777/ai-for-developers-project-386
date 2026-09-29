@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.22.2](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.22.1...v1.22.2) (2026-09-29)
+
+
+### Bug Fixes
+
+* **tests:** make TwoWeekGrid fixture date-relative ([#79](https://github.com/frostiks777/ai-for-developers-project-386/issues/79)) ([5245815](https://github.com/frostiks777/ai-for-developers-project-386/commit/52458152184b16c68ce3133f28b8c22a8194a51c))
+* **ui:** hide reschedule and cancel for past bookings in my bookings ([#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76)) ([df83073](https://github.com/frostiks777/ai-for-developers-project-386/commit/df830732a90ca98cd5d03f75539ec5840203c149))
+
 ## [1.22.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.22.0...v1.22.1) (2026-09-28)
 
 
