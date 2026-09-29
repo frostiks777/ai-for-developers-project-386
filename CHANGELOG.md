@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.23.0...v1.23.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **email:** accept any content type on reminders endpoint ([#86](https://github.com/frostiks777/ai-for-developers-project-386/issues/86)) ([16cdc24](https://github.com/frostiks777/ai-for-developers-project-386/commit/16cdc244909a1d81935c0375d33c29f952fda549))
+
 ## [1.23.0](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.22.2...v1.23.0) (2026-09-29)
 
 
