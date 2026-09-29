@@ -33,12 +33,21 @@ npm test
 
 ## 3. Сообщение коммита
 
-Conventional Commits, тип на английском, описание краткое и в повелительном наклонении:
+Conventional Commits, тип на английском, описание краткое и в повелительном наклонении.
+**Каждое сообщение содержит номер Issue `(#NN)`** — от этого зависит `release-please` и восстановление хода агентной разработки:
 
-- `feat: add slot booking dialog with toasts`
-- `fix: bind vite dev server to ipv4`
-- `chore: add commit-push skill`
+- `feat: add slot booking dialog with toasts (#42)`
+- `fix: bind vite dev server to ipv4 (#57)`
+- `chore: add commit-push skill (#93)`
 - `docs:`, `refactor:`, `test:` — по смыслу
+
+Порядок работы:
+
+1. Задача/баг до начала работы оформлены Issue (`gh issue create`, методология — `docs/agents/issue-tracker.md`); баги — с меткой `bug`, chore-подобные задачи — без метки типа (метки `chore` в репозитории нет).
+2. В сообщении коммита указан `(#NN)`.
+3. После пуша Issue закрывается: `gh issue close <NN> --comment "..."`.
+
+Единственное исключение — однострочные механические правки без изменения поведения.
 
 ## 4. Коммит и пуш
 
