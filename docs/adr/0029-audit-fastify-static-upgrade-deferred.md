@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-09-29.
+Accepted — 2026-09-29. **Апгрейд выполнен в тот же день** ([#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99)): см. раздел «Update». Имя файла оставлено прежним, чтобы не ломать ссылки в issue и в индексе.
 
 ## Context
 
@@ -56,6 +56,22 @@ Accepted — 2026-09-29.
    dev-инструмент вне контейнера; «фикс» — откат версии, что хуже самой находки.
 4. **Правило на будущее:** обновления безопасности, требующие мажорного апгрейда,
    не применяются «втихую» — оформляются как issue с обоснованием и планом.
+
+## Update (2026-09-29): апгрейд выполнен
+
+Долг закрыт через день, отдельной задачей [#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99) по плану из 9 шагов. Разбор цепочки 8 → 10 подтвердился на практике.
+
+**Что сделано:**
+
+1. **Baseline снят до апгрейда** (локальная прод-сборка, `PORT=3210 DATABASE_URL= npm start`): статусы, `Content-Type`, `Content-Length` по `/`, `/assets/*`, `/dashboard`, `/health`, `/api/v1/*`, плюс пробы обхода каталога. Зафиксирован в [#99 (comment)](https://github.com/frostiks777/ai-for-developers-project-386/issues/99).
+2. **Установлено `@fastify/static@^10.1.5`** обычным `npm i`, без `npm audit fix --force` (тот откатил бы `drizzle-kit` до `0.18.1`).
+3. **Кода приложения не потребовалось**: обе точки касания (`register(fastifyStatic, { root, prefix })` и `reply.sendFile('index.html')`) не затронуты ни одним ломающим изменением. `typecheck`/`lint` — чисто без единой правки.
+4. **Тесты:** 331/331 до, `npm run test:e2e` — 3/3 (Playwright против `build && start`), то есть реальная раздача и SPA-fallback проверены браузером.
+5. **Сверка с baseline:** все статусы и `Content-Type` совпали; прод-бандл `dist/assets/index-*.js` побайтово тот же (155.52 kB). `glob` 11 → 13 в рантайме не проявился.
+6. **`npm audit`:** `high`-находка по `path traversal` ушла; остались 4 `moderate` по `esbuild` через `drizzle-kit` — dev-only, п. 3 Decision остаётся в силе.
+7. **Закрыта дырка в покрытии:** добавлен `server/static.test.ts` (5 тестов, `describe.skipIf(!hasBuild)`): `/` и `/dashboard` → 200 html, `/assets/` без листинга, обход через `%2e%2e%2f` не выпускает файлы за пределы `dist/`, `/health` не перехватывается статикой. В `.github/workflows/ci.yml` шаг `Build` перенесён **перед** `Test`, иначе дист в CI отсутствует и тест молча скипается.
+
+**Выводы для будущих мажорных апгрейдов:** проверять не только API плагина, но и его транзитивные зависимости (`glob`), и обязательно иметь baseline раздачи — юнит-тесты Fastify работают через `inject` и статику не покрывают, её ловит только e2e.
 
 ## Consequences
 

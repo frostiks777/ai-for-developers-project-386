@@ -30,11 +30,13 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
-
+      # Сборка раньше тестов: серверные тесты раздачи dist/ (server/static.test.ts)
+      # пропускаются без собранного dist, а в CI он должен проверяться.
       - name: Build
         run: npm run build
+
+      - name: Test
+        run: npm test
 
   e2e:
     runs-on: ubuntu-latest

@@ -1,6 +1,6 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-29 (вечер: #89 закрыт не полностью — [#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97) «отменённые брони держат слоты вне сетки», фикс готов; чистка прод-БД — регенерацией приложения после деплоя. Ранее в этот же день — разбор ревью #88–#93 (закрыты), email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md), [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md) — апгрейд `@fastify/static` 8.3.0 → 10.1.5 отложен как осознанный долг).
+> Дата последнего обновления: 2026-09-29 (вечер: закрыты [#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97) «отменённые брони держат слоты вне сетки» и [#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99) «апгрейд `@fastify/static` 8.3.0 → 10.1.5» — `high`-находка `npm audit` ушла, [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md) обновлён. Ранее в этот же день — разбор ревью #88–#93 (закрыты), email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md)). Открытых issues нет.
 > Все шаги курса закрыты. Продуктовый backlog — `docs/todo.md` («Backlog продукта»): уведомления ✅, далее регистрация/аккаунты, интеграции с календарями, повторяющиеся события, аналитика.
 > **Итог ревью проверяющего (2026-09-29):** все шесть замечаний оформлены как issues [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88)–[#93](https://github.com/frostiks777/ai-for-developers-project-386/issues/93) и **закрыты**: #88 (панель без логина, [ADR-0028](docs/adr/0028-dashboard-access-without-login.md)), #89 (сетка слотов 30 мин, [ADR-0027](docs/adr/0027-slot-grid-step-independent-of-buffers.md)), #90 (CI на каждый push), #91 (npm audit), #92 (Conventional Commits), #93 (привязка коммитов к issue). Открытых issues нет.
 
@@ -123,7 +123,7 @@
   "@electric-sql/pglite": "^0.5.8",
   "drizzle-orm": "^0.45.3",
   "drizzle-kit": "^0.31.11",
-  "@fastify/static": "^8.3.0",
+  "@fastify/static": "^10.1.5",
   "tsx": "^4.23.15",
   "tailwindcss": "^3.4.17",
   "react-router-dom": "^7.18.4",
@@ -147,7 +147,7 @@
 ```
 ✅ typecheck: tsc --noEmit — чисто
 ✅ lint: 0 ошибок, 0 warnings
-✅ test: 331/331 passed (55 файлов: фронтенд RTL + server/*), PGlite в памяти
+✅ test: 336/336 passed (56 файлов: фронтенд RTL + server/*), PGlite в памяти
 ✅ e2e: playwright — 3/3 (бронь гостя, конфликт слотов, перенос/отмена), собранное приложение на :3210
 ```
 
@@ -417,6 +417,8 @@
   - [#89](https://github.com/frostiks777/ai-for-developers-project-386/issues/89) — ✅ закрыто: сетка слотов 30 мин ([ADR-0027](docs/adr/0027-slot-grid-step-independent-of-buffers.md)). `stepMin = slotDurationMin` в `generateSlotStarts` и `generateSlotStartsFromRanges`; буферы перестали двигать сетку и применяются фильтром занятости — новая `conflictsWithBuffers` в `selectFutureSlots` и в `POST .../bookings` (`409`); дефолт `bufferAfterMin` 10 → 0; UI (`AvailabilityPreview`, «≈ N слотов») считает сетку по `slotDurationMin`. Горизонт 30 дней был значением в БД, а не кодом — снят настройкой в панели. Коммит `a86150b`.
   - [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88) — ✅ закрыто: панель организатора без логина ([ADR-0028](docs/adr/0028-dashboard-access-without-login.md)). Удалены `requiresAdminAuth`, `isAuthorizedAdmin`, хук `onRequest` с Basic-auth; `ADMIN_PASSWORD` убрана из `server/env.ts`, `.env.example`, `render.yaml`, README, `scripts/demo.sh`. Тест `server/admin-auth.test.ts` → `server/dashboard-access.test.ts`. ADR-0017 помечен Superseded, п. 1 ADR-0022 заменён (список броней снова открыт — отмечено как последствие). Защищены: cron-endpoint по `X-Reminders-Secret`, Turnstile + rate-limit, capability-токены. Коммит `be47ce4`.
   - [#92](https://github.com/frostiks777/ai-for-developers-project-386/issues/92) — ✅ закрыто (по апруву владельца): три ранних коммита переписаны в Conventional Commits через `filter-branch --msg-filter` + `--force-with-lease` push в `main`; содержимое не менялось, новый HEAD `ba6756e`, CI/hexlet-check/Release Please — success.
+  - [#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97) — ✅ закрыто: отменённые брони больше не закрепляют слоты вне сетки. `purgeUnpinnedFutureSlots` в `server/rules.ts` считает закреплённым только слот с `confirmed`-бронью (не-confirmed брони снимаются в одной транзакции — FK `NO ACTION`), `regenerateAllHostsSlots` вызывается при старте (`server/index.ts`), в `selectFutureSlots` (`server/app.ts`) добавлена верхняя граница горизонта. Тесты `server/slot-regeneration.test.ts` (3). Прод вычищен регенерацией приложения после деплоя (сырым SQL — нет: удалил бы сло­ты без пересоздания); проверено на живой Neon — свободных слотов вне сетки 0. Коммиты `4a75322`, `2f6a580`, `98b2895`.
+  - [#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99) — ✅ закрыто: апгрейд `@fastify/static` 8.3.0 → 10.1.5, `high`-находка `npm audit` (path traversal) ушла. Кода приложения менять не пришлось (единственное ломающее v10 — `setHeaders`, не используется), e2e 3/3, раздача `dist/` совпала с baseline, бандл побайтово тот же. Добавлен `server/static.test.ts` (5 тестов, `skipIf` без сборки); в `.github/workflows/ci.yml` шаг `Build` перенесён перед `Test`, чтобы smoke-тест раздачи выполнялся в CI. [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md) обновлён.
 
 ## Ключевые решения
 
