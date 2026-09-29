@@ -386,6 +386,7 @@
     - Модули: `server/email.ts` (Brevo-транспорт, `appOrigin`), `server/email-templates.ts` (text+html, экранирование), `server/notifications.ts` (письма по событиям брони — гость и организатор), `server/reminders.ts` (идемпотентные due-напоминания за 24 ч + `POST /api/internal/reminders` под `X-Reminders-Secret`).
     - Схема: `bookings.reminderSentAt` + идемпотентная миграция. Планировщик: проверка при старте + ленивая в `onRequest` (в тестах выключена) + внешний cron-job.org.
     - Тесты: `email.test.ts` (5), `email-templates.test.ts` (8), `email-notifications.test.ts` (7). Попутно: e2e-порт 3100→3210 (конфликт с чужим dev-сервером), `scripts/dev-all.mjs` падает с подсказкой при занятых портах, README/env-таблица/AGENTS/architecture синхронизированы.
+    - Пошаговая инструкция прода (Brevo sender + API key → env в Render → проверка → cron-job.org) — [`docs/email-setup-brevo.md`](docs/email-setup-brevo.md), [#85](https://github.com/frostiks777/ai-for-developers-project-386/issues/85).
     - Проверки: lint 0, typecheck чисто, **323/323 тестов** (54 файла), build ✓, e2e 3/3.
 
 ## Что осталось (следующие шаги)

@@ -11,6 +11,7 @@
 | Фронтенд + API | Render Web Service (Docker, `main`, `frankfurt`, plan `free`) | Fastify раздаёт `dist/` и слушает `/api/*` — один origin, CORS не нужен |
 | БД | Neon (PostgreSQL) | строки подключения в `DATABASE_URL` |
 | Доступ к панели | `ADMIN_PASSWORD` → HTTP Basic Auth на `/dashboard`, `/admin/*` и админских мутациях ([ADR-0017](adr/0017-dashboard-basic-auth.md)) | без переменной гейт выключен |
+| Email-уведомления | Brevo HTTP API + внешний cron (cron-job.org) | включается `EMAIL_API_KEY` ([ADR-0026](adr/0026-email-notifications.md)); пошагово — [email-setup-brevo.md](email-setup-brevo.md) |
 
 Данные **не** хранятся в контейнере: файловая система Render free эфемерна, поэтому БД обязана быть внешней. Без `DATABASE_URL` сервер поднимает PGlite в памяти — это годится для локального dev, но на Render приведёт к потере всех данных при каждом рестарте.
 
@@ -22,6 +23,14 @@
 | `PORT` | `10000` | Render задаёт порт; сервер читает `process.env.PORT` |
 | `ADMIN_PASSWORD` | пароль организатора | в Blueprint задано демо-значение `call-calendar-admin` — **смените** |
 | `NODE_ENV` | `production` | отключает тестовый логгер Fastify |
+| `EMAIL_API_KEY` | ключ Brevo (v3, `xkeysib-…`) | пусто — письма не отправляются (no-op). Подробная настройка — [email-setup-brevo.md](email-setup-brevo.md) |
+| `EMAIL_FROM` | `Календарь звонков <sender@example.com>` | email должен быть **подтверждён** в Brevo (Senders) |
+| `EMAIL_REPLY_TO` | почта организатора | Reply-To писем гостю |
+| `ORGANIZER_EMAIL` | почта организатора | получатель писем о новых бронях/отменах; пусто — не шлём |
+| `REMINDER_LEAD_MINUTES` | `1440` | напоминание за 24 часа до встречи |
+| `REMINDERS_SECRET` | случайная строка | включает `POST /api/internal/reminders`; не задан — endpoint отвечает `404` |
+| `APP_ORIGIN` | `https://calendar-slots-app.onrender.com` | базовый origin для ссылок в письмах (fallback — `RENDER_EXTERNAL_URL`) |
+| `TURNSTILE_SITEKEY` / `TURNSTILE_SECRET_KEY` / `TURNSTILE_ALLOWED_HOSTNAMES` | ключи Cloudflare Turnstile | включают CAPTCHA ([ADR-0025](adr/0025-captcha-and-rate-limit.md)) |
 
 ## 3. Создание сервиса вручную (если Blueprint не подошёл)
 

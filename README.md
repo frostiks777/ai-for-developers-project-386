@@ -145,6 +145,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
   и e2e в CI не ходят в сеть. В production без ключа приложение пишет предупреждение в лог.
 - **В Render:** Environment → `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `ORGANIZER_EMAIL` →
   Save & Deploy. Ключ берётся в Brevo: SMTP & API → API Keys; sender верифицируется в Senders.
+  Подробная пошаговая инструкция (Brevo → Render → cron-job.org) — [`docs/email-setup-brevo.md`](docs/email-setup-brevo.md).
 - **Напоминания** не планируются in-process (сервис спит через 15 минут): ленивая проверка due-писем
   при старте и входящих запросах (`reminderSentAt` защищает от дублей). Для точности подключите
   бесплатный внешний cron (например, [cron-job.org](https://cron-job.org)): `POST
