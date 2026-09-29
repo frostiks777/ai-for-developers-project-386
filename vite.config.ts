@@ -15,6 +15,31 @@ export default defineConfig({
       '/api': 'http://127.0.0.1:3000',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return
+          }
+
+          if (id.includes('react-router')) {
+            return 'vendor-router'
+          }
+
+          if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) {
+            return 'vendor-react'
+          }
+
+          if (id.includes('zod')) {
+            return 'vendor-zod'
+          }
+
+          return 'vendor'
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
