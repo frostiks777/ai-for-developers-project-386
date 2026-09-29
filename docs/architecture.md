@@ -45,6 +45,10 @@ import type { Host } from '@/api/generated'
 - `server/availability.ts` — правила доступности (`AvailabilityRules`), дефолт и чистая генерация слотов `generateSlotStarts`; конверсия строк таблицы `availability_rules`. См. [ADR-0004](adr/0004-slot-generation-rules.md), [ADR-0005](adr/0005-dashboard-availability-and-cancellation.md), [ADR-0024](adr/0024-slots-in-host-timezone.md).
 - `server/rules.ts` — персистентные правила per-host: `loadAvailabilityRules(hostId)` / `saveAvailabilityRules(hostId, rules)` / `regenerateFutureSlots(hostId, rules)` (пересборка свободных будущих слотов, занятые не трогаются). См. [ADR-0020](adr/0020-per-host-availability-rules.md).
 - `server/hosts.ts` — слой хостов API v1: `findHost` по slug **или** UUID, `GET /api/v1/hosts/:ref/settings|slots` (404 на неизвестный хост). См. [ADR-0009](adr/0009-hosts-and-api-v1.md), [ADR-0018](adr/0018-multi-host-model.md).
+- `server/email.ts` — транспорт писем через Brevo HTTP API (`sendEmail`); без `EMAIL_API_KEY` — no-op, внешняя сеть не задействуется. См. [ADR-0026](adr/0026-email-notifications.md).
+- `server/email-templates.ts` — тексты писем (`text` + `html`) гостю и организатору: подтверждение, перенос, отмена, напоминание.
+- `server/notifications.ts` — отправка писем по событиям брони (`notifyBookingConfirmed/Cancelled/Rescheduled/Reminder`); ошибки провайдера не ломают бронь.
+- `server/reminders.ts` — ленивая проверка due-напоминаний (`sendDueReminders`, идемпотентность через `bookings.reminderSentAt`) и `scheduleLazyReminderCheck`; внешний cron дёргает `POST /api/internal/reminders` с секретом. См. [ADR-0026](adr/0026-email-notifications.md).
 - `server/db/schema.ts` — схема БД в терминах Drizzle ORM (`pg-core`): `hosts`, `event_types`, `slots`, `bookings`, `availability_rules`, `availability_ranges`, `time_blocks`.
 - `server/db/index.ts` — клиент Drizzle: `pg` при заданном `DATABASE_URL` (Neon), иначе **PGlite в памяти** (тесты и локальный dev без переменной).
 - `server/db/migrate.ts` — идемпотентные миграции (`ALTER TABLE … IF NOT EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS`) и бэкфиллы; выполняются при старте сервера.

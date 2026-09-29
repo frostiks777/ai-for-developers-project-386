@@ -35,7 +35,7 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   ├── App.tsx        # Роуты
 │   └── main.tsx       # Точка входа
 ├── server/
-│   ├── index.ts       # Точка входа: buildApp() + listen
+│   ├── index.ts       # Точка входа: buildApp() + listen + стартовая проверка напоминаний
 │   ├── app.ts         # Фабрика Fastify: /health, /api/*, /api/v1/*, Basic-auth гейт, статика dist/
 │   ├── hosts.ts       # Хосты: findHost (slug или UUID), дефолтный хост
 │   ├── bookings-v1.ts # Логика броней v1 (слоты, статус, гости, идемпотентность)
@@ -44,6 +44,10 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 │   ├── availability.ts / availability-settings.ts / rules.ts
 │   ├── captcha.ts      # Cloudflare Turnstile: verifyCaptchaToken, fail-closed (ADR-0025)
 │   ├── rate-limit.ts   # Лимиты по IP + clientIpKey (CF-Connecting-IP) (ADR-0025)
+│   ├── email.ts        # Brevo HTTP API: sendEmail, no-op без EMAIL_API_KEY (ADR-0026)
+│   ├── email-templates.ts # Тексты писем (text+html): подтверждение/перенос/отмена/напоминание
+│   ├── notifications.ts # Письма по событиям брони (гостю и организатору)
+│   ├── reminders.ts    # Ленивая проверка due-напоминаний + секретный endpoint (ADR-0026)
 │   ├── env.ts         # Валидация env (zod)
 │   ├── validation.ts  # zod-схема API (зеркало src/lib/validation.ts)
 │   ├── types.ts       # Типы API
