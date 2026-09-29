@@ -79,13 +79,15 @@ export default function MyBookingsPage() {
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={`/reschedule/${booking.id}`}>Перенести</Link>
-                  </Button>
                   {!isPast && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/cancel/${booking.id}`}>Отменить</Link>
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/reschedule/${booking.id}`}>Перенести</Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to={`/cancel/${booking.id}`}>Отменить</Link>
+                      </Button>
+                    </>
                   )}
                   <Button
                     variant="ghost"
