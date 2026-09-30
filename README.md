@@ -3,6 +3,8 @@
 [![hexlet-check](https://github.com/frostiks777/ai-for-developers-project-386/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/frostiks777/ai-for-developers-project-386/actions)
 [![CI](https://github.com/frostiks777/ai-for-developers-project-386/actions/workflows/ci.yml/badge.svg)](https://github.com/frostiks777/ai-for-developers-project-386/actions/workflows/ci.yml)
 
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white) ![Fastify](https://img.shields.io/badge/Fastify-5-FFFFFF?logo=fastify&logoColor=black) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-4-6E9F18?logo=vitest&logoColor=white) ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?logo=playwright&logoColor=white)
+
 Сервис бронирования звонков (аналог Calendly): гость видит свободные слоты и оставляет заявку, организатор получает список броней.
 
 Учебный проект Хекслета: https://ru.hexlet.io/programs/ai-for-developers
@@ -17,7 +19,7 @@
 - `/dashboard` — организатор: обзор, брони, типы встреч, доступность, блокировки, организаторы (открыт без логина, см. [«Доступ организатора»](#доступ-организатора-без-логина)).
 - `/admin/{bookings,availability,event-types,blocks,hosts}` — deep-link на раздел панели.
 
-Список броней и контакты гостей видны только организатору ([ADR-0022](docs/adr/0022-private-bookings-list.md)). Старый публичный маршрут `/events` отвечает редиректом на панель.
+Гостю список встреч с контактами не показывается: публичной страницы со списком нет, старый маршрут `/events` отвечает `302` на панель ([ADR-0022](docs/adr/0022-private-bookings-list.md)). Сама панель организатора открыта без логина ([ADR-0028](docs/adr/0028-dashboard-access-without-login.md)) — см. [«Доступ организатора»](#доступ-организатора-без-логина).
 
 После брони доступен экспорт встречи в календарь (`.ics`, Google Календарь), перенос и ссылка для самостоятельной отмены.
 
@@ -42,11 +44,28 @@ asciinema upload demo.cast
 
 ## Стек
 
-- **Frontend:** React 18, TypeScript, Vite 6, React Router 7, shadcn/ui, Tailwind CSS 3.4
+- **Frontend:** React 18, TypeScript, Vite 6, React Router 7, shadcn/ui, Tailwind CSS 3.4, lucide-react
 - **Backend:** Node.js, Fastify 5, zod 4
 - **БД:** PostgreSQL (Neon) + Drizzle ORM; в тестах и локальном dev без `DATABASE_URL` — PGlite
-- **Тесты:** Vitest 4 + React Testing Library
-- **Инструменты:** ESLint 9, Prettier, Docker
+- **Контракт API:** TypeSpec (`api/main.tsp`) → OpenAPI → клиентский SDK и серверные типы (`npm run api:generate`)
+- **Тесты:** Vitest 4 + React Testing Library, контрактные тесты по OpenAPI (ajv), e2e — Playwright
+- **Инструменты:** ESLint 9, Prettier, Docker, GitHub Actions (CI + release-please)
+
+## Продукты и сервисы
+
+Всё внешнее — на бесплатных тарифах, без карт и без оплаты:
+
+| Сервис | Зачем | Тариф / условия |
+|---|---|---|
+| [Neon](https://neon.tech) | PostgreSQL в проде | Free: база спит после 5 минут простоя, холодный старт — до секунды; `DATABASE_URL` из Environment Group `DB` |
+| [Render](https://render.com) | Хостинг контейнера (Docker) | Free: засыпает через 15 минут простоя, холодный старт до ~1 минуты; `render.yaml`, healthcheck `/health` |
+| [Brevo](https://brevo.com) | Транзакционные письма (HTTP API) | Free: 300 писем/день, нужен верифицированный sender; без `EMAIL_API_KEY` отправка — no-op |
+| [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) | CAPTCHA в публичной форме записи | Free: без лимитов на виджете; выключена, пока не задан `TURNSTILE_SECRET_KEY` |
+| [cron-job.org](https://cron-job.org) | Внешний запуск напоминаний | Free: `POST /api/internal/reminders` каждые 15 минут с секретом |
+| GitHub Actions + [release-please](https://github.com/googleapis/release-please) | CI (lint, typecheck, test, build, e2e) и релизные PR по Conventional Commits | Бесплатно для публичного репозитория |
+| [asciinema](https://asciinema.org) / [PowerSession](https://github.com/Watfaq/PowerSession-rs) | Запись демо-сценария | — |
+
+Ограничения, из-за которых SMTP и in-process планировщик не подошли (Render Free блокирует порты 25/465/587 и не даёт Cron Jobs), разобраны в [`docs/research/email-notifications.md`](docs/research/email-notifications.md) и [`docs/ci_cd_render.md`](docs/ci_cd_render.md).
 
 ## Установка
 
@@ -94,7 +113,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `REMINDERS_SECRET` | — | секрет endpoint `/api/internal/reminders`; пусто — endpoint выключен |
 | `APP_ORIGIN` | — | базовый origin для ссылок в письмах; пусто → `RENDER_EXTERNAL_URL` |
 
-Пример — [`.env.example`](.env.example). При первом старте создаются слоты на 14 дней вперёд по правилам хоста: будни 10:00–18:00, слот 30 мин, буферы до/после встречи, бронь не позднее чем за 2 часа до начала ([ADR-0004](docs/adr/0004-slot-generation-rules.md)). Слоты генерируются в часовом поясе хоста ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)), в интерфейсе их можно переключить на любой IANA-пояс.
+Пример — [`.env.example`](.env.example). При первом старте создаются слоты на 14 дней вперёд по правилам хоста: будни 10:00–18:00, слот 30 мин (шаг сетки = `slotDurationMin`), бронь не позднее чем за 2 часа до начала ([ADR-0004](docs/adr/0004-slot-generation-rules.md)). Буферы до/после встречи по умолчанию 0 — их можно задать в панели, они не двигают сетку, а отсекают конфликтные слоты ([ADR-0027](docs/adr/0027-slot-grid-step-independent-of-buffers.md)). Слоты генерируются в часовом поясе хоста ([ADR-0024](docs/adr/0024-slots-in-host-timezone.md)), в интерфейсе их можно переключить на любой IANA-пояс.
 
 ## Доступ организатора (без логина)
 
@@ -151,7 +170,9 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
   {APP_ORIGIN}/api/internal/reminders` каждые 15 минут с заголовком `X-Reminders-Secret:
   <REMINDERS_SECRET>`. Пока `REMINDERS_SECRET` не задан, endpoint отвечает `404`.
 - **Антиспам:** отправка только транзакционных писем opted-in получателям, `Reply-To` организатора,
-  rate-limit/backoff; для лучшей доставляемости стоит добавить домен и SPF/DKIM/DMARC.
+  rate-limit на публичных маршрутах; для лучшей доставляемости стоит добавить домен и SPF/DKIM/DMARC.
+  Что ещё не сделано: ретраи с backoff на `429/5xx` и suppression-список hard-bounce (см. чек-лист в
+  [`docs/research/email-notifications.md`](docs/research/email-notifications.md)).
 
 ## API
 
@@ -167,7 +188,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 | `GET` | `/api/v1/hosts/:slug/slots` | слоты хоста; `?date=YYYY-MM-DD`, `?eventTypeId=` |
 | `GET` | `/api/v1/hosts/:slug/event-types` | типы встреч |
 | `GET` | `/api/v1/hosts/:slug/availability` | правила доступности |
-| `POST` | `/api/v1/hosts/:slug/bookings` | создать бронь (`Idempotency-Key` поддерживается) |
+| `POST` | `/api/v1/hosts/:slug/bookings` | создать бронь (`Idempotency-Key`, при заданном `TURNSTILE_SECRET_KEY` — с проверкой CAPTCHA) |
 | `GET` | `/api/v1/bookings/:bookingId` | бронь по id (страница управления встречей) |
 | `POST` | `/api/v1/bookings/:bookingId/cancel` | отмена: `{ reason? }` |
 | `POST` | `/api/v1/bookings/:bookingId/reschedule` | перенос: `{ startAt }` |
@@ -209,8 +230,10 @@ curl -X POST http://127.0.0.1:3000/api/v1/hosts/default/bookings \
 # 422 {"error":{"code":"VALIDATION_ERROR","message":"Неверный email"}}
 ```
 
+> Даты в примерах условные — подставьте `startAt` свободного слота из выдачи `/api/v1/hosts/:slug/slots` (иначе будет `400`: слот прошёл или нарушено окно `minNotice`).
+
 Ошибки:
-- **v1** (`/api/v1/*`) — конверт `{ "error": { "code", "message" } }`, коды: `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `SLOT_TAKEN` (409), `CONFLICT` (409), `UNAUTHORIZED` (401), плюс `400` на бизнес-ошибки (прошедший слот, окно `minNotice`).
+- **v1** (`/api/v1/*`) — конверт `{ "error": { "code", "message" } }`, коды: `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `SLOT_TAKEN` (409), `CONFLICT` (409), `CAPTCHA_FAILED` (422), `RATE_LIMITED` (429), плюс `400` на бизнес-ошибки (прошедший слот, окно `minNotice`).
 - **легаси `/api/*`** — плоский `{ "error": "текст" }`; `422` на невалидное тело (кроме `POST /api/bookings/reschedule` — там `400`), `400` на бизнес-ошибку, `404`, `409` — слот занят (перехват `23505`, уникальный индекс по `slotId`).
 
 ## Скрипты
@@ -251,6 +274,15 @@ api/       TypeSpec-контракт API v1
 e2e/       сценарии Playwright
 docs/      архитектура, конвенции, ADR, спека, дизайн-пакеты, todo; docs/archive/ — выполненные планы и снятые документы
 ```
+
+Куда смотреть в документации:
+
+- [`docs/architecture.md`](docs/architecture.md) — архитектура, слои, поток данных, команды;
+- [`docs/spec.md`](docs/spec.md) — утверждённая спецификация (снимок Шага 2 курса);
+- [`docs/adr/`](docs/adr/README.md) — 29 архитектурных решений с индексом (что, почему, от чего отказались);
+- [`docs/todo.md`](docs/todo.md) — состояние проекта, критерии приёмки и открытый бэклог;
+- [`docs/ci_cd_render.md`](docs/ci_cd_render.md) и [`docs/email-setup-brevo.md`](docs/email-setup-brevo.md) — инструкции по деплою и почте;
+- [`docs/design/v2/`](docs/design/v2/README.md) — дизайн-пакет «Мята и солнце» (текущий), [`docs/design/`](docs/design/README.md) — v1 как история.
 
 ## Тесты
 
