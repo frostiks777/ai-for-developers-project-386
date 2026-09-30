@@ -119,7 +119,7 @@
 
 Повторить существующий CAPTCHA-паттерн (`server/captcha.ts`):
 
-- `isEmailEnabled = () => Boolean(env.EMAIL_API_KEY)` — пока ключ не задан, отправка = no-op (возврат `{ ok: true, skipped: true }`), UI не показывает обещаний о письмах, в прод-лог — warn (как `ADMIN_PASSWORD`/Turnstile-секрет).
+- `isEmailEnabled = () => Boolean(env.EMAIL_API_KEY)` — пока ключ не задан, отправка = no-op (возврат `{ ok: true, skipped: true }`), UI не показывает обещаний о письмах, в прод-лог — warn (как для секрета Turnstile).
 - Новые env (в `.env.example` — только пустые значения, секреты — в Render Environment, по аналогии с `TURNSTILE_*`):
   - `EMAIL_PROVIDER=resend|brevo|mailjet|smtp2go|none` (дефолт `none`),
   - `EMAIL_API_KEY=` (пусто = выключено),
@@ -151,18 +151,24 @@
 
 **Открытый вопрос к пользователю (блокер): есть ли в распоряжении домен/субдомен с доступом к DNS?** Без него прод-отправка невозможна ни на одном провайдере — останется только dev-режим (Ethereal/Mailtrap) + no-op без ключа. Если домена нет — самый дешёвый путь обычно DNS у регистратора + бесплатный субдомен вида `mail.<ваш-домен>` только под SPF/DKIM.
 
+> **Ответ (2026-09-29): домена нет** — выбран Brevo (2-е место), прод работает на верифицированном sender-е Brevo. Открытым остаётся только домен + SPF/DKIM/DMARC для доставляемости (см. чек-лист ниже). Решение — [ADR-0026](../adr/0026-email-notifications.md).
+
 ## Anti-spam checklist для реализации (обязательный)
 
-- [ ] Отправка только через HTTP API провайдера (не SMTP-порты) — требование Render Free.
-- [ ] From-домен свой, верифицирован: SPF + DKIM (+ DMARC `p=none` на старте, позже `quarantine`).
-- [ ] DMARC-alignment From-домена с SPF/DKIM (проверить в Postmaster Tools перед продом).
-- [ ] DKIM-ключ ≥ 1024 бит (требование Gmail).
-- [ ] `Reply-To` — email организатора; From — отдельный `noreply@`/имя сервиса (не личный ящик).
-- [ ] Только транзакционные письма opted-in получателям (подтверждение, отмена, перенос, напоминание); bulk-рассылок нет.
-- [ ] Unsubscribe не обязателен для транзакционных, но каждое письмо содержит ссылку управления бронёй (отмена/перенос в 1 клик).
-- [ ] Rate-limit + ретраи с экспоненциальным backoff только на 429/5xx; идемпотентность отправки (ключ/флаг в БД, `reminder_sent_at`).
-- [ ] Hard-bounce получатели — в suppression (не слать повторно); подключить вебхуки bounce/complaint провайдера.
-- [ ] В каждом письме `text`+`html` версии, честные Subject/From, без спам-маркеров; опционально `List-Unsubscribe` заголовки.
-- [ ] Без ключа провайдера отправка — no-op; dev/CI/e2e без сети (in-memory транспорт; Ethereal/Mailtrap только локально).
-- [ ] Секрет cron-endpoint (`REMINDERS_SECRET`) + rate-limit на нём; напоминание идемпотентно (повторный вызов не дублирует письма).
-- [ ] Регистрация домена в Google Postmaster Tools + мониторинг спам-рейта (< 0.3%, цель ≤ 0.1%) и логов провайдера.
+> **Статус на 2026-09-30** сверен с реализацией ([ADR-0026](../adr/0026-email-notifications.md)).
+> Выбран **Brevo** (2-е место в рейтинге ниже), потому что домена с DNS нет — Resend его требует.
+> Открытым остаётся только домен/SPF/DKIM и suppression баунсов.
+
+- [x] Отправка только через HTTP API провайдера (не SMTP-порты) — требование Render Free. → `server/email.ts`, Brevo `POST /v3/smtp/email`
+- [ ] From-домен свой, верифицирован: SPF + DKIM (+ DMARC `p=none` на старте, позже `quarantine`). → **осталось**: сейчас верифицирован sender Brevo, домена нет
+- [ ] DMARC-alignment From-домена с SPF/DKIM (проверить в Postmaster Tools перед продом). → зависит от домена
+- [ ] DKIM-ключ ≥ 1024 бит (требование Gmail). → ключи генерирует Brevo при верификации домена/sender
+- [x] `Reply-To` — email организатора; From — отдельный `noreply@`/имя сервиса (не личный ящик). → env `EMAIL_REPLY_TO`, `EMAIL_FROM`
+- [x] Только транзакционные письма opted-in получателям (подтверждение, отмена, перенос, напоминание); bulk-рассылок нет. → `server/notifications.ts`, `server/reminders.ts`
+- [x] Unsubscribe не обязателен для транзакционных, но каждое письмо содержит ссылку управления бронёй (отмена/перенос в 1 клик). → ссылки в шаблонах `server/email-templates.ts`
+- [~] Rate-limit + ретраи с экспоненциальным backoff только на 429/5xx; идемпотентность отправки (ключ/флаг в БД, `reminder_sent_at`). → **частично**: идемпотентность есть (`bookings.reminderSentAt`), глобальный rate-limit есть; ретраев с backoff в `server/email.ts` нет
+- [ ] Hard-bounce получатели — в suppression (не слать повторно); подключить вебхуки bounce/complaint провайдера. → **не сделано**, в бэклоге
+- [x] В каждом письме `text`+`html` версии, честные Subject/From, без спам-маркеров; опционально `List-Unsubscribe` заголовки. → `server/email-templates.ts`, тесты `email-templates.test.ts` (8)
+- [x] Без ключа провайдера отправка — no-op; dev/CI/e2e без сети (in-memory транспорт; Ethereal/Mailtrap только локально). → env `EMAIL_API_KEY`
+- [x] Секрет cron-endpoint (`REMINDERS_SECRET`) + rate-limit на нём; напоминание идемпотентно (повторный вызов не дублирует письма). → заголовок `X-Reminders-Secret`, без секрета — `404`; фикс [#86](https://github.com/frostiks777/ai-for-developers-project-386/issues/86) (scoped content-type parser)
+- [ ] Регистрация домена в Google Postmaster Tools + мониторинг спам-рейта (< 0.3%, цель ≤ 0.1%) и логов провайдера. → зависит от домена

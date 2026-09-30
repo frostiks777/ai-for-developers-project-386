@@ -1,8 +1,12 @@
 # TypeSpec toolchain — research note (September 2026)
 
+> **Статус:** выполнено 2026-09-24, конвейер работает ([ADR-0011](../adr/0011-event-types-status-and-availability-ranges.md), `npm run api:generate`). Документ сохранён как обоснование выбора версий.
+> Упоминания «Fastify + SQLite» в заголовках — на момент исследования; сейчас БД — PostgreSQL/Neon
+> ([ADR-0013](../adr/0013-postgres-migration.md)). Выводы по toolchain'у (alpha-статус серверного эмиттера, ручные маршруты и валидация) остаются актуальными.
+
 Ticket: #13 («TypeSpec toolchain 2026»).
 Goal: versions, packages, minimal `main.tsp`, `tspconfig.yaml`, one-command generation,
-limitations for a small Fastify + SQLite app, discriminated unions for errors.
+limitations for a small Fastify app, discriminated unions for errors.
 
 All versions below were verified against the npm registry on **2026-09-24**
 (`npm view <pkg> version time.modified`) and the official docs at

@@ -18,7 +18,7 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - Миграции: идемпотентный `server/db/migrate.ts`, выполняется при старте сервера (не drizzle-kit)
 - Валидация: zod 4 (схемы-зеркала: `server/validation.ts` ↔ `src/lib/validation.ts`)
 - Контракт API: TypeSpec (`api/main.tsp`) → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); генерация — `npm run api:generate`
-- Тесты: Vitest 4 + React Testing Library (фронт), `app.inject()` на PGlite (API, ~12 серверных файлов), контракт-тесты (`server/contract.test.ts`, ajv по OpenAPI), Playwright e2e (`e2e/`, `npm run test:e2e` — job в CI)
+- Тесты: Vitest 4 + React Testing Library (фронт), `app.inject()` на PGlite (API, 21 серверный файл), контракт-тесты (`server/contract.test.ts`, ajv по OpenAPI), Playwright e2e (`e2e/`, `npm run test:e2e` — job в CI)
 - Линтеры: ESLint 9 (flat config), Prettier
 
 ## Directory structure
@@ -139,15 +139,17 @@ Hexlet "AI for Developers" course project: **Календарь звонков**
 - `todo.md` — текущий roadmap и расхождения со спекой
 - `spec.md` — утверждённая спецификация (снимок Шага 2; реализация ушла вперёд, см. ADR)
 - `course-steps.md` — шаги курса и критерии приёмки
-- `ci_cd.md` — план деплоя на Google Cloud Run (**не используется**, см. `ci_cd_render.md`)
 - `ci_cd_render.md` — руководство по бесплатному деплою на Render.com + Neon
 - `adr/` — Architecture Decision Records (см. `docs/adr/README.md`)
 - `mcp.md` — подключённые MCP-серверы и правила работы с ними
 - `email-setup-brevo.md` — настройка email-уведомлений: Brevo + Render + cron-job.org
 - `research/` — исследования (email-notifications.md)
 - `design/v2/` — текущий дизайн-пакет («Мята и солнце») и план внедрения
+- `calendar_agent_spec.md` — внешняя UI/UX-спека (вход); решения — в ADR
+- `archive/` — **выполненные планы и снятые документы** (не актуальны, читать только для контекста; правила — в `docs/archive/README.md`)
 
-При внесении изменений — сверяться с документацией в `docs/`. При принятии архитектурного решения — добавить ADR (шаблон в `docs/adr/template.md`).
+При внесении изменений — сверяться с документацией в `docs/`. При принятии архитектурного решения — добавить ADR (шаблон в `docs/adr/template.md`). Документ-план, который **выполнен**, переносится в `docs/archive/` вместе с шапкой-статусом, а не остаётся в `docs/` с незакрытым чек-листом.
+
 
 ## Coding patterns
 - Все компоненты — функциональные, с типизацией пропсов

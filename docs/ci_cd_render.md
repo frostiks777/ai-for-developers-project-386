@@ -1,6 +1,6 @@
 # Деплой: Render.com + Neon
 
-Актуальная схема деплоя «Календарь звонков»: контейнер на **Render** (план free) + база в **Neon** (PostgreSQL). План Google Cloud Run из `docs/ci_cd.md` **не используется** — он остался как альтернатива.
+Актуальная схема деплоя «Календарь звонков»: контейнер на **Render** (план free) + база в **Neon** (PostgreSQL). План Google Cloud Run из [`docs/archive/ci_cd.md`](archive/ci_cd.md) **не используется** — он остался как альтернатива.
 
 Конфигурация в репозитории: `render.yaml` (Blueprint), `Dockerfile` (multi-stage). Живой стенд: <https://calendar-slots-app.onrender.com>.
 
@@ -56,7 +56,7 @@
 - **Деплой новой версии:** пуш в `main` → автосборка (сборка занимает несколько минут, free-план может «заснуть»).
 - **Откат:** Render → *Deploys* → выбрать предыдущий успешный деплой → *Rollback*.
 - **Логи:** Render → *Logs* (live/по времени). Полезные маркеры: `Server listening at http://0.0.0.0:10000`, отсутствие ошибок миграций.
-- **Проверка после деплоя:** `/health`, `/` (SPA), `/book/default`, `/dashboard` (запросит пароль).
+- **Проверка после деплоя:** `/health`, `/` (SPA), `/book/default`, `/dashboard` (откроется без пароля).
 
 ## 6. Ограничения free-плана
 

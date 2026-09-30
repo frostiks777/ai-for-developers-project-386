@@ -1,5 +1,7 @@
 # План тюнинга AI-агентов для проекта «Календарь звонков»
 
+> **АРХИВ (перенесено 2026-09-30, #100).** План **полностью внедрён** 2026-09-25: скиллы `interview`/`plan`/`ponytail`/`tdd`/`verify`, [`docs/adr/`](../adr/README.md) + ADR-0001, `docs/mcp.md`, разделы `Hygiene of context window` / `Long-term memory` / `Safety gates` в `AGENTS.md`. Незакрытые чек-листы § G и § J ниже — исторические, по ним всё сделано. Описание стека в шапке (SQLite) тоже историческое: актуальный стек — [`../../AGENTS.md`](../../AGENTS.md). Канон: [`README.md`](README.md) архива.
+
 > Источник принципов: внешняя методичка `ai_agent_tuning_plan.md` (память/контекст, процессные скиллы, MCP, верификация, безопасность), адаптированная под этот стек: **Node.js + TypeScript + Fastify 5 + React 18 + Vite 6 + shadcn/ui + Drizzle ORM + SQLite + Vitest 4 + ESLint 9**.
 >
 > Дата: 2026-09-22.Автор: AI-агент (аудит + проектирование).
@@ -284,7 +286,7 @@ description: Use before reporting a task as done — «закончил», «г�
 
 | # | Заголовок | Статус | Дата |
 |---|---|---|---|
-| [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted | 2026-09-22 |
+| [0001](../adr/0001-record-architecture-decisions.md) | Record architecture decisions | Accepted | 2026-09-22 |
 ```
 
 **Содержимое `0001-record-architecture-decisions.md` (Nygard-template):**

@@ -1,21 +1,27 @@
 # TODO: план развития проекта
 
+> **Актуальный статус — 2026-09-30.** Открытых GitHub Issues нет. Все шаги курса закрыты. Единственный
+> открытый объём — «[Backlog продукта](#backlog-продукта-сверх-курса)» (регистрация/аккаунты → интеграции
+> с календарями → повторяющиеся события → аналитика) плюс три мелких пункта, помеченных ⏳ ниже.
+> Документы-планы, которые **выполнены**, перенесены в [`archive/`](archive/README.md) — здесь их нет.
+
 Аудит соответствия `docs/code_artifact.md` (спека Hexlet) и текущего MVP.
 Репозиторий реализует упрощённый вариант на стеке из `AGENTS.md` (Vite + Fastify + PostgreSQL/Neon + Drizzle; в тестах PGlite); отклонения от спеки зафиксированы в `docs/architecture.md` и в ADR.
 
-## Актуальный план (обновлён 2026-09-28)
+## Актуальный план (обновлён 2026-09-30)
 
-**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0, v1.21.2). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66), мобильный аудит после v2 закрыт (#49). Все шаги курса закрыты, доки синхронизированы (#72). Защита публичной записи реализована 2026-09-28 (#46, [ADR-0025](adr/0025-captcha-and-rate-limit.md)). Открытых issues на 2026-09-29 нет: закрыты [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76) (суббота разобрана, превью исправлено, «Перенести» у прошедших убран), [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46) (верифицирован), [#79](https://github.com/frostiks777/ai-for-developers-project-386/issues/79) (тайм-бомба теста `TwoWeekGrid` исправлена).
+**Состояние:** редизайн v2 «Мята и солнце» завершён и влит в `main` (PR #54, #63, #67; релизы v1.20.0, v1.21.0, v1.21.2). Ветка `feat/redesign-v2-mint` смержена — новую работу начинать от свежего `main` в отдельной ветке. Мобильные правки приёмки закрыты (#56–#62, #65–#66), мобильный аудит после v2 закрыт (#49). Все шаги курса закрыты, доки синхронизированы (#72). Защита публичной записи реализована 2026-09-28 (#46, [ADR-0025](adr/0025-captcha-and-rate-limit.md)). Ревью проверяющего закрыто 2026-09-29 (#88–#93). Открытых issues на 2026-09-30 нет. Документация актуализирована (#100, [`docs/archive/`](archive/README.md)).
 
 **Следующие шаги (в порядке приоритета):**
 
-1. ~~**Сменить `ADMIN_PASSWORD` в Render.**~~ — решение пользователя 2026-09-29: **не менять**.
-2. ~~**Включить CAPTCHA в проде**~~ — ✅ выполнено: `TURNSTILE_*` заданы в Render (подтверждено пользователем 2026-09-29).
-3. ~~**«Перенести» у прошедших встреч**~~ — ✅ исправлено 2026-09-29: кнопка была в `src/pages/my-bookings-page.tsx` (не в панели) — скрыта у прошедших, «Убрать» оставлена, тест обновлён.
-4. ~~**Проверить шифрование соединения с БД.**~~ — решение пользователя 2026-09-29: **не трогать**.
-5. **SSL-режим драйвера `pg`**: ✅ закрыт 2026-09-28 — режим нормализуется в `server/env.ts`, предупреждения в логах нет ([Backlog](#backlog-новые-задачи)). Перепроверить после апгрейда `pg` до v9.
+1. **Продуктовый backlog** (см. ниже) — начать с регистрации и аккаунтов: без разграничения владельцев дальнейшая работа (интеграции, аналитика) добавит ценность одному заранее заданному владельцу. Перед заходом — issue + `interview` + ADR по аутентификации.
+2. ~~**Сменить `ADMIN_PASSWORD` в Render.**~~ — ✅ неактуально с 2026-09-29: панель открыта без логина ([ADR-0028](adr/0028-dashboard-access-without-login.md)), `ADMIN_PASSWORD` из окружения игнорируется.
+3. ~~**Включить CAPTCHA в проде**~~ — ✅ выполнено: `TURNSTILE_*` заданы в Render (подтверждено пользователем 2026-09-29).
+4. ~~**«Перенести» у прошедших встреч**~~ — ✅ исправлено 2026-09-29: кнопка была в `src/pages/my-bookings-page.tsx` (не в панели) — скрыта у прошедших, «Убрать» оставлена, тест обновлён.
+5. **SSL-режим драйвера `pg`**: ✅ закрыт 2026-09-28 — режим нормализуется в `server/env.ts`, предупреждения в логах нет ([Backlog](#backlog-новые-задачи)). ⏳ Перепроверить после апгрейда `pg` до v9 (`pg` v9 не выпущен, latest 8.23.0).
 
 **Разобрано 2026-09-28 (не требует действий):** «суббота в переносе» из [#76](https://github.com/frostiks777/ai-for-developers-project-386/issues/76) — оказалось, в правилах доступности хоста были включены суббота/воскресенье, поэтому слоты (и дни) генерировались для них, и страница переноса вела себя правильно. Врёт было превью недели: там был захардкожен список Пн–Пт, теперь колонки берутся из правил.
+
 
 > ✅ **Визуальная приёмка редизайна v2 «Мята и солнце» пройдена 2026-09-28** — проверено человеком вручную, расхождений не найдено (ADR-0023, `docs/design/v2/`). Пункт снят с плана.
 
@@ -37,7 +43,7 @@
 
 - ✅ Тесты + линтер в GitHub Actions, `main` зелёный (`ci.yml`)
 - ✅ Тесты покрывают сценарий бронирования и конфликт слотов (интеграционные + `409` + контракт-тесты `ajv` + e2e Playwright); требования к покрытию Шага 3 — в `docs/spec.md` §7, решение — [ADR-0012](adr/0012-contract-tests-and-e2e.md)
-- ✅ Conventional Commits, release-please создаёт release-PR (`release-please.yml`; текущая версия — 1.21.1, релиз собирается автоматически в PR `main` → `release-please/*`)
+- ✅ Conventional Commits, release-please создаёт release-PR (`release-please.yml`; версия на 2026-09-30 — 1.24.1, релиз собирается автоматически в PR `main` → `release-please/*`)
 - ✅ Секретов в репозитории нет (`.env` в `.gitignore`, `.env.example`)
 
 ### Настройка агентной разработки
@@ -107,7 +113,7 @@
 - [x] **Кнопка «Блокировки» в левом меню организатора (`/dashboard`, `src/components/dashboard-sidebar.tsx`):** в сайдбаре есть «Встречи» (текущий), «Типы встреч», «Доступность» — пункта «Блокировки» нет, хотя секция `id="blocks"` на странице присутствует (`src/pages/dashboard-page.tsx:153`). Добавить ссылку по образцу «Типы встреч»/«Доступность» (`scrollToSection` + иконка, напр. `CalendarOff`), добавить `BLOCKS_SECTION_ID = 'blocks'`; тест в `src/components/dashboard-sidebar.test.tsx`.
 - [x] **Аудит корректности кнопок левого меню организатора:** проверить, что каждый пункт сайдбара (`Встречи`, `Типы встреч`, `Доступность`, + будущие `Блокировки`) реально скроллит/переключает нужную секцию и не «ломается» при отсутствии элемента (мобильная раскладка использует табы, а не сайдбар — сверить, что десктоп-сайдбар скрыт на мобиле). Зафиксировать найденные баги отдельными пунклами.
 
-### Редизайн блока «Доступность» (`docs/Инструкция по редизайну блока Доступность.md`)
+### Редизайн блока «Доступность» (инструкция — [`archive/Инструкция по редизайну блока Доступность.md`](<archive/Инструкция по редизайну блока Доступность.md>), все пункты выполнены)
 
 > Внешняя спека (Calendly/Cal.com-паттерны). Сверка с текущим `src/components/availability-settings-form.tsx`.
 
@@ -136,13 +142,13 @@
 > Эталон от Gemini — упрощённый (без типов встреч, часового пояса, телефона/комментария, отмены/переноса). Полное выравнивание **отклонено**: сохраняем утверждённый редизайн A/D ([ADR-0007](adr/0007-visual-redesign-and-themes.md)) и API `/api/v1`. Берём только функционально недостающее.
 > Сверка: S1 Landing / S2 Slot Selection / S3 Contact Form / S4 Success — уже есть (наша реализация); S2-панель «Свободно»/«Длительность» покрыта `freeCount`/`durationMin`.
 
-- [x] **Экран «Предстоящие события» (S5):** был реализован как публичная страница `src/pages/events-page.tsx` (`/events`) на `GET /api/v1/hosts/:slug/bookings`. **Отменён в этапе 1 редизайна v2**: контакты гостей стали приватными ([ADR-0022](adr/0022-private-bookings-list.md)) — `GET .../bookings` под Basic-auth, `/events` отвечает `302` на `/admin/bookings`, страница и вкладка удалены. Список встреч живёт в панели организатора.
+- [x] **Экран «Предстоящие события» (S5):** был реализован как публичная страница `src/pages/events-page.tsx` (`/events`) на `GET /api/v1/hosts/:slug/bookings`. **Отменён в этапе 1 редизайна v2**: контакты гостей стали приватными ([ADR-0022](adr/0022-private-bookings-list.md)) — `GET .../bookings` убран из публичного доступа, `/events` отвечает `302` на `/admin/bookings`, страница и вкладка удалены. Список встреч живёт в панели организатора.
 - [x] **Табы в шапке «Записаться / Предстоящие события»** — `AppHeader` получил проп `tabs` (pill-навигация, `aria-current`); после v2 вкладка «Предстоящие события» заменена на «Мои встречи» (`/my`).
 
 ### Low
 
-- [x] **Полная мульти-хост-модель** — [ADR-0018](adr/0018-multi-host-model.md): `hostId` в `slots`/`bookings` (+бэкфилл), генерация слотов per-host, `findHost` по slug **или** UUID, `GET/POST /api/v1/hosts` (POST — под Basic-auth), scoped `/api/v1/hosts/:ref/{slots,bookings}`, публичный `/book/:uuid`. Per-host скаляры расписания и UI управления хостами закрыты позже ([ADR-0020](adr/0020-per-host-availability-rules.md), [ADR-0021](adr/0021-active-host-and-hosts-ui.md)).
-- [x] **Авторизация `/dashboard`** — [ADR-0017](adr/0017-dashboard-basic-auth.md): Basic-auth на `/dashboard` и `/admin/*` через `ADMIN_PASSWORD` (если не задан — панель открыта, для dev/тестов); гейт также закрывает админские мутации API и список броней ([ADR-0022](adr/0022-private-bookings-list.md)); демо-пароль для наставника — в README.
+- [x] **Полная мульти-хост-модель** — [ADR-0018](adr/0018-multi-host-model.md): `hostId` в `slots`/`bookings` (+бэкфилл), генерация слотов per-host, `findHost` по slug **или** UUID, `GET/POST /api/v1/hosts`, scoped `/api/v1/hosts/:ref/{slots,bookings}`, публичный `/book/:uuid`. Per-host скаляры расписания и UI управления хостами закрыты позже ([ADR-0020](adr/0020-per-host-availability-rules.md), [ADR-0021](adr/0021-active-host-and-hosts-ui.md)).
+- [x] **Авторизация `/dashboard`** — ⚠️ **Superseded**: [ADR-0017](adr/0017-dashboard-basic-auth.md) (Basic-auth через `ADMIN_PASSWORD`) заменён 2026-09-29 на [ADR-0028](adr/0028-dashboard-access-without-login.md) — панель и админские API **открыты без логина**, `ADMIN_PASSWORD` игнорируется. Первоначально гейт закрывал и список броней ([ADR-0022](adr/0022-private-bookings-list.md)); после ADR-0028 контакты гостей снова видны в панели — это осознанное последствие.
 - [x] **Баг:** ссылка «Доступность» в сайдбаре `/dashboard` не скроллила к секции — исправлено: `onClick` + `scrollIntoView({behavior:'smooth'})` + `history.replaceState('#availability')` в `src/components/dashboard-sidebar.tsx`; тест `src/components/dashboard-sidebar.test.tsx`
 
 ### Остаток Low из [ADR-0018](adr/0018-multi-host-model.md) — per-host скаляры расписания — [#41](https://github.com/frostiks777/ai-for-developers-project-386/issues/41) ✅
@@ -186,6 +192,9 @@
 
 - [x] **Апгрейд `@fastify/static` 8.3.0 → 10.1.5** (2026-09-29, [#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99)) — `high`-находка `npm audit` (path traversal GHSA-83w8-p2f5-377r) закрыта. Правок кода не потребовалось (единственное ломающее изменение v10 — `setHeaders`, не используется), e2e 3/3, раздача `dist/` идентична baseline. Добавлен `server/static.test.ts` (5 тестов), в CI `Build` перенесён перед `Test`. Остаётся только `esbuild` 0.18.20 (moderate через `drizzle-kit` → `@esbuild-kit/*`) — dev-only, вне контейнера. Решение и анализ — [ADR-0029](adr/0029-audit-fastify-static-upgrade-deferred.md).
 
+- [x] **Актуализация документации** (2026-09-30, [#100](https://github.com/frostiks777/ai-for-developers-project-386/issues/100)) — выполненные планы и снятые документы перенесены в [`docs/archive/`](archive/README.md) (`ai-tuning-plan.md`, `archi-scheme.md`, `ci_cd.md`, внешний бэклог Gemini, инструкция по редизайну «Доступности», `roadmap.html`); у каждого — шапка-статус, в архиве — `README`-канон. Ссылки обновлены в `AGENTS.md`, `MEMORY.md`, `README.md`, ADR и `ci_cd_render.md`, битые ссылки в `docs/design/v2/adr/*` исправлены. Вычищены устаревшие утверждения: Basic-auth/`ADMIN_PASSWORD` в живых доках (заменено на [ADR-0028](adr/0028-dashboard-access-without-login.md)), e2e-порт 3100 → 3210 в `README.md`, версия релиза в критериях приёмки, файловый снимок в `MEMORY.md` вынесен в архив. `MEMORY.md` и этот файл пересобраны по факту на 2026-09-30.
+
+
 ### Backlog: редизайн v2
 
 > Старт 2026-09-28 (ветка `feat/redesign-v2-mint`, issue [#48](https://github.com/frostiks777/ai-for-developers-project-386/issues/48)):
@@ -194,7 +203,7 @@
 > **Завершено 2026-09-28:** этапы 0–13 влиты в `main` (PR #54), issue #48 закрыт; мобильные правки приёмки — PR #63, #67.
 
 - [x] **Этап 0 — подготовка** — ветка `feat/redesign-v2-mint`, пакет в [`docs/design/v2/`](design/v2/), ADR-0022…0024 в [`docs/adr/`](adr/) (Proposed), скилл `apply-design-v2` в `.agents/skills/` и в `AGENTS.md`.
-- [x] **Этап 1** — контакты гостей только для организатора ([ADR-0022](adr/0022-private-bookings-list.md)): `GET /bookings` под Basic-auth, `/events` → 302 на `/admin/bookings`, вкладка и `events-page` удалены.
+- [x] **Этап 1** — контакты гостей не в публичном разделе ([ADR-0022](adr/0022-private-bookings-list.md)): публичная страница `/events` удалена, редирект `302` на `/admin/bookings`; после [ADR-0028](adr/0028-dashboard-access-without-login.md) список броней доступен в панели без логина.
 - [x] **Этап 2** — баги времени: `formatWeekdayShort` (дни недели в ленте), пояс гостя при отмене (`formatZoneShort`).
 - [x] **Этап 3** — токены, живой фон, стеклянные поверхности, шапка (`ambient-background`, `app-shell`, `glass-bar`, `formatZoneShort`).
 - [x] **Этап 4** — десктоп «Дни» (A): `event-type-picker`, `two-week-grid`, `slot-groups`, `booking-form`, `timezone-card`; форма в колонке, без автовыбора слота.
@@ -216,11 +225,11 @@
 > Целевое состояние зафиксировано в утверждённой спецификации `docs/spec.md` (Шаг 2). Ниже — расхождения кода **на конец Шага 2**, которые закрыты на Шаге 3 и позже. Актуальное состояние описано в [`docs/architecture.md`](architecture.md) и ADR; новые расхождения не накапливаются здесь.
 
 1. ~~**Схема БД**: нет `event_types`, `bookings.status`/`eventTypeId`, `availability_ranges`~~ ✅ **закрыто**: `server/db/migrate.ts` (идемпотентные миграции), [ADR-0011](adr/0011-event-types-status-and-availability-ranges.md); позже — PostgreSQL ([ADR-0013](adr/0013-postgres-migration.md)), `time_blocks` ([ADR-0014](adr/0014-time-blocks.md)), per-host правила ([ADR-0020](adr/0020-per-host-availability-rules.md)).
-2. ~~**API**: `/api/v1` реализован частично~~ ✅ **закрыто**: реализованы все операции `api/main.tsp` (хосты, слоты, типы встреч, доступность, брони, блокировки, отмена/перенос по id), контракт покрыт `server/contract.test.ts` ([ADR-0012](adr/0012-contract-tests-and-e2e.md)). Легаси `/api/*` сохранён и закрыт Basic-auth для админских операций.
+2. ~~**API**: `/api/v1` реализован частично~~ ✅ **закрыто**: реализованы все операции `api/main.tsp` (хосты, слоты, типы встреч, доступность, брони, блокировки, отмена/перенос по id), контракт покрыт `server/contract.test.ts` ([ADR-0012](adr/0012-contract-tests-and-e2e.md)). Легаси `/api/*` сохранён; админские операции открыты (Basic-auth снят в [ADR-0028](adr/0028-dashboard-access-without-login.md)).
 3. ~~**Форма**: нет `guests`/согласия/`Idempotency-Key`~~ ✅ **закрыто**: [ADR-0015](adr/0015-booking-guests-consent-idempotency.md).
-4. ~~**Экраны**: `/dashboard` без auth, только токены~~ ✅ **закрыто**: Basic-auth панели ([ADR-0017](adr/0017-dashboard-basic-auth.md)), маршруты `/booking/:uuid/{confirmed,cancel,reschedule}`, `/my`, `/admin/*` ([ADR-0019](adr/0019-my-bookings-on-device.md)), редизайн v2 ([ADR-0023](adr/0023-redesign-v2-mint.md)).
+4. ~~**Экраны**: `/dashboard` без auth, только токены~~ ✅ **закрыто**: маршруты `/booking/:uuid/{confirmed,cancel,reschedule}`, `/my`, `/admin/*` ([ADR-0019](adr/0019-my-bookings-on-device.md)), редизайн v2 ([ADR-0023](adr/0023-redesign-v2-mint.md)).
 
-## Backlog из внешней спеки (Gemini, docs/gemini-code-1790192589378.md)
+## Backlog из внешней спеки (Gemini, [`archive/gemini-code-1790192589378.md`](archive/gemini-code-1790192589378.md))
 
 Сверка пунктов спеки с фактическим кодом: DONE здесь не дублируется, ниже — только MISSING и PARTIAL (`<частично: …>` — что уже есть и чего не хватает).
 Умышленные расхождения MVP, закрытые позже (формулировка ниже была актуальна на 2026-09-25): один хост → мульти-хост ([ADR-0018](adr/0018-multi-host-model.md)); токены вместо uuid → маршруты `/booking/:uuid/*`; форма без `guests`/согласия → [ADR-0015](adr/0015-booking-guests-consent-idempotency.md); `/dashboard` без auth → [ADR-0017](adr/0017-dashboard-basic-auth.md).
@@ -274,7 +283,7 @@
 
 **Нужно сделать:**
 
-- [ ] **Регистрация и аккаунты** — self-service: регистрация/логин, у каждого пользователя свои календари и типы встреч. Сейчас есть мульти-хост ([ADR-0018](adr/0018-multi-host-model.md)), но вход в панель — общий Basic-auth `ADMIN_PASSWORD` ([ADR-0017](adr/0017-dashboard-basic-auth.md)); владения/разграничения нет. Ожидает ADR по аутентификации.
+- [ ] **Регистрация и аккаунты** — self-service: регистрация/логин, у каждого пользователя свои календари и типы встреч. Сейчас есть мульти-хост ([ADR-0018](adr/0018-multi-host-model.md)), но панель **открыта без логина** ([ADR-0028](adr/0028-dashboard-access-without-login.md)): владелец один и заранее задан, разграничения прав нет. Требует ADR по аутентификации и владению календарями.
 - [ ] **Интеграции с внешними календарями** — двусторонняя синхронизация занятости/событий (Google/Outlook). Сейчас только экспорт: `.ics` и ссылка Google Calendar (`src/utils/calendar.ts`), односторонне.
 - [x] **Уведомления** — ✅ 2026-09-29: Brevo HTTP API, гостю — подтверждение/перенос/отмена/напоминание за 24 ч, организатору — новая бронь/отмена; без `EMAIL_API_KEY` — no-op. Напоминания — ленивая проверка + `POST /api/internal/reminders` (cron-job.org). [ADR-0026](adr/0026-email-notifications.md), [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83).
 - [ ] **Повторяющиеся события** — серии встреч (еженедельно/по будням и т.п.) и повторяющиеся брони.

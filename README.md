@@ -14,7 +14,7 @@
 - `/my` — «Мои встречи»: брони, сделанные с этого устройства (перенос, отмена, удаление).
 - `/booking/:uuid/confirmed` — shareable-экран подтверждения: детали встречи, экспорт в календарь, ссылки на перенос и отмену.
 - `/booking/:uuid/cancel`, `/booking/:uuid/reschedule` (алиасы `/cancel/:token`, `/reschedule/:token`) — гость управляет своей встречей.
-- `/dashboard` — организатор: обзор, брони, типы встреч, доступность, блокировки, организаторы (вход по паролю, см. [«Доступ организатора»](#доступ-организатора-пароль)).
+- `/dashboard` — организатор: обзор, брони, типы встреч, доступность, блокировки, организаторы (открыт без логина, см. [«Доступ организатора»](#доступ-организатора-без-логина)).
 - `/admin/{bookings,availability,event-types,blocks,hosts}` — deep-link на раздел панели.
 
 Список броней и контакты гостей видны только организатору ([ADR-0022](docs/adr/0022-private-bookings-list.md)). Старый публичный маршрут `/events` отвечает редиректом на панель.
@@ -155,7 +155,7 @@ npm run start        # http://127.0.0.1:3000 (API + статика из dist/)
 
 ## API
 
-Контракт задан в `api/main.tsp` (TypeSpec) и сгенерирован в `docs/openapi/openapi.yaml`; ниже — фактические маршруты `server/app.ts`. Столбец **auth** — `admin` означает HTTP Basic Auth (см. [«Доступ организатора»](#доступ-организатора-пароль)).
+Контракт задан в `api/main.tsp` (TypeSpec) и сгенерирован в `docs/openapi/openapi.yaml`; ниже — фактические маршруты `server/app.ts`. Разделение на «публичные» и «административные» — по назначению, а не по защите: панель и админские операции **открыты без логина** ([ADR-0028](docs/adr/0028-dashboard-access-without-login.md), см. [«Доступ организатора»](#доступ-организатора-без-логина)).
 
 Публичные (гостевые):
 
@@ -249,7 +249,7 @@ src/       фронтенд: pages, components (в т.ч. ui/), hooks, utils, ap
 server/    Fastify: app.ts (фабрика и роуты), bookings-v1.ts, hosts.ts, event-types.ts, time-blocks.ts, email.ts + email-templates.ts + notifications.ts + reminders.ts, db/ (Drizzle pg-core + миграции)
 api/       TypeSpec-контракт API v1
 e2e/       сценарии Playwright
-docs/      архитектура, конвенции, ADR, спека, дизайн-пакеты, план
+docs/      архитектура, конвенции, ADR, спека, дизайн-пакеты, todo; docs/archive/ — выполненные планы и снятые документы
 ```
 
 ## Тесты
@@ -262,7 +262,7 @@ npm run test:e2e  # Playwright: сквозной сценарий в брауз�
 - фронтенд — React Testing Library (jsdom);
 - API — интеграционные тесты через `app.inject()` на PGlite в памяти (`DATABASE_URL` пустой);
 - контрактные (`server/contract.test.ts`) — маршруты `/api/v1/*` из `docs/openapi/openapi.yaml` зарегистрированы, а ключевые ответы (настройки, слоты, бронь) валидны по OpenAPI через ajv;
-- e2e (`e2e/`) — Playwright гоняется против **собранного** приложения (`npm run build && npm start`, `PORT=3100`, PGlite) и проверяет сквозной сценарий гостя и конфликт слотов.
+- e2e (`e2e/`) — Playwright гоняется против **собранного** приложения (`npm run build && npm start`, `PORT=3210`, PGlite) и проверяет сквозной сценарий гостя, конфликт слотов и управление встречей (перенос/отмена).
 
 Перед первым запуском e2e установите браузер:
 
@@ -275,7 +275,7 @@ npm run test:e2e
 
 ## Деплой
 
-Docker-образ (multi-stage) + `render.yaml` для Render.com: план free, healthcheck `/health`, хост `0.0.0.0`, порт из `PORT`. Данные — PostgreSQL в Neon (`DATABASE_URL` из Environment Group `DB`), доступ к панели — `ADMIN_PASSWORD`. Подробности — [`docs/ci_cd_render.md`](docs/ci_cd_render.md).
+Docker-образ (multi-stage) + `render.yaml` для Render.com: план free, healthcheck `/health`, хост `0.0.0.0`, порт из `PORT`. Данные — PostgreSQL в Neon (`DATABASE_URL` из Environment Group `DB`); доступ к панели открыт без логина, `ADMIN_PASSWORD` не используется. Подробности — [`docs/ci_cd_render.md`](docs/ci_cd_render.md).
 
 ---
 

@@ -1,8 +1,8 @@
 # MEMORY.md — Состояние проекта «Календарь звонков»
 
-> Дата последнего обновления: 2026-09-29 (вечер: закрыты [#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97) «отменённые брони держат слоты вне сетки» и [#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99) «апгрейд `@fastify/static` 8.3.0 → 10.1.5» — `high`-находка `npm audit` ушла, [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md) обновлён. Ранее в этот же день — разбор ревью #88–#93 (закрыты), email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md)). Открытых issues нет.
+> Дата последнего обновления: 2026-09-30 ([#100](https://github.com/frostiks777/ai-for-developers-project-386/issues/100) — актуализация документации: выполненные планы перенесены в [`docs/archive/`](docs/archive/README.md) с `README`-каноном, битые ссылки исправлены, `MEMORY.md` и `docs/todo.md` пересобраны; прогон 336/336 тестов). До этого: 2026-09-29 — закрыты [#97](https://github.com/frostiks777/ai-for-developers-project-386/issues/97) «отменённые брони держат слоты вне сетки» и [#99](https://github.com/frostiks777/ai-for-developers-project-386/issues/99) «апгрейд `@fastify/static` 8.3.0 → 10.1.5», [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md) обновлён; ревью #88–#93 закрыто; email-уведомления [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83), [ADR-0026](docs/adr/0026-email-notifications.md). Открытых issues нет.
 > Все шаги курса закрыты. Продуктовый backlog — `docs/todo.md` («Backlog продукта»): уведомления ✅, далее регистрация/аккаунты, интеграции с календарями, повторяющиеся события, аналитика.
-> **Итог ревью проверяющего (2026-09-29):** все шесть замечаний оформлены как issues [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88)–[#93](https://github.com/frostiks777/ai-for-developers-project-386/issues/93) и **закрыты**: #88 (панель без логина, [ADR-0028](docs/adr/0028-dashboard-access-without-login.md)), #89 (сетка слотов 30 мин, [ADR-0027](docs/adr/0027-slot-grid-step-independent-of-buffers.md)), #90 (CI на каждый push), #91 (npm audit), #92 (Conventional Commits), #93 (привязка коммитов к issue). Открытых issues нет.
+> **Итог ревью проверяющего (2026-09-29):** все шесть замечаний оформлены как issues [#88](https://github.com/frostiks777/ai-for-developers-project-386/issues/88)–[#93](https://github.com/frostiks777/ai-for-developers-project-386/issues/93) и **закрыты**: #88 (панель без логина, [ADR-0028](docs/adr/0028-dashboard-access-without-login.md)), #89 (сетка слотов 30 мин, [ADR-0027](docs/adr/0027-slot-grid-step-independent-of-buffers.md)), #90 (CI на каждый push), #91 (npm audit), #92 (Conventional Commits), #93 (привязка коммитов к issue).
 
 > **Актуальный стек:** PostgreSQL (Neon) + Drizzle ORM (`pg`), PGlite в тестах и локальном dev без `DATABASE_URL`; миграции — идемпотентный `server/db/migrate.ts` при старте сервера; контракт — TypeSpec `api/main.tsp` → OpenAPI + клиентский SDK (`src/api/generated/`) + серверные типы (`server/generated/api-types.ts`); фронт ходит в API через `src/api/sdk.ts` (ручной `src/api/client.ts` удалён на Шаге 3, T7).
 > Упоминания SQLite, `DATABASE_PATH`, `better-sqlite3`, `server/data/app.db` ниже — **история** до [ADR-0013](docs/adr/0013-postgres-migration.md) (2026-09-24).
@@ -11,86 +11,11 @@
 
 **Все 4 шага курса закрыты** (2026-09-24), включая Шаг 3 (реализация тикетов T1–T9, #19–#27). Шаг 2 (проектирование бронирования): карта решений [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18 закрыта, утверждена спецификация `docs/spec.md`, контракт `api/main.tsp`, конвейер `npm run api:generate` (OpenAPI + клиентский SDK + серверные типы).
 Скелет: бэкенд (Fastify + Drizzle ORM + PostgreSQL/Neon, PGlite в тестах), фронтенд (React 18 + TypeScript + Vite + shadcn/ui), документация, конфиги.
-Сверх курса реализовано: мульти-хост, открытая панель организатора без логина (ADR-0028), блокировки времени, раздельные буферы как фильтр занятости (ADR-0027), «Мои встречи» на устройстве, список броней в панели, редизайн v2 «Мята и солнце», контракт-тесты + e2e Playwright (в т.ч. в CI).
+Сверх курса реализовано: мульти-хост, открытая панель организатора без логина (ADR-0028), блокировки времени, раздельные буферы как фильтр занятости (ADR-0027), «Мои встречи» на устройстве, список броней в панели, редизайн v2 «Мята и солнце», CAPTCHA + rate-limit (ADR-0025), email-уведомления (ADR-0026), контракт-тесты + e2e Playwright (в т.ч. в CI).
 
-### Файловая структура (снимок на 2026-09-24; актуальная — в `AGENTS.md`)
+### Файловая структура
 
-> Блок ниже отражает состояние скелета **до** миграции на PostgreSQL и до редизайна v2. Актуальный состав каталогов — раздел «Directory structure» в [`AGENTS.md`](AGENTS.md).
-
-```
-├── package.json              ✅ зависимости + скрипты
-├── vite.config.ts            ✅ (vitest 4 + vite 6 — совместимы)
-├── tsconfig.json             ✅
-├── tailwind.config.js        ✅ shadcn/ui
-├── postcss.config.js         ✅
-├── eslint.config.js          ✅ flat config ESLint 9
-├── .prettierrc               ✅
-├── .gitignore                ✅
-├── components.json           ✅ shadcn/ui
-├── drizzle.config.ts         ✅
-├── index.html                ✅
-├── Dockerfile                ✅ multi-stage (builder + runtime)
-├── .dockerignore             ✅
-├── render.yaml               ✅ Render Blueprint (docker, free, frankfurt)
-├── src/
-│   ├── main.tsx              ✅
-│   ├── App.tsx               ✅ маршруты (React Router): / (лендинг), /book/:slug, /dashboard, /cancel/:token, /reschedule/:token, *
-│   ├── App.test.tsx          ✅ 3 smoke-теста (лендинг, бронь, 404)
-│   ├── index.css             ✅ shadcn CSS-переменные + Tailwind
-│   ├── lib/utils.ts          ✅ cn()
-│   ├── lib/validation.ts     ✅ zod-схемы брони + правил доступности (зеркало server/validation.ts)
-│   ├── types/booking.ts      ✅ TimeSlot, Booking, CreateBookingBody (+email)
-│   ├── types/host.ts         ✅ HostSettings (зеркало server/types.ts)
-│   ├── types/availability.ts ✅ AvailabilityRules (зеркало server/availability.ts)
-│   ├── api/client.ts         ✅ fetchSlots, fetchHostSettings, fetchHostSlots, createBooking, fetchBookings, cancelBooking, cancelBookingByToken, fetch/updateAvailability
-│   ├── hooks/use-availability.ts ✅ принимает slug, тянет /api/v1/hosts/:slug/slots (фильтр прошедших)
-│   ├── hooks/use-availability.test.tsx ✅ 2 теста (фильтр, ошибка загрузки)
-│   ├── utils/dates.ts        ✅ (toDateKey/parseDateKey/startOfDay)
-│   ├── utils/calendar.ts     ✅ buildIcs / googleCalendarUrl / downloadIcs
-│   ├── utils/timezone.ts     ✅ toDateKeyInZone / formatDateTimeInZone / timeZoneOptionLabel
-│   ├── pages/landing-page.tsx ✅ главная (витрина, данные из /api/v1/hosts/:slug/settings)
-│   ├── pages/landing-page.test.tsx ✅ 2 теста (данные из API, фолбэк на конфиг)
-│   ├── pages/not-found-page.tsx ✅ 404 (неизвестный slug/маршрут)
-│   ├── pages/home-page.tsx   ✅ страница бронирования (/book/:slug)
-│   ├── pages/home-page.test.tsx ✅ 8 тестов (экран успеха, экспорт, назад, TZ, фильтр, мобильная)
-│   ├── pages/dashboard-page.tsx ✅ панель организатора (список + отмена + настройки)
-│   ├── pages/dashboard-page.test.tsx ✅ 6 тестов
-│   ├── pages/cancel-page.tsx ✅ отмена брони по токену (/cancel/:token)
-│   ├── pages/cancel-page.test.tsx ✅ 2 теста
-│   ├── pages/reschedule-page.tsx ✅ перенос брони по токену (/reschedule/:token)
-│   ├── pages/reschedule-page.test.tsx ✅ 2 теста
-│   ├── components/bookings-list.tsx ✅ список броней по дням + отмена
-│   ├── components/dashboard-sidebar.tsx ✅ сайдбар (скролл к #availability)
-│   ├── components/dashboard-sidebar.test.tsx ✅ 1 тест (скролл)
-│   ├── components/availability-form.tsx ✅ форма настроек доступности
-│   ├── components/ui/button.tsx ✅ shadcn Button
-│   └── test/setup.ts         ✅ jest-dom/vitest + jsdom-полифилы (safe для node)
-├── server/
-│   ├── index.ts              ✅ точка входа: buildApp() + listen + graceful shutdown
-│   ├── app.ts                ✅ фабрика buildApp(): /health, /api/*, статика dist/ (SPA)
-│   ├── app.test.ts           ✅ 11 интеграционных тестов (app.inject, in-memory БД)
-│   ├── dashboard.test.ts     ✅ 7 интеграционных тестов (отмена, availability)
-│   ├── validation.ts         ✅ zod createBookingSchema + availabilityRulesSchema
-│   ├── availability.ts       ✅ AvailabilityRules, defaultAvailabilityRules, generateSlotStarts, rulesFromRow/ToRow
-│   ├── rules.ts              ✅ load/save правил + regenerateFutureSlots
-│   ├── types.ts              ✅ TimeSlot, Booking, CreateBookingBody (+email)
-│   ├── db/schema.ts          ✅ Drizzle: slots, bookings (+email), availability_rules
-│   ├── db/index.ts           ✅ клиент БД (DATABASE_PATH) + ALTER + авто-сид по правилам
-│   └── README.md             ✅
-├── docs/
-│   ├── architecture.md       ✅
-│   ├── conventions.md        ✅
-│   ├── agent-principles.md   ✅
-│   ├── Структура проекта.md  ✅ (теория агентов)
-│   ├── Каркас приложения.md  ✅ (требования шага 2)
-│   ├── adr/                  ✅ README + ADR-0001, ADR-0002 + template
-│   ├── ci_cd.md              ✅ (план GCP — не используется)
-│   ├── ci_cd_render.md       ✅ (план Render — основной)
-│   ├── ai-tuning-plan.md     ✅ (тюнинг AI-агентов)
-│   └── mcp.md                ✅ (MCP-серверы)
-└── AGENTS.md                 ✅ (обновлён под финальный стек)
-└── CONTEXT.md                ✅ словарь проекта (организатор, гость, слот, бронь, встреча, тип встречи, правило доступности, токен)
-```
+Актуальный состав каталогов — раздел «Directory structure» в [`AGENTS.md`](AGENTS.md) (обновлён 2026-09-28, пункт 72). Исторический снимок скелета на 2026-09-24 (до миграции на PostgreSQL и до редизайна v2) вынесен в [`docs/archive/memory-file-tree-2026-09-24.md`](docs/archive/memory-file-tree-2026-09-24.md) — там же список того, что изменилось после него.
 
 ## Исправленные ошибки
 
@@ -107,9 +32,11 @@
 | `test` | `App.test.tsx` — фикстура слота с прошедшей датой ломалась о новый фильтр | `startAt` генерируется как `now + 1h` |
 | CI | `lint-and-test (20)`: `Channel closed` (`ERR_IPC_CHANNEL_CLOSED`, tinypool) — баг vitest 3.x ([vitest#8201](https://github.com/vitest-dev/vitest/issues/8201)) | vitest `3.2.7 → 4.1.11` (пул переписан без tinypool) + Node 20 (EOL) убран из матрицы: `[22, 24]` |
 | API/БД | check-then-insert: гонка при параллельных бронированиях; после отказа от предпроверки дубль давал `500` | [ADR-0003](docs/adr/0003-unique-slot-booking.md): `UNIQUE`-индекс `bookings_slotId_unique` + перехват `SQLITE_CONSTRAINT_UNIQUE` → `409` |
-| `docs sync` | `opencode/mimo-v2.5-free` удалён из каталога моделей, заменён на `opencode/mimo-v2.6-flash-free` | Обновлено во всех 4 файлах: `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` |
+| `docs sync` | `opencode/mimo-v2.5-free` удалён из каталога моделей, заменён на `opencode/mimo-v2.6-flash-free` | Обновлено во всех 4 файлах: `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/archive/ai-tuning-plan.md` (на тот момент — `docs/ai-tuning-plan.md`) |
 
 ## Версии зависимостей (финальные)
+
+> Снято из `package.json` 2026-09-30. Полный список — в самом `package.json`; здесь только опорные пакеты.
 
 ```json
 {
@@ -124,11 +51,13 @@
   "drizzle-orm": "^0.45.3",
   "drizzle-kit": "^0.31.11",
   "@fastify/static": "^10.1.5",
+  "@fastify/rate-limit": "^11.2.0",
   "tsx": "^4.23.15",
   "tailwindcss": "^3.4.17",
   "react-router-dom": "^7.18.4",
   "zod": "^4.6.5",
   "sonner": "^2.0.8",
+  "lucide-react": "^0.469.0",
   "@typespec/compiler": "^1.16.0",
   "@typespec/http": "^1.16.0",
   "@typespec/openapi3": "^1.16.0",
@@ -136,19 +65,21 @@
   "@typespec/ts-http-runtime": "^0.2.1",
   "openapi-typescript": "^7.13.0",
   "@playwright/test": "^1.63.0",
-  "ajv": "^8.20.0"
+  "ajv": "^8.20.0",
+  "ajv-formats": "^3.0.1",
+  "yaml": "^2.9.1"
 }
 ```
 
 ## Результаты проверок
 
-> Актуальный прогон — 2026-09-29. Блок ниже в комментарии `// 2026-09-25 (эпоха SQLite)` — история.
+> Актуальный прогон — 2026-09-30 (`npm test` в рамках #100). Блок ниже в комментарии `// 2026-09-25 (эпоха SQLite)` — история.
 
 ```
-✅ typecheck: tsc --noEmit — чисто
-✅ lint: 0 ошибок, 0 warnings
 ✅ test: 336/336 passed (56 файлов: фронтенд RTL + server/*), PGlite в памяти
-✅ e2e: playwright — 3/3 (бронь гостя, конфликт слотов, перенос/отмена), собранное приложение на :3210
+✅ typecheck: tsc --noEmit — чисто (без изменений кода с 2026-09-29)
+✅ lint: 0 ошибок, 0 warnings (без изменений кода с 2026-09-29)
+✅ e2e: playwright — 3/3 (прогон 2026-09-29)
 ```
 
 Исторический прогон 2026-09-25 (до миграции на PostgreSQL, см. [ADR-0013](docs/adr/0013-postgres-migration.md)):
@@ -177,7 +108,7 @@
 9. ✅ GitHub Actions: CI workflow (lint+test на push)
 10. ✅ GitHub Actions: release-please workflow
 11. ✅ AGENTS.md — обновлён под финальный стек
-12. ✅ Тюнинг AI-агентов по [`docs/ai-tuning-plan.md`](docs/ai-tuning-plan.md):
+12. ✅ Тюнинг AI-агентов по плану (ныне [`docs/archive/ai-tuning-plan.md`](docs/archive/ai-tuning-plan.md), выполнен полностью):
     - ADR-хранилище: [`docs/adr/`](docs/adr/README.md) (README + ADR-0001 + template)
     - Процессные скиллы: `.agents/skills/{interview,plan,ponytail,tdd,verify}` (5 файлов)
     - AGENTS.md: добавлены разделы `## Hygiene of context window`, `## Long-term memory`, `## Safety gates`; обновлены `## Documentation`, `## Skills (OpenCode)`, `## Directory structure`
@@ -190,11 +121,11 @@
     - `render.yaml` — docker, plan free, region frankfurt, branch main, healthCheck `/health`
     - Коммиты `aa22fb0`, `1202442`, `7c5a1ba`, `ed95bf7` запушены в `main`
 14. ✅ Синхронизация документации с каталогом моделей (`tools.opencode.models`):
-    - **Sync #1:** `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` — открытый ID `opencode/mimo-v2.5-free` заменён на `opencode/mimo-v2.6-flash-free`. Добавлен OpenRouter как «справочно».
+    - **Sync #1:** `docs/model-usage.md`, `AGENTS.md`, `opencode.jsonc`, `docs/ai-tuning-plan.md` (ныне архив) — открытый ID `opencode/mimo-v2.5-free` заменён на `opencode/mimo-v2.6-flash-free`. Добавлен OpenRouter как «справочно».
     - **Sync #2 (текущий):** каталог вырос с 16 до 133 моделей. Обновлено:
       - `docs/model-usage.md`: opencode — добавлена 5-я бесплатная `big-pickle` (теперь 5 из 18); openrouter — таблица переразбита на 3 группы (универсальные 7, роутеры 5, специализированные 1) итого 12 из 115; добавлены `fusion`, `pareto-code`, `bodybuilder`, `auto`, `lyria-3-clip-preview`; удалены 4 устаревших free-модели (`qwen3.8-27b:free`, `laguna-xs:free`, `glm-5.2:free`, `gemma-4-31b-it:free`); список платных opencode-моделей для справки.
       - `AGENTS.md`: добавлен `opencode/big-pickle` в список бесплатных ID.
-      - `opencode.jsonc`, `docs/ai-tuning-plan.md`: без изменений (sync #1 уже закрыл `mimo-v2.5-free → v2.6`).
+      - `opencode.jsonc`, архивный `ai-tuning-plan.md`: без изменений (sync #1 уже закрыл `mimo-v2.5-free → v2.6`).
       - Сводная статистика: **133 модели всего, 17 бесплатных, 116 платных**.
 15. ⚠️ **Плагин superpowers — в репозитории НЕ подключён.** Запись 2026-09-25 утверждала, что в `opencode.jsonc` добавлен ключ `plugins: ["superpowers@git+…"]`; фактически в конфиге ключ **`plugin`** со значением `["opencode-notify"]` (уведомления opencode), а `obra/superpowers` отсутствует. Процессные скиллы работают из `.agents/skills/` — этого достаточно. Если superpowers понадобится: добавить в `plugin` (синтаксис плагинов opencode 1.18.x — `plugin`, не `plugins`) и проверить `skill`-лист.
 16. ✅ Обязательный email ([ADR-0002](docs/adr/0002-zod-api-validation.md)):
@@ -242,7 +173,7 @@
 44. ✅ Визуальный редизайн, **Этап 4** (`8d0513a`): рестайл формы брони — `DialogContent` с пропом `hideClose`, заголовок Lora, сводка с иконкой `Calendar`, порядок полей Имя → Email → Телефон → Комментарий, счётчик «N / 1000» под комментарием, на телефоне — панель снизу с ручкой и кнопкой во всю ширину, фокус на поле «Имя» при открытии; ошибка 409/400 из API: toast + закрыть диалог + `refetch` + снять выбор в `home-page.tsx`.
 45. ✅ Визуальный редизайн, **Этап 5** (`db5aec2`): рестайл экрана успеха — `src/components/booking-success.tsx` по `design-spec.md` §3.4 (десктоп — карточка 600 px, телефон — колонка с кнопками внизу), кнопка «Назад» — ghost со стрелкой.
 46. ✅ Визуальный редизайн, **Этап 6** (`7293469`): редизайн панели организатора — `src/components/dashboard-sidebar.tsx` (десктопный сайдбар: лого-`h1`, «Встречи» со счётчиком, «Доступность» → `#availability`, `ThemeToggle`), `src/components/bookings-list.tsx` вместо `bookings-table.tsx` (группировка по дню через `toDateKeyInZone`, карточки `<li>`, пустое состояние «Пока нет ни одной брони»; старый файл удалён), `src/components/booking-filter.tsx` (сегменты «Все / Неделя / Сегодня», `role="tablist"`, фильтр на клиенте), `src/components/availability-form.tsx` (дни-«таблетки», select часов, подсказка «≈ N слотов в рабочий день», кнопка «Сохранить» во всю ширину; `id` полей и zod-схема сохранены). Тесты: `closest('tr') → closest('li')` + новые (группировка, фильтр «Сегодня», подсказка «≈ 12 слотов»).
-47. ✅ Внешний бэклог Gemini: добавлен `docs/gemini-code-1790192589378.md` (спека от внешнего ревью) + раздел «Backlog из внешней спеки» в `docs/todo.md` (только MISSING/PARTIAL, P0/P1); `docs/roadmap.html` перегенерирован. Итог: 105/105 тестов (17 файлов).
+47. ✅ Внешний бэклог Gemini: добавлен бэклог Gemini (спека от внешнего ревью, ныне [`docs/archive/gemini-code-1790192589378.md`](docs/archive/gemini-code-1790192589378.md)) + раздел «Backlog из внешней спеки» в `docs/todo.md` (только MISSING/PARTIAL, P0/P1); сгенерирован `roadmap.html` (ныне архив). Итог: 105/105 тестов (17 файлов).
 48. ✅ Визуальный редизайн, **Этап 7** (документация, текущий): [ADR-0007](docs/adr/0007-visual-redesign-and-themes.md) переведён в **Accepted** (ветка `feat/redesign-a-d-themes` смержена в `main`), индекс `docs/adr/README.md` обновлён; `README.md` упоминает светлую/тёмную тему и десктоп/мобильные раскладки; `MEMORY.md` и `docs/todo.md` отмечают завершение этапов 1–7.
 49. ✅ Шаг 1 курса (главная страница): `CONTEXT.md` — словарь проекта (русские каноны + англ. алиасы); [ADR-0010](docs/adr/0010-landing-and-booking-routes.md); маршруты — `/` = новый `LandingPage` (витрина гостя: hero, «Как это работает», карточка организатора, CTA; данные из `GET /api/v1/hosts/:slug/settings`, фолбэк на `src/config/host.ts`), `/book/:slug` = `HomePage`, `*` = `NotFoundPage`; `host.slug = 'default'`; фронт брони переведён на API v1 (`fetchHostSettings`/`fetchHostSlots`, `useAvailability(slug)`), легаси `/api/*` сохранён; ссылки дашборда/отмены/переноса → `/book/${host.slug}`; фикс бага сайдбара (`scrollIntoView`); 3 теста лендинга + 3 smoke `App` + обновлены `home-page`/`use-availability`. Итог: 109/109 тестов, lint/typecheck/build — зелёные.
 50. ✅ Шаг 2 курса (проектирование бронирования, карта решений): карта [#10](https://github.com/frostiks777/ai-for-developers-project-386/issues/10) с тикетами #11–#18, все закрыты. Артефакты:
@@ -356,7 +287,7 @@
     - `AGENTS.md`: стек (PostgreSQL/Neon + PGlite, миграции `server/db/migrate.ts`, TypeSpec-контракт, ~12 серверных тест-файлов), «Directory structure» (реальные `src/`, `server/`, `api/`, `e2e/`, `scripts/`, `docs/*`), «Commands» (`dev:all`, `start`, `preview`, `test:e2e` — job в CI, `api:generate`), скиллы (83 директории, `apply-design`/`telegram-bridge`), метки `bug`/`enhancement`.
     - `README.md`: роуты (`/my`, `/booking/:uuid/*`, `/admin/*`), таблица API — публичные и админские (Basic-auth) маршруты `/api/v1/*` + легаси, форматы ошибок (конверт v1 vs плоский legacy, `400` у legacy-reschedule), комментарий `max(500)`, слоты в поясе хоста, e2e в CI, деплой Neon + `ADMIN_PASSWORD`, `src/api/sdk.ts` вместо `client.ts`.
     - `docs/architecture.md`: БД, слои фронта, `server/db/*`, полные роуты и тесты, поток данных и диаграмма (Neon/PGlite), команды.
-    - `docs/ci_cd_render.md` пересобран под Neon (Environment Group `DB`, `ADMIN_PASSWORD`, отсутствие `db:seed`); `docs/ci_cd.md` помечен DEPRECATED (GCP не используется).
+    - `docs/ci_cd_render.md` пересобран под Neon (Environment Group `DB`, `ADMIN_PASSWORD`, отсутствие `db:seed`); `docs/ci_cd.md` помечен DEPRECATED (GCP не используется; ныне архив).
     - `docs/spec.md` помечен снимком Шага 2; §5 — фактические таблицы (PostgreSQL, `time_blocks`, `guests`/`consentAccepted`/`idempotencyKey`, раздельные буферы, `UNIQUE(hostId)`).
     - `docs/todo.md`: S5 `/events` помечен отменённым ([ADR-0022](docs/adr/0022-private-bookings-list.md)), «Ключевые расхождения» — «закрыты», `23505` вместо `SQLITE_CONSTRAINT`, `max(500)`, PR #9/1.8.0 заменён актуальным релиз-процессом, «Актуальный план» перестроен (#72 → #49 → #46).
     - `MEMORY.md`: шапка (курс закрыт, открытые #49/#46/SSL, актуальный стек), результаты проверок **272/272** (47 файлов) + исторический блок 230/230, версии зависимостей из `package.json` (`pg`/`pglite` вместо `better-sqlite3`), плагин superpowers помечен неподключённым (в `opencode.jsonc` ключ `plugin: ["opencode-notify"]`), «83 скила» вместо «38», устаревшие строки «Ключевых решений» помечены историей.
@@ -390,16 +321,33 @@
     - Пошаговая инструкция прода (Brevo sender + API key → env в Render → проверка → cron-job.org) — [`docs/email-setup-brevo.md`](docs/email-setup-brevo.md), [#85](https://github.com/frostiks777/ai-for-developers-project-386/issues/85).
     - Фикс [#86](https://github.com/frostiks777/ai-for-developers-project-386/issues/86): cron-job.org получал `415` на `/api/internal/reminders` (Fastify принимал только `json`/`text`) — scoped `addContentTypeParser('*')` для этого маршрута; тест на `x-www-form-urlencoded`/`text/plain`.
     - Проверки: lint 0, typecheck чисто, **323/323 тестов** (54 файла), build ✓, e2e 3/3.
+77. ✅ **Актуализация документации** (2026-09-30) — [#100](https://github.com/frostiks777/ai-for-developers-project-386/issues/100):
+    - Выполненные планы и снятые документы перенесены в [`docs/archive/`](docs/archive/README.md): `ai-tuning-plan.md` (внедрён полностью), `archi-scheme.md` (снапшот на `1959b89`), `ci_cd.md` (DEPRECATED, GCP не используется), `gemini-code-1790192589378.md` (P0/P1 закрыты), `Инструкция по редизайну блока Доступность.md` (все 8 пунктов сделаны), `roadmap.html`. В архиве — `README.md`-канон с таблицей «почему в архиве / актуальная замена» и правилом «новые планы сюда не кладут».
+    - Ссылки на перенесённые файлы обновлены в `AGENTS.md`, `MEMORY.md`, `README.md`, `docs/todo.md`, `docs/adr/{0005,0010,0015,0016}`, `docs/ci_cd_render.md`; исправлены битые относительные ссылки в черновиках `docs/design/v2/adr/*` (`../../adr/` → `../../../adr/`). Проверка скриптом по `docs/`, `AGENTS.md`, `MEMORY.md`, `README.md`, `CONTEXT.md` — битых ссылок нет.
+    - Устаревшие утверждения вычищены: `README.md` (пароль/`ADMIN_PASSWORD` в деплое, несуществующий якорь «Доступ организатора (пароль)», e2e-порт 3100 → 3210, описание auth-столбца), `docs/todo.md` (Basic-auth как текущее состояние — заменено на [ADR-0028](docs/adr/0028-dashboard-access-without-login.md)), `docs/spec.md` (сноска про Basic-auth).
+    - `MEMORY.md`: устаревший файловый снимок вынесен в `docs/archive/memory-file-tree-2026-09-24.md` (со списком изменений после него), версии зависимостей пересобраны по `package.json` (добавлены `@fastify/rate-limit`, `ajv-formats`, `yaml`, `lucide-react`), результаты проверок — 336/336 (56 файлов), «Что осталось» перестроено: открыто 3 пункта, закрытое — под заголовком «Закрыто ранее».
+    - Проверки: `npm test` **336/336** (56 файлов); правки только в документации.
 
 ## Что осталось (следующие шаги)
+
+**Открыто сейчас (2026-09-30):**
+
+- [ ] **Продуктовый backlog (сверх курса)** — 4 пункта, порядок захода: **регистрация и аккаунты** (сейчас один заранее заданный владелец, разделения нет — нужен ADR по аутентификации) → **интеграции с внешними календарями** (сейчас только экспорт `.ics`/GCal) → **повторяющиеся события** → **аналитика по записям**. Детали и что уже сделано — `docs/todo.md`, «Backlog продукта». Перед каждым пунктом: issue → `interview` → ADR → `plan` → реализация.
+- [ ] **Перепроверить SSL-режим `pg`** после выхода `pg` v9 (сейчас latest 8.23.0) — в v9 `sslmode=require` начнёт вести себя как в libpq. Сейчас режим нормализован в `server/env.ts` на `verify-full`, предупреждений в логах нет ([ADR-0013](docs/adr/0013-postgres-migration.md), разбор в `docs/todo.md`).
+- [ ] **`esbuild` 0.18.20 в дереве dev-зависимостей** (moderate, `npm audit`) — тянется через `drizzle-kit`, в контейнер не попадает. Решение при обновлении `drizzle-kit`; зафиксировано в [ADR-0029](docs/adr/0029-audit-fastify-static-upgrade-deferred.md).
+
+Открытых GitHub Issues нет. Ниже — закрытые пункты (история, чтобы не искать по Issues).
+
+**Закрыто ранее:**
 
 - [x] **#49 — мобильная вёрстка** (P1, bug): повторный аудит после v2 — 56 проверок (14 экранов × 2 ширины × 2 темы), 0 overflow/наложений после двух правок панели. Закрыт 2026-09-28.
 - [x] **#46 — CAPTCHA** (enhancement): Cloudflare Turnstile + rate-limit по IP, [ADR-0025](docs/adr/0025-captcha-and-rate-limit.md).
 - [x] **SSL-режим `pg`** (мелкое, закрыто 2026-09-28): `pg-connection-string@2.14.0` печатает предупреждение только из-за `sslmode=require`. Проверено живым соединением: `require`/`verify-full`/`prefer` дают **тот же** конфиг `ssl: {}`, а сервер TLS требует (без `sslmode` → `28000 connection is insecure`); `uselibpqcompat=true&require` отклонён (даёт `rejectUnauthorized: false`). **Ручная правка строки не нужна** — её формируют Neon/Render: режим нормализуется в `server/env.ts: normalizeSslMode` (меняется только значение параметра, без пересборки URL, чтобы не перекодировать пароль). 7 тестов — `server/env.test.ts`. Перепроверить после апгрейда `pg` до v9.
 - [x] **Визуальная приёмка v2** (человек): пройдена 2026-09-28, расхождений нет.
-- [ ] **Продуктовый backlog (сверх курса)** — см. `docs/todo.md`, «Backlog продукта»: уведомления (email) → регистрация/аккаунты → интеграции с внешними календарями → повторяющиеся события → аналитика.
+- [x] **Email-уведомления** — Brevo HTTP API: гостю подтверждение/перенос/отмена/напоминание за 24 ч, организатору новая бронь/отмена, внешний cron-endpoint. [ADR-0026](docs/adr/0026-email-notifications.md), [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83).
+- [x] **Продуктовый backlog, первый пункт** — уведомления (email): ✅ 2026-09-29. Остальные три пункта — в списке «Открыто сейчас» выше.
 
-- [x] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также `docs/gemini-code-1790192589378.md` — внешний backlog).
+- [x] **План курса (процессы)** — сохранён в [`docs/course-steps.md`](docs/course-steps.md): 4 шага — (1) главная страница — **✅ выполнено 2026-09-24** ([ADR-0010](docs/adr/0010-landing-and-booking-routes.md)); (2) проектирование бронирования (wayfinder → спека → тикеты, Design First) — **✅ выполнено 2026-09-24** (карта #10, `docs/spec.md`, `api/main.tsp`, `npm run api:generate`); (3) реализация тикетов через `implement` + Playwright — **✅ выполнено 2026-09-24** (T1–T9, #19–#27); (4) Docker/деплой — **✅ уже выполнено**. Все шаги курса закрыты. Подробные критерии приёмки — в том же файле (см. также [`docs/archive/gemini-code-1790192589378.md`](docs/archive/gemini-code-1790192589378.md) — внешний backlog (сверка закрыта)).
 - [x] **Шаг 3 курса** ✅ завершён 2026-09-24: тикеты T1–T9 (#19–#27) закрыты, `docs/spec.md` сверена с реализацией и контрактом, `docs/course-steps.md` отмечает шаг выполненным. CI + hexlet-check на `main` — success (коммит `807d4e0`).
 - [x] **Фаза 0 — гигиена/синхронизация (2026-09-24):** фикс UI-бага «Доступность», заметки в `docs/todo.md` (несколько интервалов — сделано), это обновление `MEMORY.md`.
 - [x] Записать asciinema для README — ✅ **записано 2026-09-25**: публикация https://asciinema.org/a/mpuvYnckvG7iKlH4, каст в репозитории [`docs/demo.cast`](docs/demo.cast). На Windows asciinema не поддерживается → запись через [PowerSession](https://github.com/Watfaq/PowerSession-rs). По ходу исправлен баг `scripts/demo.sh`: кириллица в `curl -d` ломала `Content-Length` (`FST_ERR_CTP_INVALID_CONTENT_LENGTH`) — заменено на `--data-binary @-`.
@@ -452,7 +400,7 @@
 | Процессные скиллы (локальные) | [.agents/skills/](.agents/skills/) — `commit-push`, `interview`, `plan`, `ponytail`, `tdd`, `verify` | Повторно используемые workflow через `skill` tool по триггер-фразам |
 | Процессные скиллы (плагин) | [obra/superpowers](https://github.com/obra/superpowers) через `opencode.jsonc` → `plugins` (V2 git-spec) | Дополнительные 14 скилов: `brainstorming`, `systematic-debugging`, `test-driven-development`, `writing-plans`, `executing-plans`, `subagent-driven-development`, `dispatching-parallel-agents`, `requesting-code-review`, `receiving-code-review`, `finishing-a-development-branch`, `using-git-worktrees`, `verification-before-completion`, `using-superpowers`, `diagnosing-superpowers`. Приоритет V2: проектные → персональные → superpowers (локальные `ponytail` и др. не страдают). |
 | MCP для UI | [`shadcn mcp`](docs/mcp.md) через `opencode.jsonc` → `mcp.shadcn` | Пакет `shadcn` (не `@shadcn/ui/mcp`); доступ к каталогу компонентов через `components.json` |
-| Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP (`docs/ci_cd.md`) не используется |
+| Деплой | Render.com (Docker, Free) | Бесплатно без карты; план GCP ([`docs/archive/ci_cd.md`](docs/archive/ci_cd.md)) не используется |
 | Фронт в проде | `@fastify/static` раздаёт `dist/` из Fastify | Один контейнер, same-origin `/api` без CORS |
 | Порт в проде | `process.env.PORT` (fallback 3000) | Требование Render; хост `0.0.0.0` |
 | Валидация API | zod 4 (схема-зеркало: `server/validation.ts` ↔ `src/lib/validation.ts`) | См. [ADR-0002](docs/adr/0002-zod-api-validation.md); единые сообщения об ошибках фронт/бэк |
@@ -479,6 +427,8 @@
 | Отмена без ссылки | «Мои встречи» на устройстве: бронь в `localStorage`, страница `/my` с отменой/переносом | [ADR-0019](docs/adr/0019-my-bookings-on-device.md); capability-токен не утекает, нет перечисления по email; ограничение — только тот же браузер |
 | Защита публичной записи | Cloudflare Turnstile (Free), **включается фактом `TURNSTILE_SECRET_KEY`**; `server/captcha.ts` fail-closed; проверка в `POST .../bookings` после zod и **после** реплея по `Idempotency-Key`; site key отдаёт `GET /hosts/:slug/settings` (`captcha: CaptchaSettings`); rate-limit `@fastify/rate-limit` in-memory (20/мин запись, 300/мин чтения), ключ — `CF-Connecting-IP` → `request.ip` | [ADR-0025](docs/adr/0025-captcha-and-rate-limit.md); [#46](https://github.com/frostiks777/ai-for-developers-project-386/issues/46); dev/CI/e2e не зависят от внешнего сервиса; `trustProxy: true` обязателен, иначе IP у всех одинаковый и лимит глобальный |
 | Email-уведомления | **Brevo HTTP API** (free 300/день, без своего домена), включается фактом `EMAIL_API_KEY`; `server/email.ts` + `email-templates.ts` + `notifications.ts`; напоминания — идемпотентная ленивая проверка (`bookings.reminderSentAt`) + внешний cron `POST /api/internal/reminders` под `X-Reminders-Secret` | [ADR-0026](docs/adr/0026-email-notifications.md); [#83](https://github.com/frostiks777/ai-for-developers-project-386/issues/83); SMTP на Render Free заблокирован, Render Cron платный, домена нет; без ключа — no-op (тесты/CI/e2e без сети) |
+| Документация | Выполненные планы и снятые документы → `docs/archive/` с `README`-каноном; в `docs/` живут только актуальные документы и незакрытые планы; история — в git | [#100](https://github.com/frostiks777/ai-for-developers-project-386/issues/100); в `docs/` копились планы с выполненными, но незачёркнутыми чек-листами (`ai-tuning-plan.md`, инструкция по «Доступности», внешний бэклог Gemini) — агент и наставник читали их как актуальные |
+
 
 ## Окружение
 

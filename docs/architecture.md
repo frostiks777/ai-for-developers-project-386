@@ -38,7 +38,7 @@ import type { Host } from '@/api/generated'
 
 - `server/index.ts` — точка входа: создаёт приложение через `buildApp()` и слушает порт 3000. Запуск в dev-режиме — `npm run server:dev` (через `tsx watch`).
 - `server/app.ts` — фабрика `buildApp()`: регистрирует `/health`, маршруты легаси `/api/*`, маршруты `/api/v1/*` и раздачу собранного фронтенда из `dist/`. Панель организатора и админские API открыты без логина ([ADR-0028](adr/0028-dashboard-access-without-login.md)). Фабрика позволяет тестам поднять изолированный инстанс без `listen()` (`app.inject()`).
-- `server/env.ts` — валидация переменных окружения (`PORT`, `DATABASE_URL`, `TURNSTILE_*`, `EMAIL_*`) через zod.
+- `server/env.ts` — валидация переменных окружения через zod: `NODE_ENV`, `PORT`, `DATABASE_URL`, `TURNSTILE_*` (CAPTCHA), `RATE_LIMIT_*`, `EMAIL_*`, `ORGANIZER_EMAIL`, `REMINDER_LEAD_MINUTES`, `REMINDERS_SECRET`, `APP_ORIGIN`/`RENDER_EXTERNAL_URL`; там же `normalizeSslMode` (любой входящий `sslmode` → `verify-full`).
 - `server/bookings-v1.ts` — логика броней v1: проверка слота, `minNotice`, статус, гости, `Idempotency-Key`, отмена/перенос.
 - `server/event-types.ts`, `server/time-blocks.ts` — CRUD типов встреч и блокировок времени ([ADR-0014](adr/0014-time-blocks.md)).
 - `server/validation.ts` — zod-схемы API-контракта (`createBookingSchema`, `availabilityRulesSchema`); зеркало для фронтенда — `src/lib/validation.ts`. См. [ADR-0002](adr/0002-zod-api-validation.md).
@@ -49,6 +49,7 @@ import type { Host } from '@/api/generated'
 - `server/email-templates.ts` — тексты писем (`text` + `html`) гостю и организатору: подтверждение, перенос, отмена, напоминание.
 - `server/notifications.ts` — отправка писем по событиям брони (`notifyBookingConfirmed/Cancelled/Rescheduled/Reminder`); ошибки провайдера не ломают бронь.
 - `server/reminders.ts` — ленивая проверка due-напоминаний (`sendDueReminders`, идемпотентность через `bookings.reminderSentAt`) и `scheduleLazyReminderCheck`; внешний cron дёргает `POST /api/internal/reminders` с секретом. См. [ADR-0026](adr/0026-email-notifications.md).
+- `server/captcha.ts`, `server/rate-limit.ts` — проверка Cloudflare Turnstile (fail-closed) и лимиты по IP с ключом `CF-Connecting-IP` → `request.ip` ([ADR-0025](adr/0025-captcha-and-rate-limit.md)).
 - `server/db/schema.ts` — схема БД в терминах Drizzle ORM (`pg-core`): `hosts`, `event_types`, `slots`, `bookings`, `availability_rules`, `availability_ranges`, `time_blocks`.
 - `server/db/index.ts` — клиент Drizzle: `pg` при заданном `DATABASE_URL` (Neon), иначе **PGlite в памяти** (тесты и локальный dev без переменной).
 - `server/db/migrate.ts` — идемпотентные миграции (`ALTER TABLE … IF NOT EXISTS`, `CREATE UNIQUE INDEX IF NOT EXISTS`) и бэкфиллы; выполняются при старте сервера.
@@ -57,7 +58,7 @@ drizzle-kit (`npm run db:generate` / `db:push`, `drizzle.config.ts`) в прод
 
 Маршруты фронтенда (React Router, `src/App.tsx`): `/` — лендинг гостя (`LandingPage`), `/book/:slug` — бронирование (`HomePage`), `/my` — «Мои встречи», `/booking/:uuid/confirmed` — shareable-экран подтверждения, `/booking/:uuid/{cancel,reschedule}` (алиасы `/cancel/:token`, `/reschedule/:token`) — self-service (`ManageBookingPage`), `/dashboard` и `/admin/{bookings,availability,event-types,blocks,hosts}` — панель организатора (`DashboardPage`), `*` — 404. См. [ADR-0010](adr/0010-landing-and-booking-routes.md), [ADR-0019](adr/0019-my-bookings-on-device.md), [ADR-0023](adr/0023-redesign-v2-mint.md).
 
-Интеграционные тесты API лежат в `server/*.test.ts` (~12 файлов: `app`, `dashboard`, `contract`, `bookings-v1`, `event-types`, `hosts`, `host-availability`, `availability-settings`, `availability`, `admin-auth`, `multi-host`, `time-blocks`, `db/migrate`) и работают через `app.inject()` на PGlite в памяти (`DATABASE_URL=''` в `vite.config.ts` → `test.env`).
+Интеграционные тесты API лежат в `server/**/*.test.ts` (21 файл на 2026-09-30: `app`, `dashboard`, `dashboard-access` — панель без логина, `contract`, `static`, `bookings-v1`, `event-types`, `hosts`, `host-availability`, `multi-host`, `availability`, `availability-settings`, `time-blocks`, `slot-regeneration`, `captcha`, `rate-limit`, `env`, `email`, `email-templates`, `email-notifications`, `db/migrate`) и работают через `app.inject()` на PGlite в памяти (`DATABASE_URL=''` в `vite.config.ts` → `test.env`). Всего вместе с фронтенд-тестами — 56 файлов, 336 тестов.
 
 ## Контракт API (TypeSpec)
 
