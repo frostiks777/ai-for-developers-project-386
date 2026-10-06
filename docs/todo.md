@@ -194,6 +194,10 @@
 
 - [x] **Актуализация документации** (2026-09-30, [#100](https://github.com/frostiks777/ai-for-developers-project-386/issues/100)) — выполненные планы и снятые документы перенесены в [`docs/archive/`](archive/README.md) (`ai-tuning-plan.md`, `archi-scheme.md`, `ci_cd.md`, внешний бэклог Gemini, инструкция по редизайну «Доступности», `roadmap.html`); у каждого — шапка-статус, в архиве — `README`-канон. Ссылки обновлены в `AGENTS.md`, `MEMORY.md`, `README.md`, ADR и `ci_cd_render.md`, битые ссылки в `docs/design/v2/adr/*` исправлены. Вычищены устаревшие утверждения: Basic-auth/`ADMIN_PASSWORD` в живых доках (заменено на [ADR-0028](adr/0028-dashboard-access-without-login.md)), e2e-порт 3100 → 3210 в `README.md`, версия релиза в критериях приёмки, файловый снимок в `MEMORY.md` вынесен в архив. `MEMORY.md` и этот файл пересобраны по факту на 2026-09-30.
 
+- [x] **Второе ревью проверяющего — остаток (2026-10-06)** — два замечания закрыты, проект завершён:
+  - [#102](https://github.com/frostiks777/ai-for-developers-project-386/issues/102) — гость видит только сетку доступности ([ADR-0030](adr/0030-guest-sees-only-availability-grid.md)). `selectFutureSlots` отдаёт лишь слоты из `generateSlotStartsFromRanges(now, settings)`, поэтому подтверждённые встречи вне сетки (:20/:40, созданные по старой формуле шага) не выводятся отдельными элементами календаря; сами брони сохраняются в панели организатора и через `busyIntervals` блокируют пересекающиеся получасовые окна. Контракт API не менялся, миграция данных не нужна.
+  - [#103](https://github.com/frostiks777/ai-for-developers-project-386/issues/103) — убраны устаревшие утверждения про Basic Auth из комментариев `server/app.ts` (список хостов, список броней, редирект `/events`), комментария `isAdminRoute` в `src/components/app-header.tsx` и названия теста в `src/components/app-header.test.tsx`.
+
 
 ### Backlog: редизайн v2
 
