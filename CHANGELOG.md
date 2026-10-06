@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.2](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.24.1...v1.24.2) (2026-10-06)
+
+
+### Bug Fixes
+
+* **server:** гостевой календарь только по сетке доступности ([#102](https://github.com/frostiks777/ai-for-developers-project-386/issues/102)) ([b6e1df4](https://github.com/frostiks777/ai-for-developers-project-386/commit/b6e1df40d3ac3ea0d5ab2c97a3c2a171579fe7a9))
+
 ## [1.24.1](https://github.com/frostiks777/ai-for-developers-project-386/compare/v1.24.0...v1.24.1) (2026-09-29)
 
 
